@@ -1,0 +1,13 @@
+[app]
+name = "World Clock Pro: Desktop Time, Alarms & Focus Timer"
+id = "com.worldclockpro.desktop"
+version = "1.0.0"
+executable = "OliveClock"
+package = "./cmd/worldclock"
+icon = "assets/icon.png"
+
+[build]
+out = "dist"
+
+[windows]
+publisher = "World Clock Pro Studio"
