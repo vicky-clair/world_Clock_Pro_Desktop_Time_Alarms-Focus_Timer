@@ -100,6 +100,13 @@ func DrawAlarms(f *flex.Frame, state *AppState, theme ui.Theme) {
 
 							f.Spacer()
 
+							// 试听该闹钟的合成铃声按钮
+							if f.Button(AlarmPreviewID(a.ID), state.T("alarm.preview")).Ghost().Small().Clicked() {
+								if state.Audio != nil {
+									state.Audio.PreviewAlarm(a.Sound)
+								}
+							}
+
 							// Toggle Enable/Disable
 							toggleLabel := state.T("common.off")
 							if a.IsEnabled {
@@ -212,6 +219,58 @@ func DrawNewAlarmModal(f *flex.Frame, state *AppState, theme ui.Theme) {
 			}
 		})
 
+		// Sound Selector & Preview
+		if state.NewAlarmSound == "" {
+			state.NewAlarmSound = "Classic Chime"
+		}
+		f.Text(state.T("alarm.select_sound")).FontSize(13).Muted()
+		f.Row().Items(flex.Center).Gap(8).Children(func() {
+			btnClassic := f.Button(IDBtnAlarmSoundClassic, state.T("alarm.snd_classic")).Small()
+			if state.NewAlarmSound == "Classic Chime" {
+				btnClassic.Outline()
+			} else {
+				btnClassic.Secondary()
+			}
+			if btnClassic.Clicked() {
+				state.NewAlarmSound = "Classic Chime"
+				if state.Audio != nil {
+					state.Audio.PreviewAlarm(state.NewAlarmSound)
+				}
+			}
+
+			btnGentle := f.Button(IDBtnAlarmSoundGentle, state.T("alarm.snd_gentle")).Small()
+			if state.NewAlarmSound == "Gentle Chime" {
+				btnGentle.Outline()
+			} else {
+				btnGentle.Secondary()
+			}
+			if btnGentle.Clicked() {
+				state.NewAlarmSound = "Gentle Chime"
+				if state.Audio != nil {
+					state.Audio.PreviewAlarm(state.NewAlarmSound)
+				}
+			}
+
+			btnDigital := f.Button(IDBtnAlarmSoundDigital, state.T("alarm.snd_digital")).Small()
+			if state.NewAlarmSound == "Digital Bell" {
+				btnDigital.Outline()
+			} else {
+				btnDigital.Secondary()
+			}
+			if btnDigital.Clicked() {
+				state.NewAlarmSound = "Digital Bell"
+				if state.Audio != nil {
+					state.Audio.PreviewAlarm(state.NewAlarmSound)
+				}
+			}
+
+			if f.Button(IDBtnAlarmPreviewSound, state.T("alarm.preview")).Small().Ghost().Clicked() {
+				if state.Audio != nil {
+					state.Audio.PreviewAlarm(state.NewAlarmSound)
+				}
+			}
+		})
+
 		// Save Button
 		timeDisplay := fmt.Sprintf("%02d:%02d", state.NewAlarmHour, state.NewAlarmMinute)
 		f.Row().Justify(flex.End).Gap(8).Children(func() {
@@ -233,7 +292,7 @@ func DrawNewAlarmModal(f *flex.Frame, state *AppState, theme ui.Theme) {
 					DaysOfWeek:    weekdays,
 					IsEnabled:     true,
 					SnoozeMinutes: 5,
-					Sound:         "Classic Chime",
+					Sound:         state.NewAlarmSound,
 				})
 				state.Persist()
 				state.ShowNewAlarmModal = false

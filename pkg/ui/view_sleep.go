@@ -33,6 +33,9 @@ func DrawSleepMode(f *flex.Frame, state *AppState, theme ui.Theme) {
 			if status != sleep.StateIdle {
 				if f.Button(IDBtnSleepStop, state.T("sleep.exit")).Small().Outline().Clicked() {
 					sl.Stop()
+					if state.Audio != nil {
+						state.Audio.Stop()
+					}
 				}
 			}
 		})
@@ -105,6 +108,22 @@ func DrawSleepMode(f *flex.Frame, state *AppState, theme ui.Theme) {
 					}
 					if btnRain.Clicked() {
 						state.SleepSound = sleep.SoundRain
+						if state.Audio != nil {
+							state.Audio.PreviewAmbient(string(state.SleepSound))
+						}
+					}
+
+					btnStream := f.Button(IDBtnSleepStream, state.T("sleep.stream"))
+					if state.SleepSound == sleep.SoundStream {
+						btnStream.Outline()
+					} else {
+						btnStream.Secondary()
+					}
+					if btnStream.Clicked() {
+						state.SleepSound = sleep.SoundStream
+						if state.Audio != nil {
+							state.Audio.PreviewAmbient(string(state.SleepSound))
+						}
 					}
 
 					btnWaves := f.Button(IDBtnSleepWaves, state.T("sleep.waves"))
@@ -115,6 +134,9 @@ func DrawSleepMode(f *flex.Frame, state *AppState, theme ui.Theme) {
 					}
 					if btnWaves.Clicked() {
 						state.SleepSound = sleep.SoundWaves
+						if state.Audio != nil {
+							state.Audio.PreviewAmbient(string(state.SleepSound))
+						}
 					}
 
 					btnWhite := f.Button(IDBtnSleepWhite, state.T("sleep.white"))
@@ -125,13 +147,26 @@ func DrawSleepMode(f *flex.Frame, state *AppState, theme ui.Theme) {
 					}
 					if btnWhite.Clicked() {
 						state.SleepSound = sleep.SoundWhite
+						if state.Audio != nil {
+							state.Audio.PreviewAmbient(string(state.SleepSound))
+						}
 					}
 				})
 
-				// Start button
-				if f.Button(IDBtnSleepStart, state.T("sleep.start")).Clicked() {
-					sl.Start(now, state.SleepDuration, state.SleepSound)
-				}
+				// Start & Preview buttons
+				f.Row().Items(flex.Center).Gap(12).Children(func() {
+					if f.Button(IDBtnSleepPreview, state.T("sleep.preview")).Outline().Clicked() {
+						if state.Audio != nil {
+							state.Audio.PreviewAmbient(string(state.SleepSound))
+						}
+					}
+					if f.Button(IDBtnSleepStart, state.T("sleep.start")).Clicked() {
+						sl.Start(now, state.SleepDuration, state.SleepSound)
+						if state.Audio != nil {
+							state.Audio.SyncState(false, "", true, string(state.SleepSound), 0.8)
+						}
+					}
+				})
 			})
 		} else {
 			// Active Sleep Session Display
@@ -139,6 +174,8 @@ func DrawSleepMode(f *flex.Frame, state *AppState, theme ui.Theme) {
 			switch sound {
 			case sleep.SoundRain:
 				soundLabel = state.T("sleep.rain")
+			case sleep.SoundStream:
+				soundLabel = state.T("sleep.stream")
 			case sleep.SoundWaves:
 				soundLabel = state.T("sleep.waves")
 			case sleep.SoundWhite:

@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 
+	"worldclock/pkg/clock"
 	"worldclock/pkg/weather"
 	"worldclock/pkg/world"
 
@@ -14,12 +15,15 @@ import (
 // DrawWorldClock renders the multi-city world clock screen and city picker modal.
 func DrawWorldClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	cfg := state.Store.Get()
-	snapshots := state.World.Snapshots(state.UTC, state.Now, cfg.TimeFormat24H, cfg.ShowSeconds, string(state.Lang()))
+	localNow := state.Now.Local()
+	sysLoc := clock.DetectSystemLocation(localNow)
+	snapshots := state.World.Snapshots(state.UTC, localNow, cfg.TimeFormat24H, cfg.ShowSeconds, string(state.Lang()))
 
 	f.Column().Fill().Pad(24).Gap(16).Children(func() {
 		// Top Action Bar
 		f.Row().FillWidth().Items(flex.Center).Gap(12).Children(func() {
 			f.Text(state.T("world.title")).FontSize(22).Bold().Color(theme.Foreground)
+			f.Text(sysLoc.FormatBadge(string(state.Lang()))).FontSize(12).Color(theme.Primary)
 			f.Spacer()
 			if f.Button(IDBtnAddCityModal, state.T("world.add_city")).Clicked() {
 				state.ShowAddCityModal = true

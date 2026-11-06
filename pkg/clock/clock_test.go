@@ -75,3 +75,24 @@ func TestComputeAnalogGeometry(t *testing.T) {
 		t.Errorf("hands should point up at 12:00:00: hr=%v, min=%v, sec=%v", geom.HourHand, geom.MinuteHand, geom.SecondHand)
 	}
 }
+
+func TestDetectSystemLocation(t *testing.T) {
+	now := time.Now()
+	loc := DetectSystemLocation(now)
+	if loc.CountryCode == "" || loc.CountryZH == "" || loc.CountryEN == "" || loc.CountryJA == "" {
+		t.Fatalf("expected non-empty country names, got %+v", loc)
+	}
+	if loc.UTCOffset == "" {
+		t.Fatal("expected non-empty UTCOffset")
+	}
+
+	// Verify resolveLocation with explicit CN/JP/US inputs
+	cn := resolveLocation(time.Date(2026, 11, 6, 12, 0, 0, 0, time.FixedZone("CST", 8*3600)), "CN", "zh-CN", "China Standard Time")
+	if cn.CountryCode != "CN" || cn.CountryZH != "中国" || cn.CityZH != "北京" {
+		t.Fatalf("unexpected CN location: %+v", cn)
+	}
+	jp := resolveLocation(time.Date(2026, 11, 6, 12, 0, 0, 0, time.FixedZone("JST", 9*3600)), "JP", "ja-JP", "Tokyo Standard Time")
+	if jp.CountryCode != "JP" || jp.CountryJA != "日本" || jp.CityJA != "東京" {
+		t.Fatalf("unexpected JP location: %+v", jp)
+	}
+}

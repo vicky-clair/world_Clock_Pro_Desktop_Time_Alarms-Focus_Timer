@@ -70,19 +70,23 @@ var (
 	IDContOceania      = Tree.ID(featWorld, "cont-oc")
 
 	// Alarm Controls
-	IDBtnNewAlarmModal = Tree.ID(featAlarms, "btn-new-alarm-modal")
-	IDBtnCloseNewAlarm = Tree.ID(featAlarms, "btn-close-new-alarm")
-	IDBtnSaveNewAlarm  = Tree.ID(featAlarms, "btn-save-new-alarm")
-	IDBtnPresetMorning = Tree.ID(featAlarms, "preset-morning")
-	IDBtnPresetNoon    = Tree.ID(featAlarms, "preset-noon")
-	IDBtnPresetEvening = Tree.ID(featAlarms, "preset-evening")
-	IDBtnAlarmHourDown = Tree.ID(featAlarms, "alarm-hr-down")
-	IDBtnAlarmHourUp   = Tree.ID(featAlarms, "alarm-hr-up")
-	IDBtnAlarmMinDown  = Tree.ID(featAlarms, "alarm-min-down")
-	IDBtnAlarmMinUp    = Tree.ID(featAlarms, "alarm-min-up")
-	IDBtnRecurOnce     = Tree.ID(featAlarms, "recur-once")
-	IDBtnRecurDaily    = Tree.ID(featAlarms, "recur-daily")
-	IDBtnRecurWeekdays = Tree.ID(featAlarms, "recur-weekdays")
+	IDBtnNewAlarmModal     = Tree.ID(featAlarms, "btn-new-alarm-modal")
+	IDBtnCloseNewAlarm     = Tree.ID(featAlarms, "btn-close-new-alarm")
+	IDBtnSaveNewAlarm      = Tree.ID(featAlarms, "btn-save-new-alarm")
+	IDBtnPresetMorning     = Tree.ID(featAlarms, "preset-morning")
+	IDBtnPresetNoon        = Tree.ID(featAlarms, "preset-noon")
+	IDBtnPresetEvening     = Tree.ID(featAlarms, "preset-evening")
+	IDBtnAlarmHourDown     = Tree.ID(featAlarms, "alarm-hr-down")
+	IDBtnAlarmHourUp       = Tree.ID(featAlarms, "alarm-hr-up")
+	IDBtnAlarmMinDown      = Tree.ID(featAlarms, "alarm-min-down")
+	IDBtnAlarmMinUp        = Tree.ID(featAlarms, "alarm-min-up")
+	IDBtnRecurOnce         = Tree.ID(featAlarms, "recur-once")
+	IDBtnRecurDaily        = Tree.ID(featAlarms, "recur-daily")
+	IDBtnRecurWeekdays     = Tree.ID(featAlarms, "recur-weekdays")
+	IDBtnAlarmSoundGentle  = Tree.ID(featAlarms, "alarm-snd-gentle")
+	IDBtnAlarmSoundDigital = Tree.ID(featAlarms, "alarm-snd-digital")
+	IDBtnAlarmSoundClassic = Tree.ID(featAlarms, "alarm-snd-classic")
+	IDBtnAlarmPreviewSound = Tree.ID(featAlarms, "alarm-snd-preview")
 
 	// Timers Controls
 	IDBtnAddTimerCustom = Tree.ID(featTimers, "btn-add-timer-custom")
@@ -100,20 +104,23 @@ var (
 	IDBtnTrackerDND      = Tree.ID(featTracker, "btn-tracker-dnd")
 
 	// Sleep Controls
-	IDBtnSleepStart = Tree.ID(featSleep, "btn-sleep-start")
-	IDBtnSleepStop  = Tree.ID(featSleep, "btn-sleep-stop")
-	IDBtnSleep15m   = Tree.ID(featSleep, "btn-sleep-15m")
-	IDBtnSleep30m   = Tree.ID(featSleep, "btn-sleep-30m")
-	IDBtnSleep60m   = Tree.ID(featSleep, "btn-sleep-60m")
-	IDBtnSleepRain  = Tree.ID(featSleep, "btn-sleep-rain")
-	IDBtnSleepWaves = Tree.ID(featSleep, "btn-sleep-waves")
-	IDBtnSleepWhite = Tree.ID(featSleep, "btn-sleep-white")
+	IDBtnSleepStart   = Tree.ID(featSleep, "btn-sleep-start")
+	IDBtnSleepStop    = Tree.ID(featSleep, "btn-sleep-stop")
+	IDBtnSleep15m     = Tree.ID(featSleep, "btn-sleep-15m")
+	IDBtnSleep30m     = Tree.ID(featSleep, "btn-sleep-30m")
+	IDBtnSleep60m     = Tree.ID(featSleep, "btn-sleep-60m")
+	IDBtnSleepRain    = Tree.ID(featSleep, "btn-sleep-rain")
+	IDBtnSleepStream  = Tree.ID(featSleep, "btn-sleep-stream")
+	IDBtnSleepWaves   = Tree.ID(featSleep, "btn-sleep-waves")
+	IDBtnSleepWhite   = Tree.ID(featSleep, "btn-sleep-white")
+	IDBtnSleepPreview = Tree.ID(featSleep, "btn-sleep-preview")
 
-	// News Controls
-	IDNewsCatAll     = Tree.ID(featNews, "cat-all")
-	IDNewsCatTech    = Tree.ID(featNews, "cat-tech")
-	IDNewsCatWorld   = Tree.ID(featNews, "cat-world")
-	IDNewsCatScience = Tree.ID(featNews, "cat-science")
+	// News / History Today Controls
+	IDNewsCatAll        = Tree.ID(featNews, "cat-all")
+	IDNewsCatTech       = Tree.ID(featNews, "cat-tech")
+	IDNewsCatWorld      = Tree.ID(featNews, "cat-world")
+	IDNewsCatScience    = Tree.ID(featNews, "cat-science")
+	IDBtnRefreshHistory = Tree.ID(featNews, "btn-refresh-history")
 
 	// Popout Controls
 	IDBtnExitPopout = Tree.ID(featPopout, "btn-exit-popout")
@@ -239,6 +246,10 @@ func AlarmToggleID(alarmID string) ui.ID {
 
 func AlarmDeleteID(alarmID string) ui.ID {
 	return Tree.ID(featAlarms, "del-"+alarmID)
+}
+
+func AlarmPreviewID(alarmID string) ui.ID {
+	return Tree.ID(featAlarms, "prev-"+alarmID)
 }
 
 func TimerStartID(timerID string) ui.ID {

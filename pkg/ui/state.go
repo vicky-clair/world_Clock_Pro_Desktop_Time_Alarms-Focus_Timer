@@ -8,6 +8,7 @@ import (
 	"github.com/vivaui/viva/flex"
 	"github.com/vivaui/viva/ui"
 	"worldclock/pkg/alarm"
+	"worldclock/pkg/audio"
 	"worldclock/pkg/i18n"
 	"worldclock/pkg/rss"
 	"worldclock/pkg/sleep"
@@ -46,8 +47,9 @@ type AppState struct {
 	Weather   *weather.Service   // 城市天气服务
 	Tracker   *tracker.Tracker   // 番茄专注计时器
 	Sleep     *sleep.Session     // 睡眠助眠会话
-	News      *rss.FeedStore     // 资讯流存储
+	News      *rss.FeedStore     // 历史上的今天与精选事件流存储
 	Wallpaper *wallpaper.Manager // 壁纸与轮播引擎
+	Audio     *audio.Engine      // 原生程序化合成音频播放引擎（闹钟铃声与睡眠白噪音）
 
 	Invalidator *app.Invalidator // 跨线程触发窗口重绘与 OnWake 的通知器
 	Window      *app.Window      // 当前主窗口引用
@@ -81,6 +83,7 @@ type AppState struct {
 	NewAlarmMinute     int                // 新建闹钟的分钟 (0-59)
 	NewAlarmSchedule   alarm.ScheduleType // 新建闹钟的重复规则
 	NewAlarmWeekdays   [7]bool            // 新建闹钟的自定义星期掩码
+	NewAlarmSound      string             // 新建闹钟选中的铃声名称 ("Classic Chime", "Gentle Chime", "Digital Bell")
 
 	// Flex 声明式布局视图容器（跨帧复用内部布局缓冲区以实现零额外分配）
 	View flex.View
@@ -107,6 +110,7 @@ func NewAppState(store *storage.Store) *AppState {
 	sl := sleep.NewSession()
 	news := rss.NewFeedStore()
 	wpMgr := wallpaper.NewManager(s.Wallpaper)
+	audioEng := audio.NewEngine()
 	var weekdays [7]bool
 	weekdays[2] = true
 	weekdays[3] = true
@@ -129,6 +133,7 @@ func NewAppState(store *storage.Store) *AppState {
 		Sleep:            sl,
 		News:             news,
 		Wallpaper:        wpMgr,
+		Audio:            audioEng,
 		ActiveTab:        activeTab,
 		IsPopout:         s.PopoutMode,
 		NewsCategory:     "All",
@@ -142,6 +147,7 @@ func NewAppState(store *storage.Store) *AppState {
 		NewAlarmTitle:    "New Alarm",
 		NewAlarmSchedule: alarm.ScheduleDaily,
 		NewAlarmWeekdays: weekdays,
+		NewAlarmSound:    "Classic Chime",
 	}
 }
 

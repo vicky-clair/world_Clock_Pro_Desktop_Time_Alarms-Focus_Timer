@@ -538,12 +538,12 @@ func TestNewsViewInteractions(t *testing.T) {
 	state, driver := setupTestApp(t)
 	defer driver.Close()
 
-	// Navigate to News tab
+	// Navigate to On This Day (History) tab
 	if !clickID(t, driver, TabNewsID) {
-		t.Fatal("failed to click News tab")
+		t.Fatal("failed to click On This Day tab")
 	}
-	if !hasLabel(driver.Snapshot(), "News & Headlines") {
-		t.Fatal("expected News screen title")
+	if !hasLabel(driver.Snapshot(), "On This Day in History") {
+		t.Fatal("expected On This Day in History screen title")
 	}
 
 	// Filter Tech
@@ -1255,5 +1255,63 @@ func TestCloseBehaviorSetting(t *testing.T) {
 	}
 	if state.Store.Get().CloseBehavior != storage.CloseBehaviorMinimize {
 		t.Fatalf("expected CloseBehavior %q, got %q", storage.CloseBehaviorMinimize, state.Store.Get().CloseBehavior)
+	}
+}
+
+func TestCountryDisplayAudioAndHistoryToday(t *testing.T) {
+	state, driver := setupTestApp(t)
+	defer driver.Close()
+
+	// 1. Main Clock should display detected Country/Region badge
+	snapMain := driver.Snapshot()
+	if !hasLabel(snapMain, "Country/Region:") {
+		t.Fatal("expected Country/Region badge on main clock screen")
+	}
+
+	// Switch to Chinese and verify "所在国家/地区：" and "历史上的今天"
+	clickID(t, driver, TabSettingsID)
+	clickID(t, driver, IDSettingsTabLanguage)
+	clickID(t, driver, IDLangZH)
+	clickID(t, driver, TabClockID)
+	if !hasLabel(driver.Snapshot(), "所在国家/地区：") {
+		t.Fatal("expected '所在国家/地区：' badge on Chinese main clock screen")
+	}
+
+	// 2. Test Alarm sound selector & preview in New Alarm Modal
+	clickID(t, driver, TabAlarmsID)
+	clickID(t, driver, IDBtnNewAlarmModal)
+	if !clickID(t, driver, IDBtnAlarmSoundGentle) {
+		t.Fatal("failed to click Gentle Chime sound option")
+	}
+	if state.NewAlarmSound != "Gentle Chime" {
+		t.Fatalf("expected NewAlarmSound Gentle Chime, got %s", state.NewAlarmSound)
+	}
+	if state.Audio.PreviewKey() != "alarm:Gentle Chime" {
+		t.Fatalf("expected audio preview key alarm:Gentle Chime, got %s", state.Audio.PreviewKey())
+	}
+	clickID(t, driver, IDBtnCloseNewAlarm)
+
+	// 3. Test Sleep ambient sound preview & active loop
+	clickID(t, driver, TabSleepID)
+	if !clickID(t, driver, IDBtnSleepStream) {
+		t.Fatal("failed to click Forest Stream ambient sound")
+	}
+	if state.Audio.PreviewKey() != "ambient:Forest Stream" {
+		t.Fatalf("expected audio preview key ambient:Forest Stream, got %s", state.Audio.PreviewKey())
+	}
+	clickID(t, driver, IDBtnSleepStart)
+	if state.Audio.ActiveKey() != "ambient:Forest Stream" {
+		t.Fatalf("expected active audio loop ambient:Forest Stream, got %s", state.Audio.ActiveKey())
+	}
+	clickID(t, driver, IDBtnSleepStop)
+	if state.Audio.ActiveKey() != "" {
+		t.Fatalf("expected active audio loop stopped, got %s", state.Audio.ActiveKey())
+	}
+
+	// 4. Test On This Day in History ("历史上的今天") screen in Chinese
+	clickID(t, driver, TabNewsID)
+	snapHist := driver.Snapshot()
+	if !hasLabel(snapHist, "历史上的今天") {
+		t.Fatal("expected '历史上的今天' title on screen")
 	}
 }

@@ -410,6 +410,18 @@ func (m *Manager) loadImageLocked(filePath string) bool {
 	}
 	defer f.Close()
 
+	// 先读取图片头部尺寸元数据，拒绝超过 16384x16384 的异常超大文件以防范内存暴涨
+	if imgCfg, _, err := image.DecodeConfig(f); err != nil || imgCfg.Width <= 0 || imgCfg.Height <= 0 || imgCfg.Width > 16384 || imgCfg.Height > 16384 {
+		if m.rawImage == nil {
+			m.rawImage = GeneratePresetImage(m.cfg.Preset)
+			m.rebuildBitmapLocked()
+		}
+		return false
+	}
+	if _, err := f.Seek(0, 0); err != nil {
+		return false
+	}
+
 	img, _, err := image.Decode(f)
 	if err != nil {
 		if m.rawImage == nil {

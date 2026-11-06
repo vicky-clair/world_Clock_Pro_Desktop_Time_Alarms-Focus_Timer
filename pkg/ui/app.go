@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"worldclock/pkg/clock"
+	"worldclock/pkg/sleep"
 	"worldclock/pkg/storage"
 	"worldclock/pkg/timer"
 	"worldclock/pkg/wallpaper"
@@ -45,14 +46,37 @@ func NewAppConfig(state *AppState) app.Config {
 		settings := state.Store.Get()
 		theme := BuildTheme(settings.Theme, state.Wallpaper.Config().Enabled, state.Wallpaper.Config().CardOpacity, settings.UIFontColor)
 
-		// 3. 检查当前分钟是否有闹钟应当触发响铃
-		state.Scheduler.CheckTriggers(now)
+		// 3. 检查当前分钟是否有闹钟应当触发响铃（若处于贪睡静音期内则返回 nil）
+		ringing := state.Scheduler.CheckTriggers(now)
 
 		// 4. 无论当前处于哪个标签页，同步推进后台专注计时器、睡眠模式和倒计时器进度
 		state.Tracker.Update(now)
-		state.Sleep.Update(now)
+		slState, slVol := state.Sleep.Update(now)
+		_, slSound, _ := state.Sleep.Info()
+		timerRinging := false
 		for _, t := range state.TimerMgr.Timers() {
 			t.Update(now)
+			if t.State == timer.StateExpired {
+				timerRinging = true
+			}
+		}
+
+		// 4b. 同步闹钟响铃、倒计时到期提醒与睡眠环境白噪音的硬件音频输出状态
+		alarmActive := ringing != nil || timerRinging
+		alarmSound := "Classic Chime"
+		if ringing != nil && ringing.Sound != "" {
+			alarmSound = ringing.Sound
+		} else if timerRinging {
+			alarmSound = "Digital Bell"
+		}
+		sleepPlaying := slState == sleep.StateActive || slState == sleep.StateFading
+		if state.Audio != nil {
+			state.Audio.SyncState(alarmActive, alarmSound, sleepPlaying, string(slSound), slVol)
+		}
+
+		// 4c. 后台非阻塞同步“历史上的今天”在线 API（每天每种语言仅请求一次，完成后自动触发单次重绘）
+		if state.News != nil {
+			state.News.EnsureFetchedAsync(now, string(state.Lang()), false, state.Invalidate)
 		}
 
 		// 5. 判断是否存在需要高频刷新（约 25 FPS）的活动秒表、倒计时或番茄钟
@@ -76,7 +100,7 @@ func NewAppConfig(state *AppState) app.Config {
 		if fastTick {
 			canvas.RequestFrameIn(40 * time.Millisecond) // 秒表/倒计时运行期间按 40ms (~25 fps) 刷新
 		} else {
-			delay := clock.NextBoundaryDelay(now, settings.ShowSeconds)
+			delay := clock.NextBoundaryDelay(now, settings.ShowSeconds || sleepPlaying)
 			if wpDelay := state.Wallpaper.NextSlideDelay(now); wpDelay > 0 && wpDelay < delay {
 				delay = wpDelay
 			}
@@ -157,8 +181,11 @@ func NewAppConfig(state *AppState) app.Config {
 		allow()
 	}
 
-	// 窗口销毁前兜底保存最新状态
+	// 窗口销毁前兜底保存最新状态并停止音频输出
 	cfg.OnClosed = func() {
+		if state.Audio != nil {
+			state.Audio.Stop()
+		}
 		state.Persist()
 	}
 

@@ -12,28 +12,65 @@ import (
 	"worldclock/pkg/weather"
 )
 
-// DrawMainClock 渲染主时钟屏幕（支持数字毛玻璃大字时钟、矢量模拟表盘、实时天气快照以及底部快捷控制栏）。
+// DrawMainClock 渲染主时钟屏幕（自动识别并展示当前电脑所在国家/地区与系统本地时间，支持数字毛玻璃大字时钟、矢量模拟表盘、实时天气快照以及底部快捷控制栏）。
 // DrawMainClock renders the primary clock screen (digital or analog).
 func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	cfg := state.Store.Get()
-	now := state.Now
+	now := state.Now.Local()
+	sysLoc := clock.DetectSystemLocation(now)
+	langStr := string(state.Lang())
+	locationBadge := sysLoc.FormatBadge(langStr)
+
 	timeStr, period := clock.FormatTime(now, cfg.TimeFormat24H, cfg.ShowSeconds)
 	dateStr := i18n.FormatDateLocalized(state.Lang(), int(now.Month()), now.Day(), now.Year(), int(now.Weekday()), cfg.ShowFullDate)
+
+	primaryCity := sysLoc.WeatherID
+	if primaryCity == "" {
+		primaryCity = "beijing"
+	}
+	wSnap := state.Weather.GetWeather(primaryCity)
+	tempStr := weather.FormatTemperature(wSnap.TempCelsius, cfg.TempFahrenheit)
+	condStr := string(wSnap.Condition)
+	switch wSnap.Condition {
+	case weather.ConditionSunny:
+		condStr = state.T("weather.sunny")
+	case weather.ConditionPartlyCloudy:
+		condStr = state.T("weather.partly_cloudy")
+	case weather.ConditionCloudy:
+		condStr = state.T("weather.cloudy")
+	case weather.ConditionRainy:
+		condStr = state.T("weather.rainy")
+	case weather.ConditionSnowy:
+		condStr = state.T("weather.snowy")
+	case weather.ConditionThunder:
+		condStr = state.T("weather.thunder")
+	}
 
 	f.Column().Fill().Pad(24).Gap(20).Items(flex.Center).Children(func() {
 		// Clock Display Area
 		if cfg.ClockStyle == string(clock.StyleAnalog) {
 			drawAnalogFace(f, now, theme)
-			// Text readout below analog face
+			// Text readout & country/region below analog face
 			f.Row().Items(flex.Baseline).Gap(8).Children(func() {
 				f.Text(timeStr).FontSize(32).Bold().Mono()
 				if period != "" {
 					f.Text(period).FontSize(18).Bold().Color(theme.Primary)
 				}
 			})
+			f.Text(dateStr).FontSize(15).Color(theme.MutedForeground)
+			f.Row().Items(flex.Center).Gap(8).Children(func() {
+				f.Text(locationBadge).FontSize(13).Bold().Color(theme.Foreground)
+				f.Text("•").FontSize(12).Muted()
+				f.Text(fmt.Sprintf("%s %s (%s)", wSnap.Icon, tempStr, condStr)).FontSize(13).Bold().Color(theme.Primary)
+			})
 		} else {
 			// Digital Clock Display with Frosted Glass Card
 			f.Column().Pad(36).Background(theme.Card).Radius(16).Border(1, theme.Border).Items(flex.Center).Gap(14).Children(func() {
+				// 顶部显示当前电脑所在国家/地区与本地时区徽章
+				f.Row().PadX(14).PadY(5).Background(theme.Muted).Radius(12).Items(flex.Center).Gap(8).Children(func() {
+					f.Text(locationBadge).FontSize(13).Bold().Color(theme.Primary)
+				})
+
 				f.Row().Items(flex.Center).Gap(16).Children(func() {
 					f.Text(timeStr).FontSize(state.EffectiveClockFontSize()).Bold().Mono().Color(state.ClockColor(theme))
 					if period != "" {
@@ -44,31 +81,8 @@ func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 				})
 				f.Text(dateStr).FontSize(18).Color(theme.MutedForeground)
 
-				_, offsetSec := now.Zone()
-				offsetHours := offsetSec / 3600
-				primaryCity := "beijing"
-				if cities := state.World.Cities(); len(cities) > 0 && cities[0].CityID != "" {
-					primaryCity = cities[0].CityID
-				}
-				wSnap := state.Weather.GetWeather(primaryCity)
-				tempStr := weather.FormatTemperature(wSnap.TempCelsius, cfg.TempFahrenheit)
-				condStr := string(wSnap.Condition)
-				switch wSnap.Condition {
-				case weather.ConditionSunny:
-					condStr = state.T("weather.sunny")
-				case weather.ConditionPartlyCloudy:
-					condStr = state.T("weather.partly_cloudy")
-				case weather.ConditionCloudy:
-					condStr = state.T("weather.cloudy")
-				case weather.ConditionRainy:
-					condStr = state.T("weather.rainy")
-				case weather.ConditionSnowy:
-					condStr = state.T("weather.snowy")
-				case weather.ConditionThunder:
-					condStr = state.T("weather.thunder")
-				}
 				f.Row().Items(flex.Center).Gap(8).Children(func() {
-					f.Text(fmt.Sprintf("%s (UTC%+d)", state.T("clock.local_timezone"), offsetHours)).FontSize(13).Muted()
+					f.Text(fmt.Sprintf("%s · %s (%s)", sysLoc.CountryName(langStr), sysLoc.CityName(langStr), sysLoc.UTCOffset)).FontSize(13).Muted()
 					f.Text("•").FontSize(12).Muted()
 					f.Text(fmt.Sprintf("%s %s (%s)", wSnap.Icon, tempStr, condStr)).FontSize(13).Bold().Color(theme.Primary)
 				})

@@ -11,11 +11,13 @@ import (
 	"github.com/vivaui/viva/ui"
 )
 
-// DrawPopoutClock 渲染紧凑型桌面悬浮小窗时钟视图（支持一键还原至完整多标签主窗口）。
+// DrawPopoutClock 渲染紧凑型桌面悬浮小窗时钟视图（显示电脑所在国家/地区与本地时间，支持一键还原至完整多标签主窗口）。
 // DrawPopoutClock renders the compact popout clock widget.
 func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	cfg := state.Store.Get()
-	now := state.Now
+	now := state.Now.Local()
+	sysLoc := clock.DetectSystemLocation(now)
+	locationBadge := sysLoc.FormatBadge(string(state.Lang()))
 	timeStr, period := clock.FormatTime(now, cfg.TimeFormat24H, cfg.ShowSeconds)
 	dateStr := i18n.FormatDateLocalized(state.Lang(), int(now.Month()), now.Day(), now.Year(), int(now.Weekday()), cfg.ShowFullDate)
 
@@ -52,8 +54,10 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 					f.Text(period).FontSize(14).Bold().Color(theme.Primary)
 				}
 			})
+			f.Text(locationBadge).FontSize(12).Color(theme.Primary)
 		} else {
 			f.Column().Pad(20).Background(theme.Card).Radius(10).Border(1, theme.Border).Items(flex.Center).Gap(8).Children(func() {
+				f.Text(locationBadge).FontSize(12).Bold().Color(theme.Primary)
 				f.Row().Items(flex.Baseline).Gap(8).Children(func() {
 					f.Text(timeStr).FontSize(44).Bold().Mono().Color(state.ClockColor(theme))
 					if period != "" {

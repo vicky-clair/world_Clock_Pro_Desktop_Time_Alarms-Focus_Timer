@@ -11,6 +11,7 @@ import (
 type RingingAlarm struct {
 	AlarmID     string    // 触发的闹钟 ID
 	Title       string    // 闹钟标题
+	Sound       string    // 闹钟绑定的铃声名称
 	TriggerTime time.Time // 触发时间戳
 	SnoozeCount int       // 已贪睡次数
 }
@@ -241,6 +242,7 @@ func (s *Scheduler) CheckTriggers(now time.Time) *RingingAlarm {
 		s.ringing = &RingingAlarm{
 			AlarmID:     alm.ID,
 			Title:       alm.Title,
+			Sound:       alm.Sound,
 			TriggerTime: now,
 		}
 		return s.ringing

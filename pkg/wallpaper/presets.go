@@ -6,16 +6,18 @@ import (
 	"math"
 )
 
+// PresetID 标识内置的程序化艺术壁纸预设类型。
 // PresetID identifies a built-in wallpaper preset.
 type PresetID string
 
 const (
-	PresetGrid   PresetID = "grid"
-	PresetAurora PresetID = "aurora"
-	PresetForest PresetID = "forest"
-	PresetSunset PresetID = "sunset"
+	PresetGrid   PresetID = "grid"   // 几何高对比网格预设
+	PresetAurora PresetID = "aurora" // 极光星空预设
+	PresetForest PresetID = "forest" // 幽静森林树冠预设
+	PresetSunset PresetID = "sunset" // 落日余晖群山预设
 )
 
+// GeneratePresetImage 根据指定预设 ID 实时生成高对比度程序化艺术壁纸图像（无需外部图片文件）。
 // GeneratePresetImage generates a colorful, high-contrast procedural image for the given preset.
 func GeneratePresetImage(preset PresetID) image.Image {
 	switch preset {
