@@ -26,7 +26,7 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 				pinLabel = state.T("popout.pin_on")
 			}
 			if f.Button(IDBtnPinPopout, pinLabel).Small().Ghost().Clicked() {
-				_ = state.Store.Update(func(s *storage.Settings) {
+				state.UpdateSettings(func(s *storage.Settings) {
 					s.Topmost = !s.Topmost
 				})
 			}
@@ -72,7 +72,7 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 				formatLabel = state.T("clock.24h")
 			}
 			if f.Button(IDBtnToggle24H, formatLabel).Small().Ghost().Clicked() {
-				_ = state.Store.Update(func(s *storage.Settings) {
+				state.UpdateSettings(func(s *storage.Settings) {
 					s.TimeFormat24H = !s.TimeFormat24H
 				})
 			}
@@ -82,7 +82,7 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 				secLabel = state.T("clock.seconds_on")
 			}
 			if f.Button(IDBtnToggleSeconds, secLabel).Small().Ghost().Clicked() {
-				_ = state.Store.Update(func(s *storage.Settings) {
+				state.UpdateSettings(func(s *storage.Settings) {
 					s.ShowSeconds = !s.ShowSeconds
 				})
 			}
@@ -92,7 +92,7 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 				styleLabel = state.T("clock.style_analog")
 			}
 			if f.Button(IDBtnToggleStyle, styleLabel).Small().Ghost().Clicked() {
-				_ = state.Store.Update(func(s *storage.Settings) {
+				state.UpdateSettings(func(s *storage.Settings) {
 					if s.ClockStyle == string(clock.StyleAnalog) {
 						s.ClockStyle = string(clock.StyleDigital)
 					} else {

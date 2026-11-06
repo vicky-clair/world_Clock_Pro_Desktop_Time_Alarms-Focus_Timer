@@ -21,6 +21,12 @@ const (
 	ThemeNord  ThemeType = "nord"
 )
 
+// CloseBehaviorType defines what happens when the user clicks the window close (X) button.
+const (
+	CloseBehaviorMinimize = "minimize"
+	CloseBehaviorExit     = "exit"
+)
+
 // Settings represents all persistent user preferences and data.
 type Settings struct {
 	TimeFormat24H  bool             `json:"timeFormat24H"`
@@ -40,6 +46,7 @@ type Settings struct {
 	ClockFontColor string           `json:"clockFontColor"` // e.g. "white", "gold", "olive", "cyan", "purple", "coral"
 	UIFontColor    string           `json:"uiFontColor"`    // e.g. "default", "white", "black", "gold", "cyan", "purple", "olive"
 	FontScale      float32          `json:"fontScale"`      // e.g. 0.9, 1.0, 1.1, 1.2
+	CloseBehavior  string           `json:"closeBehavior"`  // "minimize" or "exit"
 }
 
 // DefaultSettings returns fresh default settings.
@@ -51,6 +58,7 @@ func DefaultSettings() Settings {
 		ClockStyle:     "digital",
 		Theme:          ThemeOlive,
 		ActiveProfile:  "Default",
+		WorldCities:    world.DefaultCities(),
 		Topmost:        false,
 		PopoutMode:     false,
 		TempFahrenheit: false,
@@ -60,6 +68,7 @@ func DefaultSettings() Settings {
 		ClockFontColor: "white",
 		UIFontColor:    "default",
 		FontScale:      1.0,
+		CloseBehavior:  CloseBehaviorMinimize,
 	}
 }
 
@@ -88,11 +97,29 @@ func NewStore(filePath string) *Store {
 	return s
 }
 
-// Get returns a copy of current settings.
+// FilePath returns the path to the settings JSON file.
+func (s *Store) FilePath() string {
+	return s.filePath
+}
+
+// Get returns a deep copy of current settings.
 func (s *Store) Get() Settings {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.settings
+	cp := s.settings
+	if s.settings.WorldCities != nil {
+		cp.WorldCities = make([]world.UserCity, len(s.settings.WorldCities))
+		copy(cp.WorldCities, s.settings.WorldCities)
+	}
+	if s.settings.Alarms != nil {
+		cp.Alarms = make([]alarm.Alarm, len(s.settings.Alarms))
+		copy(cp.Alarms, s.settings.Alarms)
+	}
+	if len(s.settings.Wallpaper.ImagePaths) > 0 {
+		cp.Wallpaper.ImagePaths = make([]string, len(s.settings.Wallpaper.ImagePaths))
+		copy(cp.Wallpaper.ImagePaths, s.settings.Wallpaper.ImagePaths)
+	}
+	return cp
 }
 
 // Update updates the current settings and persists them.
@@ -103,21 +130,58 @@ func (s *Store) Update(fn func(*Settings)) error {
 	return s.saveLocked()
 }
 
-// Load loads settings from file if it exists.
+func unmarshalSettingsWithDefaults(data []byte) (Settings, error) {
+	loaded := DefaultSettings()
+	loaded.WorldCities = nil // allow distinguishing JSON "null"/missing vs explicit "[]"
+	if err := json.Unmarshal(data, &loaded); err != nil {
+		return Settings{}, err
+	}
+	if loaded.WorldCities == nil {
+		loaded.WorldCities = world.DefaultCities()
+	}
+	if loaded.CloseBehavior != CloseBehaviorMinimize && loaded.CloseBehavior != CloseBehaviorExit {
+		loaded.CloseBehavior = CloseBehaviorMinimize
+	}
+	if loaded.ClockFontSize <= 0 {
+		loaded.ClockFontSize = 64
+	}
+	if loaded.FontScale <= 0 {
+		loaded.FontScale = 1.0
+	}
+	return loaded, nil
+}
+
+// Load loads settings from file if it exists (with automatic backup recovery).
 func (s *Store) Load() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	data, err := os.ReadFile(s.filePath)
 	if err != nil {
+		// Try backup file if primary does not exist or failed to read
+		if bakData, bakErr := os.ReadFile(s.filePath + ".bak"); bakErr == nil && len(bakData) > 0 {
+			if loaded, uErr := unmarshalSettingsWithDefaults(bakData); uErr == nil {
+				s.settings = loaded
+				_ = s.saveLocked()
+				return nil
+			}
+		}
 		if os.IsNotExist(err) {
 			return nil
 		}
 		return err
 	}
 
-	var loaded Settings
-	if err := json.Unmarshal(data, &loaded); err != nil {
+	loaded, err := unmarshalSettingsWithDefaults(data)
+	if err != nil {
+		// Primary file corrupted; attempt recovery from backup
+		if bakData, bakErr := os.ReadFile(s.filePath + ".bak"); bakErr == nil && len(bakData) > 0 {
+			if bakLoaded, uErr := unmarshalSettingsWithDefaults(bakData); uErr == nil {
+				s.settings = bakLoaded
+				_ = s.saveLocked()
+				return nil
+			}
+		}
 		return err
 	}
 
@@ -143,5 +207,15 @@ func (s *Store) saveLocked() error {
 		return err
 	}
 
-	return os.WriteFile(s.filePath, data, 0644)
+	bakPath := s.filePath + ".bak"
+	if prev, readErr := os.ReadFile(s.filePath); readErr == nil && len(prev) > 0 {
+		_ = os.WriteFile(bakPath, prev, 0644)
+	}
+	if err := os.WriteFile(s.filePath, data, 0644); err != nil {
+		return err
+	}
+	if _, statErr := os.Stat(bakPath); os.IsNotExist(statErr) {
+		_ = os.WriteFile(bakPath, data, 0644)
+	}
+	return nil
 }

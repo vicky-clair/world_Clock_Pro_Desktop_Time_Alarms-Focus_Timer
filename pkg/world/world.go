@@ -94,6 +94,18 @@ func (m *Manager) Cities() []UserCity {
 	return res
 }
 
+// HasCity reports whether cityID (or an alias of it) is already in the user's world clock list.
+func (m *Manager) HasCity(cityID string) bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	for _, c := range m.cities {
+		if SameCityID(c.CityID, cityID) {
+			return true
+		}
+	}
+	return false
+}
+
 // AddCity adds a city to the user list if not already present.
 func (m *Manager) AddCity(cityID string) bool {
 	m.mu.Lock()

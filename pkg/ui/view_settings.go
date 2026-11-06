@@ -158,32 +158,26 @@ func drawSettingsWallpaper(f *flex.Frame, state *AppState, theme ui.Theme, cfg s
 			// Browse Local File(s) / Photo Folder & Sample Controls
 			f.Row().Items(flex.Center).Gap(8).Children(func() {
 				if f.Button(IDBtnBrowseWallpaper, state.T("settings.browse_file")).Small().Clicked() {
+					dialogTitle := state.T("settings.browse_file")
 					go func() {
 						paths, err := app.OpenFiles(app.OpenFileOptions{
-							Title:         "Select Wallpaper Image(s)",
+							Title:         dialogTitle,
 							AllowMultiple: true,
 						})
 						if err == nil && len(paths) > 0 {
-							if len(paths) == 1 {
-								_ = state.Wallpaper.LoadImage(paths[0])
-							} else {
-								state.Wallpaper.LoadImages(paths)
-							}
-							state.Persist()
-							state.Invalidate()
+							state.QueueWallpaperFiles(paths)
 						}
 					}()
 				}
 
 				if f.Button(IDBtnBrowseFolder, state.T("settings.browse_folder")).Small().Outline().Clicked() {
+					dialogTitle := state.T("settings.browse_folder")
 					go func() {
 						dir, err := app.OpenDirectory(app.OpenDirectoryOptions{
-							Title: "Select Wallpaper Photo Folder",
+							Title: dialogTitle,
 						})
 						if err == nil && dir != "" {
-							_, _ = state.Wallpaper.LoadFolder(dir)
-							state.Persist()
-							state.Invalidate()
+							state.QueueWallpaperFolder(dir)
 						}
 					}()
 				}
@@ -518,7 +512,7 @@ func drawSettingsWallpaper(f *flex.Frame, state *AppState, theme ui.Theme, cfg s
 				btnOlive.Secondary()
 			}
 			if btnOlive.Clicked() {
-				_ = state.Store.Update(func(s *storage.Settings) {
+				state.UpdateSettings(func(s *storage.Settings) {
 					s.Theme = storage.ThemeOlive
 				})
 			}
@@ -530,7 +524,7 @@ func drawSettingsWallpaper(f *flex.Frame, state *AppState, theme ui.Theme, cfg s
 				btnDark.Secondary()
 			}
 			if btnDark.Clicked() {
-				_ = state.Store.Update(func(s *storage.Settings) {
+				state.UpdateSettings(func(s *storage.Settings) {
 					s.Theme = storage.ThemeDark
 				})
 			}
@@ -542,7 +536,7 @@ func drawSettingsWallpaper(f *flex.Frame, state *AppState, theme ui.Theme, cfg s
 				btnLight.Secondary()
 			}
 			if btnLight.Clicked() {
-				_ = state.Store.Update(func(s *storage.Settings) {
+				state.UpdateSettings(func(s *storage.Settings) {
 					s.Theme = storage.ThemeLight
 				})
 			}
@@ -554,7 +548,7 @@ func drawSettingsWallpaper(f *flex.Frame, state *AppState, theme ui.Theme, cfg s
 				btnNord.Secondary()
 			}
 			if btnNord.Clicked() {
-				_ = state.Store.Update(func(s *storage.Settings) {
+				state.UpdateSettings(func(s *storage.Settings) {
 					s.Theme = storage.ThemeNord
 				})
 			}
@@ -575,7 +569,7 @@ func drawSettingsLanguage(f *flex.Frame, state *AppState, theme ui.Theme, cfg st
 				btnZH.Secondary()
 			}
 			if btnZH.Clicked() {
-				_ = state.Store.Update(func(s *storage.Settings) {
+				state.UpdateSettings(func(s *storage.Settings) {
 					s.Language = string(i18n.LangZH)
 				})
 			}
@@ -587,7 +581,7 @@ func drawSettingsLanguage(f *flex.Frame, state *AppState, theme ui.Theme, cfg st
 				btnEN.Secondary()
 			}
 			if btnEN.Clicked() {
-				_ = state.Store.Update(func(s *storage.Settings) {
+				state.UpdateSettings(func(s *storage.Settings) {
 					s.Language = string(i18n.LangEN)
 				})
 			}
@@ -599,7 +593,7 @@ func drawSettingsLanguage(f *flex.Frame, state *AppState, theme ui.Theme, cfg st
 				btnJA.Secondary()
 			}
 			if btnJA.Clicked() {
-				_ = state.Store.Update(func(s *storage.Settings) {
+				state.UpdateSettings(func(s *storage.Settings) {
 					s.Language = string(i18n.LangJA)
 				})
 			}
@@ -617,7 +611,7 @@ func drawSettingsLanguage(f *flex.Frame, state *AppState, theme ui.Theme, cfg st
 			}
 			btnUnit := f.Button(IDOptTempFahrenheit, unitLabel).Outline()
 			if btnUnit.Clicked() {
-				_ = state.Store.Update(func(s *storage.Settings) {
+				state.UpdateSettings(func(s *storage.Settings) {
 					s.TempFahrenheit = !s.TempFahrenheit
 				})
 			}
@@ -662,7 +656,7 @@ func drawSettingsFont(f *flex.Frame, state *AppState, theme ui.Theme, cfg storag
 					btn.Secondary()
 				}
 				if btn.Clicked() {
-					_ = state.Store.Update(func(c *storage.Settings) {
+					state.UpdateSettings(func(c *storage.Settings) {
 						c.ClockFontSize = item.val
 					})
 				}
@@ -681,7 +675,7 @@ func drawSettingsFont(f *flex.Frame, state *AppState, theme ui.Theme, cfg storag
 					if newSz < 32 {
 						newSz = 32
 					}
-					_ = state.Store.Update(func(c *storage.Settings) {
+					state.UpdateSettings(func(c *storage.Settings) {
 						c.ClockFontSize = newSz
 					})
 				}
@@ -693,7 +687,7 @@ func drawSettingsFont(f *flex.Frame, state *AppState, theme ui.Theme, cfg storag
 					if newSz > 120 {
 						newSz = 120
 					}
-					_ = state.Store.Update(func(c *storage.Settings) {
+					state.UpdateSettings(func(c *storage.Settings) {
 						c.ClockFontSize = newSz
 					})
 				}
@@ -731,7 +725,7 @@ func drawSettingsFont(f *flex.Frame, state *AppState, theme ui.Theme, cfg storag
 					btn.Secondary()
 				}
 				if btn.Clicked() {
-					_ = state.Store.Update(func(c *storage.Settings) {
+					state.UpdateSettings(func(c *storage.Settings) {
 						c.ClockFontColor = item.val
 					})
 				}
@@ -771,7 +765,7 @@ func drawSettingsFont(f *flex.Frame, state *AppState, theme ui.Theme, cfg storag
 					btn.Secondary()
 				}
 				if btn.Clicked() {
-					_ = state.Store.Update(func(c *storage.Settings) {
+					state.UpdateSettings(func(c *storage.Settings) {
 						c.UIFontColor = item.val
 					})
 				}
@@ -807,7 +801,7 @@ func drawSettingsFont(f *flex.Frame, state *AppState, theme ui.Theme, cfg storag
 					btn.Secondary()
 				}
 				if btn.Clicked() {
-					_ = state.Store.Update(func(c *storage.Settings) {
+					state.UpdateSettings(func(c *storage.Settings) {
 						c.FontScale = item.val
 					})
 				}
@@ -830,7 +824,7 @@ func drawSettingsClock(f *flex.Frame, state *AppState, theme ui.Theme, cfg stora
 				btn.Secondary()
 			}
 			if btn.Clicked() {
-				_ = state.Store.Update(func(s *storage.Settings) {
+				state.UpdateSettings(func(s *storage.Settings) {
 					s.TimeFormat24H = !s.TimeFormat24H
 				})
 			}
@@ -848,7 +842,7 @@ func drawSettingsClock(f *flex.Frame, state *AppState, theme ui.Theme, cfg stora
 				btn.Secondary()
 			}
 			if btn.Clicked() {
-				_ = state.Store.Update(func(s *storage.Settings) {
+				state.UpdateSettings(func(s *storage.Settings) {
 					s.ShowSeconds = !s.ShowSeconds
 				})
 			}
@@ -866,7 +860,7 @@ func drawSettingsClock(f *flex.Frame, state *AppState, theme ui.Theme, cfg stora
 				btn.Secondary()
 			}
 			if btn.Clicked() {
-				_ = state.Store.Update(func(s *storage.Settings) {
+				state.UpdateSettings(func(s *storage.Settings) {
 					s.ShowFullDate = !s.ShowFullDate
 				})
 			}
@@ -885,7 +879,7 @@ func drawSettingsClock(f *flex.Frame, state *AppState, theme ui.Theme, cfg stora
 					btnDig.Secondary()
 				}
 				if btnDig.Clicked() {
-					_ = state.Store.Update(func(s *storage.Settings) {
+					state.UpdateSettings(func(s *storage.Settings) {
 						s.ClockStyle = string(clock.StyleDigital)
 					})
 				}
@@ -897,7 +891,7 @@ func drawSettingsClock(f *flex.Frame, state *AppState, theme ui.Theme, cfg stora
 					btnAna.Secondary()
 				}
 				if btnAna.Clicked() {
-					_ = state.Store.Update(func(s *storage.Settings) {
+					state.UpdateSettings(func(s *storage.Settings) {
 						s.ClockStyle = string(clock.StyleAnalog)
 					})
 				}
@@ -918,7 +912,7 @@ func drawSettingsClock(f *flex.Frame, state *AppState, theme ui.Theme, cfg stora
 				btnDef.Secondary()
 			}
 			if btnDef.Clicked() {
-				_ = state.Store.Update(func(s *storage.Settings) {
+				state.UpdateSettings(func(s *storage.Settings) {
 					s.ActiveProfile = "Default"
 				})
 			}
@@ -930,8 +924,45 @@ func drawSettingsClock(f *flex.Frame, state *AppState, theme ui.Theme, cfg stora
 				btnWork.Secondary()
 			}
 			if btnWork.Clicked() {
-				_ = state.Store.Update(func(s *storage.Settings) {
+				state.UpdateSettings(func(s *storage.Settings) {
 					s.ActiveProfile = "Work"
+				})
+			}
+		})
+	})
+
+	// Close Button Behavior (Minimize to Tray vs Exit Directly)
+	f.Column().FillWidth().Pad(16).Background(theme.Card).Radius(8).Border(1, theme.Border).Gap(12).Children(func() {
+		f.Text(state.T("settings.close_behavior")).FontSize(16).Bold().Color(theme.Primary)
+		f.Text(state.T("settings.close_desc")).FontSize(13).Muted()
+
+		closeBehavior := cfg.CloseBehavior
+		if closeBehavior != storage.CloseBehaviorExit {
+			closeBehavior = storage.CloseBehaviorMinimize
+		}
+
+		f.Row().Gap(8).Children(func() {
+			btnMin := f.Button(IDCloseBehaviorMinimize, state.T("settings.close_minimize"))
+			if closeBehavior == storage.CloseBehaviorMinimize {
+				btnMin.Outline()
+			} else {
+				btnMin.Secondary()
+			}
+			if btnMin.Clicked() {
+				state.UpdateSettings(func(s *storage.Settings) {
+					s.CloseBehavior = storage.CloseBehaviorMinimize
+				})
+			}
+
+			btnExit := f.Button(IDCloseBehaviorExit, state.T("settings.close_exit"))
+			if closeBehavior == storage.CloseBehaviorExit {
+				btnExit.Outline()
+			} else {
+				btnExit.Secondary()
+			}
+			if btnExit.Clicked() {
+				state.UpdateSettings(func(s *storage.Settings) {
+					s.CloseBehavior = storage.CloseBehaviorExit
 				})
 			}
 		})

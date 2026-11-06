@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"worldclock/pkg/clock"
+	"worldclock/pkg/storage"
 	"worldclock/pkg/timer"
 	"worldclock/pkg/wallpaper"
 
@@ -128,6 +129,30 @@ func NewAppConfig(state *AppState) app.Config {
 		return state.View.Wheel(event)
 	}
 
+	cfg.OnWake = func() {
+		state.ProcessPendingWake()
+	}
+
+	cfg.OnCloseRequest = func(allow func()) {
+		state.Persist()
+		if state.ForceQuit || state.Store.Get().CloseBehavior == storage.CloseBehaviorExit {
+			allow()
+			if state.Application != nil {
+				state.Application.Quit()
+			}
+			return
+		}
+		if state.Window != nil {
+			state.Window.Hide()
+			return
+		}
+		allow()
+	}
+
+	cfg.OnClosed = func() {
+		state.Persist()
+	}
+
 	cfg.OnFileDrop = func(event ui.FileDropEvent) ui.EventResult {
 		if event.Phase == ui.FileDropDrop && len(event.Paths) > 0 {
 			first := event.Paths[0]
@@ -156,4 +181,53 @@ func NewAppConfig(state *AppState) app.Config {
 	}
 
 	return cfg
+}
+
+// BuildStatusIcon generates a crisp 32x32 straight-RGBA clock icon for the system tray.
+func BuildStatusIcon() app.StatusIcon {
+	const sz = 32
+	rgba := make([]byte, sz*sz*4)
+	cx, cy := 15.5, 15.5
+	rOuter := 13.5
+	rInner := 11.0
+	for y := range sz {
+		for x := range sz {
+			dx := float64(x) - cx
+			dy := float64(y) - cy
+			dist2 := dx*dx + dy*dy
+			off := (y*sz + x) * 4
+			if dist2 <= rOuter*rOuter {
+				if dist2 >= rInner*rInner {
+					// Olive-gold rim (#8F9779)
+					rgba[off+0] = 0x8F
+					rgba[off+1] = 0x97
+					rgba[off+2] = 0x79
+					rgba[off+3] = 0xFF
+				} else {
+					// Dark clock face (#181F1C)
+					rgba[off+0] = 0x18
+					rgba[off+1] = 0x1F
+					rgba[off+2] = 0x1C
+					rgba[off+3] = 0xFF
+				}
+			}
+		}
+	}
+	// Draw 12-o'clock vertical hand and 3-o'clock horizontal hand in bright white
+	for y := 7; y <= 16; y++ {
+		for x := 15; x <= 16; x++ {
+			off := (y*sz + x) * 4
+			rgba[off+0], rgba[off+1], rgba[off+2], rgba[off+3] = 0xFF, 0xFF, 0xFF, 0xFF
+		}
+	}
+	for x := 15; x <= 22; x++ {
+		for y := 15; y <= 16; y++ {
+			off := (y*sz + x) * 4
+			rgba[off+0], rgba[off+1], rgba[off+2], rgba[off+3] = 0xFF, 0xBE, 0x0B, 0xFF
+		}
+	}
+	return app.StatusIcon{
+		Size: sz,
+		RGBA: rgba,
+	}
 }

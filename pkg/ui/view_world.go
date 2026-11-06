@@ -138,9 +138,7 @@ func DrawAddCityModal(f *flex.Frame, state *AppState, theme ui.Theme) {
 		f.Row().FillWidth().Items(flex.Center).Gap(8).Children(func() {
 			searchBox := f.Field(&state.CitySearchField, IDInputCitySearch, state.T("world.search_label"), state.T("world.search_placeholder")).Grow(1)
 			if searchBox.Submitted() && len(catalog) > 0 {
-				state.World.AddCity(catalog[0].ID)
-				state.Persist()
-				state.ShowAddCityModal = false
+				tryAddCityFromModal(state, catalog[0])
 			}
 			if state.CitySearchQuery != "" {
 				if f.Button(IDBtnClearCitySearch, state.T("world.clear_search")).Small().Secondary().Clicked() {
@@ -261,7 +259,7 @@ func DrawAddCityModal(f *flex.Frame, state *AppState, theme ui.Theme) {
 			}
 		})
 
-		f.Text(fmt.Sprintf("%s (%d / %d)", state.T("world.available"), len(catalog), len(world.Catalog()))).FontSize(12).Muted()
+		f.Text(fmt.Sprintf("%s (%d / %d)", state.T("world.available"), len(catalog), 193)).FontSize(12).Muted()
 
 		// Scrollable List of 193 Countries with automatic clamping and sleek scrollbar
 		scrollModal := f.ScrollArea(IDScrollCityModal).Height(210).FillWidth()
@@ -285,10 +283,19 @@ func DrawAddCityModal(f *flex.Frame, state *AppState, theme ui.Theme) {
 
 						f.Spacer()
 
-						if f.Button(CityAddCatalogID(city.ID), state.T("world.btn_add")).Outline().Small().Clicked() {
-							state.World.AddCity(city.ID)
-							state.Persist()
-							state.ShowAddCityModal = false
+						alreadyAdded := state.World.HasCity(city.ID)
+						btnLabel := state.T("world.btn_add")
+						if alreadyAdded {
+							btnLabel = state.T("world.btn_added")
+						}
+						btnAdd := f.Button(CityAddCatalogID(city.ID), btnLabel).Small()
+						if alreadyAdded {
+							btnAdd.Secondary()
+						} else {
+							btnAdd.Outline()
+						}
+						if btnAdd.Clicked() {
+							tryAddCityFromModal(state, city)
 						}
 					})
 				}
@@ -296,4 +303,35 @@ func DrawAddCityModal(f *flex.Frame, state *AppState, theme ui.Theme) {
 		})
 		DrawScrollbar(f.Canvas(), scrollModal, state.View.ScrollState(IDScrollCityModal), theme)
 	})
+
+	if state.DuplicateCityAlert != "" {
+		d := f.Dialog(flex.DialogSpec{
+			Title:          state.T("world.dup_title"),
+			Description:    fmt.Sprintf(state.T("world.dup_desc"), state.DuplicateCityAlert),
+			Width:          420,
+			Scope:          IDDialogDupCityScope,
+			DismissID:      IDDialogDupCityBackdrop,
+			CloseID:        IDDialogDupCityClose,
+			InitialFocusID: IDBtnDismissDuplicateCity,
+		})
+		d.Footer(func() {
+			if f.Button(IDBtnDismissDuplicateCity, state.T("world.dup_ok")).Clicked() {
+				state.DuplicateCityAlert = ""
+			}
+		})
+		if d.Dismissed() {
+			state.DuplicateCityAlert = ""
+		}
+	}
+}
+
+func tryAddCityFromModal(state *AppState, city world.City) {
+	if state.World.AddCity(city.ID) {
+		state.DuplicateCityAlert = ""
+		state.Persist()
+		state.ShowAddCityModal = false
+		return
+	}
+	lang := string(state.Lang())
+	state.DuplicateCityAlert = fmt.Sprintf("%s (%s)", city.LocalizedName(lang), city.LocalizedCountry(lang))
 }

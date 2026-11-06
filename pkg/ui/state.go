@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"sync"
 	"time"
 
 	"github.com/vivaui/viva/app"
@@ -47,28 +48,37 @@ type AppState struct {
 	Wallpaper *wallpaper.Manager
 
 	Invalidator *app.Invalidator
+	Window      *app.Window
+	Application *app.Application
+	ForceQuit   bool
+
+	wakeMu                 sync.Mutex
+	pendingShowWindow      bool
+	pendingWallpaperFiles  []string
+	pendingWallpaperFolder string
 
 	ActiveTab Tab
 	IsPopout  bool
 
 	// Auxiliary UI state
-	NewsCategory      string
-	SleepDuration     time.Duration
-	SleepSound        sleep.AmbientSound
-	SettingsTab       string // "font", "wallpaper", "lang", "clock", "about"
-	ScrollY           float32
-	CityModalScrollY  float32
-	ShowAddCityModal  bool
-	SelectedContinent string
-	CitySearchQuery   string
-	CitySearchField   flex.Field
-	lastFieldText     string
-	ShowNewAlarmModal bool
-	NewAlarmTitle     string
-	NewAlarmHour      int
-	NewAlarmMinute    int
-	NewAlarmSchedule  alarm.ScheduleType
-	NewAlarmWeekdays  [7]bool
+	NewsCategory       string
+	SleepDuration      time.Duration
+	SleepSound         sleep.AmbientSound
+	SettingsTab        string // "font", "wallpaper", "lang", "clock", "about"
+	ScrollY            float32
+	CityModalScrollY   float32
+	ShowAddCityModal   bool
+	DuplicateCityAlert string
+	SelectedContinent  string
+	CitySearchQuery    string
+	CitySearchField    flex.Field
+	lastFieldText      string
+	ShowNewAlarmModal  bool
+	NewAlarmTitle      string
+	NewAlarmHour       int
+	NewAlarmMinute     int
+	NewAlarmSchedule   alarm.ScheduleType
+	NewAlarmWeekdays   [7]bool
 
 	// Flex layout view (keeps layout buffers across frames)
 	View flex.View
@@ -156,6 +166,78 @@ func (a *AppState) Persist() {
 		cfg.PopoutMode = a.IsPopout
 		cfg.Wallpaper = a.Wallpaper.Config()
 	})
+}
+
+// UpdateSettings updates settings in Store while guaranteeing that live WorldCities, Alarms,
+// PopoutMode, and Wallpaper state are always synchronized before writing to disk.
+func (a *AppState) UpdateSettings(fn func(*storage.Settings)) {
+	_ = a.Store.Update(func(cfg *storage.Settings) {
+		cfg.WorldCities = a.World.Cities()
+		cfg.Alarms = a.Scheduler.Alarms()
+		cfg.PopoutMode = a.IsPopout
+		cfg.Wallpaper = a.Wallpaper.Config()
+		if fn != nil {
+			fn(cfg)
+		}
+	})
+}
+
+// RequestShowWindow queues a request to show/restore the main window on the UI thread.
+func (a *AppState) RequestShowWindow() {
+	a.wakeMu.Lock()
+	a.pendingShowWindow = true
+	a.wakeMu.Unlock()
+	a.Invalidate()
+}
+
+// QueueWallpaperFiles queues selected wallpaper file paths from an async file dialog for the UI thread.
+func (a *AppState) QueueWallpaperFiles(paths []string) {
+	if len(paths) == 0 {
+		return
+	}
+	a.wakeMu.Lock()
+	a.pendingWallpaperFiles = append([]string(nil), paths...)
+	a.wakeMu.Unlock()
+	a.Invalidate()
+}
+
+// QueueWallpaperFolder queues a selected wallpaper folder path from an async folder dialog for the UI thread.
+func (a *AppState) QueueWallpaperFolder(dir string) {
+	if dir == "" {
+		return
+	}
+	a.wakeMu.Lock()
+	a.pendingWallpaperFolder = dir
+	a.wakeMu.Unlock()
+	a.Invalidate()
+}
+
+// ProcessPendingWake runs on the window thread inside OnWake before painting.
+func (a *AppState) ProcessPendingWake() {
+	a.wakeMu.Lock()
+	showWin := a.pendingShowWindow
+	files := a.pendingWallpaperFiles
+	folder := a.pendingWallpaperFolder
+	a.pendingShowWindow = false
+	a.pendingWallpaperFiles = nil
+	a.pendingWallpaperFolder = ""
+	a.wakeMu.Unlock()
+
+	if showWin && a.Window != nil {
+		a.Window.Show()
+	}
+	if len(files) > 0 {
+		if len(files) == 1 {
+			_ = a.Wallpaper.LoadImage(files[0])
+		} else {
+			a.Wallpaper.LoadImages(files)
+		}
+		a.Persist()
+	}
+	if folder != "" {
+		_, _ = a.Wallpaper.LoadFolder(folder)
+		a.Persist()
+	}
 }
 
 // ScrollOffset returns current vertical scroll offset.

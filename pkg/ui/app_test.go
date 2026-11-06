@@ -1152,3 +1152,108 @@ func TestOnOffAndFullLocalizationZH_JA_EN(t *testing.T) {
 		t.Fatal("expected 'ON' and 'OFF' on English Alarms screen")
 	}
 }
+
+func TestWorldClockDuplicateAlertAndPersistence(t *testing.T) {
+	state, driver := setupTestApp(t)
+	defer driver.Close()
+
+	// Switch to Chinese to test Chinese duplicate reminder
+	clickID(t, driver, TabSettingsID)
+	clickID(t, driver, IDSettingsTabLanguage)
+	clickID(t, driver, IDLangZH)
+
+	clickID(t, driver, TabWorldID)
+	initialCount := len(state.World.Cities())
+
+	// Open Add City Modal
+	if !clickID(t, driver, IDBtnAddCityModal) {
+		t.Fatal("failed to open Add City modal")
+	}
+
+	// 1. Add Afghanistan first time -> should succeed and close modal
+	if !clickID(t, driver, CityAddCatalogID("afghanistan")) {
+		t.Fatal("failed to click Add Afghanistan")
+	}
+	if len(state.World.Cities()) != initialCount+1 {
+		t.Fatalf("expected %d cities after adding Afghanistan, got %d", initialCount+1, len(state.World.Cities()))
+	}
+	if state.ShowAddCityModal {
+		t.Fatal("expected Add City modal to close after adding new city")
+	}
+
+	// 2. Re-open modal and try adding Afghanistan a second time -> should trigger duplicate alert and NOT add
+	if !clickID(t, driver, IDBtnAddCityModal) {
+		t.Fatal("failed to re-open Add City modal")
+	}
+	if !clickID(t, driver, CityAddCatalogID("afghanistan")) {
+		t.Fatal("failed to click already-added Afghanistan button")
+	}
+	if len(state.World.Cities()) != initialCount+1 {
+		t.Fatalf("duplicate city should not be added: expected %d, got %d", initialCount+1, len(state.World.Cities()))
+	}
+	if !state.ShowAddCityModal {
+		t.Fatal("expected Add City modal to remain open on duplicate city")
+	}
+	if state.DuplicateCityAlert == "" {
+		t.Fatal("expected DuplicateCityAlert to be populated")
+	}
+	snapDup := driver.Snapshot()
+	if !hasLabel(snapDup, "重复添加提醒") {
+		t.Fatal("expected duplicate alert dialog title '重复添加提醒' on screen")
+	}
+
+	// Dismiss duplicate alert dialog
+	if !clickID(t, driver, IDBtnDismissDuplicateCity) {
+		t.Fatal("failed to click dismiss button on duplicate alert dialog")
+	}
+	if state.DuplicateCityAlert != "" {
+		t.Fatalf("expected DuplicateCityAlert to be cleared, got %q", state.DuplicateCityAlert)
+	}
+	clickID(t, driver, IDBtnCloseAddCity)
+
+	// 3. Mutate various settings across tabs and verify World Clock cities never disappear
+	clickID(t, driver, TabClockID)
+	clickID(t, driver, IDBtnToggle24H)
+	clickID(t, driver, TabSettingsID)
+	clickID(t, driver, IDSettingsTabClock)
+	clickID(t, driver, IDCloseBehaviorExit)
+	clickID(t, driver, IDSettingsTabWallpaper)
+	clickID(t, driver, IDThemeDark)
+
+	// Reload from disk into a fresh Store + AppState
+	reloadedStore := storage.NewStore(state.Store.FilePath())
+	reloadedState := NewAppState(reloadedStore)
+	if len(reloadedState.World.Cities()) != initialCount+1 {
+		t.Fatalf("expected %d persisted cities after settings updates, got %d", initialCount+1, len(reloadedState.World.Cities()))
+	}
+	if !reloadedState.World.HasCity("afghanistan") {
+		t.Fatal("expected custom city 'afghanistan' to remain persisted in settings.json")
+	}
+}
+
+func TestCloseBehaviorSetting(t *testing.T) {
+	state, driver := setupTestApp(t)
+	defer driver.Close()
+
+	if state.Store.Get().CloseBehavior != storage.CloseBehaviorMinimize {
+		t.Fatalf("expected default CloseBehavior to be %q, got %q", storage.CloseBehaviorMinimize, state.Store.Get().CloseBehavior)
+	}
+
+	clickID(t, driver, TabSettingsID)
+	if !clickID(t, driver, IDSettingsTabClock) {
+		t.Fatal("failed to click IDSettingsTabClock button")
+	}
+	if !clickID(t, driver, IDCloseBehaviorExit) {
+		t.Fatal("failed to click IDCloseBehaviorExit button")
+	}
+	if state.Store.Get().CloseBehavior != storage.CloseBehaviorExit {
+		t.Fatalf("expected CloseBehavior %q, got %q", storage.CloseBehaviorExit, state.Store.Get().CloseBehavior)
+	}
+
+	if !clickID(t, driver, IDCloseBehaviorMinimize) {
+		t.Fatal("failed to click IDCloseBehaviorMinimize button")
+	}
+	if state.Store.Get().CloseBehavior != storage.CloseBehaviorMinimize {
+		t.Fatalf("expected CloseBehavior %q, got %q", storage.CloseBehaviorMinimize, state.Store.Get().CloseBehavior)
+	}
+}

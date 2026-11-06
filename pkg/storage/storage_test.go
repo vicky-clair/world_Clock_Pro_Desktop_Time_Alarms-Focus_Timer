@@ -42,4 +42,49 @@ func TestStoragePersistence(t *testing.T) {
 	if s2.Theme != ThemeDark {
 		t.Errorf("expected Theme to be dark after reload")
 	}
+	if len(s2.WorldCities) == 0 {
+		t.Errorf("expected default WorldCities to be preserved when updating unrelated settings")
+	}
+	if s2.CloseBehavior != CloseBehaviorMinimize {
+		t.Errorf("expected default CloseBehavior %q, got %q", CloseBehaviorMinimize, s2.CloseBehavior)
+	}
+}
+
+func TestStorageDeepCopyAndBackupRecovery(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "settings.json")
+
+	store := NewStore(path)
+	// First update writes settings.json
+	if err := store.Update(func(cfg *Settings) {
+		cfg.CloseBehavior = CloseBehaviorExit
+	}); err != nil {
+		t.Fatalf("first update failed: %v", err)
+	}
+	// Second update rotates first settings.json to settings.json.bak
+	if err := store.Update(func(cfg *Settings) {
+		cfg.Theme = ThemeNord
+	}); err != nil {
+		t.Fatalf("second update failed: %v", err)
+	}
+
+	// Verify Get() deep-copies WorldCities
+	snap := store.Get()
+	origFirst := snap.WorldCities[0].CityID
+	snap.WorldCities[0].CityID = "mutated-outside-store"
+	if store.Get().WorldCities[0].CityID != origFirst {
+		t.Fatal("mutating slice returned by Get() should not mutate Store internal state")
+	}
+
+	// Simulate corrupted primary settings.json and verify automatic recovery from .bak
+	if err := os.WriteFile(path, []byte("{corrupted-json"), 0644); err != nil {
+		t.Fatalf("failed to corrupt primary file: %v", err)
+	}
+	recovered := NewStore(path)
+	if recovered.Get().CloseBehavior != CloseBehaviorExit {
+		t.Fatalf("expected recovery from .bak to restore CloseBehaviorExit, got %q", recovered.Get().CloseBehavior)
+	}
+	if len(recovered.Get().WorldCities) == 0 {
+		t.Fatal("expected recovered settings to retain WorldCities")
+	}
 }
