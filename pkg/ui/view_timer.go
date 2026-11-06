@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"worldclock/pkg/timer"
@@ -10,6 +11,7 @@ import (
 	"github.com/vivaui/viva/ui"
 )
 
+// localizeTimerName 将内置倒计时预设名称翻译为当前界面语言；自定义名称原样返回。
 // localizeTimerName translates built-in timer preset names into the active UI language.
 func localizeTimerName(state *AppState, name string) string {
 	switch name {
@@ -26,6 +28,7 @@ func localizeTimerName(state *AppState, name string) string {
 	}
 }
 
+// localizeTimerState 将倒计时运行状态翻译为当前界面语言。
 // localizeTimerState translates timer state into the active UI language.
 func localizeTimerState(state *AppState, st timer.State) string {
 	switch st {
@@ -42,7 +45,7 @@ func localizeTimerState(state *AppState, st timer.State) string {
 	}
 }
 
-// DrawTimers 渲染多路倒计时器列表与百分之一秒高精度计圈秒表视图。
+// DrawTimers 渲染多路倒计时器列表（支持新建自定义任务、编辑原有任务、持久化删除）与百分之一秒高精度计圈秒表视图。
 // DrawTimers renders countdown timers and high-precision stopwatch.
 func DrawTimers(f *flex.Frame, state *AppState, theme ui.Theme) {
 	now := state.Now
@@ -52,14 +55,28 @@ func DrawTimers(f *flex.Frame, state *AppState, theme ui.Theme) {
 	scrollTimers := f.ScrollArea(IDScrollTimers).Fill()
 	scrollTimers.Children(func() {
 		f.Column().FillWidth().Pad(24).Gap(24).Children(func() {
-			// SECTION 1: COUNTDOWN TIMERS
-			f.Row().FillWidth().Items(flex.Center).Children(func() {
+			// SECTION 1: COUNTDOWN TIMERS HEADER
+			f.Row().FillWidth().Items(flex.Center).Gap(8).Children(func() {
 				f.Text(state.T("timer.title")).FontSize(20).Bold().Color(theme.Foreground)
 				f.Spacer()
+				if f.Button(IDBtnOpenTimerModal, state.T("timer.new_custom")).Small().Clicked() {
+					state.ShowTimerModal = true
+					state.EditingTimerID = ""
+					state.TimerNameField.SetText("")
+					state.TimerModalHours = 0
+					state.TimerModalMinutes = 15
+					state.TimerModalSeconds = 0
+				}
 				if f.Button(IDBtnAddTimerCustom, state.T("timer.add_10m")).Small().Outline().Clicked() {
 					state.TimerMgr.AddTimer("Quick 10m", 10*time.Minute)
+					state.Persist()
 				}
 			})
+
+			// 新建 / 编辑倒计时任务面板
+			if state.ShowTimerModal {
+				DrawTimerModal(f, state, theme)
+			}
 
 			f.Column().FillWidth().Gap(12).Children(func() {
 				for _, tm := range timers {
@@ -79,7 +96,7 @@ func DrawTimers(f *flex.Frame, state *AppState, theme ui.Theme) {
 						})
 
 						// Remaining Display & Progress
-						f.Column().Width(240).Gap(8).Children(func() {
+						f.Column().Width(220).Gap(8).Children(func() {
 							f.Text(timer.FormatDuration(t.Remaining)).FontSize(28).Bold().Mono().Color(theme.Foreground)
 							f.Progress(t.ProgressFraction()).Height(6)
 						})
@@ -108,8 +125,25 @@ func DrawTimers(f *flex.Frame, state *AppState, theme ui.Theme) {
 							t.Reset()
 						}
 
+						// 编辑修改原有倒计时任务按钮
+						if f.Button(TimerEditID(t.ID), state.T("timer.edit")).Small().Outline().Clicked() {
+							state.ShowTimerModal = true
+							state.EditingTimerID = t.ID
+							state.TimerNameField.SetText(localizeTimerName(state, t.Name))
+							totalSec := int(t.Duration.Round(time.Second).Seconds())
+							state.TimerModalHours = totalSec / 3600
+							state.TimerModalMinutes = (totalSec % 3600) / 60
+							state.TimerModalSeconds = totalSec % 60
+						}
+
+						// 删除倒计时任务按钮（立即持久化落盘，重启应用不再恢复）
 						if f.Button(TimerDeleteID(t.ID), "✕").Small().Ghost().Clicked() {
 							state.TimerMgr.DeleteTimer(t.ID)
+							if state.EditingTimerID == t.ID {
+								state.ShowTimerModal = false
+								state.EditingTimerID = ""
+							}
+							state.Persist()
 						}
 					})
 				}
@@ -178,4 +212,135 @@ func DrawTimers(f *flex.Frame, state *AppState, theme ui.Theme) {
 		})
 	})
 	DrawScrollbar(f.Canvas(), scrollTimers, state.View.ScrollState(IDScrollTimers), theme)
+}
+
+// DrawTimerModal 渲染“新建自定义倒计时任务 / 修改原有倒计时任务”交互面板。
+func DrawTimerModal(f *flex.Frame, state *AppState, theme ui.Theme) {
+	isEditing := state.EditingTimerID != ""
+	modalTitle := state.T("timer.create_title")
+	if isEditing {
+		modalTitle = state.T("timer.edit_title")
+	}
+
+	f.Column().FillWidth().Pad(20).Background(theme.Card).Border(2, theme.Primary).Radius(12).Gap(14).Children(func() {
+		// Header
+		f.Row().FillWidth().Items(flex.Center).Gap(12).Children(func() {
+			f.Text(modalTitle).FontSize(18).Bold().Color(theme.Primary)
+			f.Spacer()
+			if f.Button(IDBtnCloseTimerModal, state.T("timer.cancel")).Small().Outline().Clicked() {
+				state.ShowTimerModal = false
+				state.EditingTimerID = ""
+			}
+		})
+
+		// Task Name Input Field
+		f.Row().FillWidth().Items(flex.Center).Gap(8).Children(func() {
+			nameField := f.Field(&state.TimerNameField, IDInputTimerName, state.T("timer.task_name"), state.T("timer.name_placeholder")).Grow(1)
+			if nameField.Submitted() {
+				saveTimerFromModal(state)
+			}
+		})
+
+		// Quick Task Presets (populates both name and duration)
+		f.Text(state.T("timer.quick_presets")).FontSize(13).Muted()
+		f.Row().Items(flex.Center).Gap(6).Children(func() {
+			if f.Button(IDBtnTimerPresetTea, state.T("timer.preset_tea")).Small().Outline().Clicked() {
+				state.TimerNameField.SetText(state.T("timer.name_tea"))
+				state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds = 0, 3, 0
+			}
+			if f.Button(IDBtnTimerPresetNoodle, state.T("timer.preset_noodle")).Small().Outline().Clicked() {
+				state.TimerNameField.SetText(cleanPresetLabel(state.T("timer.preset_noodle")))
+				state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds = 0, 5, 0
+			}
+			if f.Button(IDBtnTimerPresetNap, state.T("timer.preset_nap")).Small().Outline().Clicked() {
+				state.TimerNameField.SetText(cleanPresetLabel(state.T("timer.preset_nap")))
+				state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds = 0, 20, 0
+			}
+			if f.Button(IDBtnTimerPresetPomo, state.T("timer.preset_pomo")).Small().Outline().Clicked() {
+				state.TimerNameField.SetText(state.T("timer.name_pomodoro"))
+				state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds = 0, 25, 0
+			}
+			if f.Button(IDBtnTimerPresetRead, state.T("timer.preset_read")).Small().Outline().Clicked() {
+				state.TimerNameField.SetText(cleanPresetLabel(state.T("timer.preset_read")))
+				state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds = 0, 45, 0
+			}
+			if f.Button(IDBtnTimerPresetWorkout, state.T("timer.preset_workout")).Small().Outline().Clicked() {
+				state.TimerNameField.SetText(cleanPresetLabel(state.T("timer.preset_workout")))
+				state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds = 1, 0, 0
+			}
+		})
+
+		// Custom Duration Steppers (Hours : Minutes : Seconds)
+		f.Text(state.T("timer.duration_label")).FontSize(13).Muted()
+		durDisplay := fmt.Sprintf("%02d:%02d:%02d", state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds)
+		f.Row().Items(flex.Center).Gap(6).Children(func() {
+			f.Text(durDisplay).FontSize(24).Bold().Mono().Color(theme.Foreground)
+
+			if f.Button(IDBtnTimerHrDown, "-1h").Small().Secondary().Clicked() {
+				state.TimerModalHours = (state.TimerModalHours + 23) % 24
+			}
+			if f.Button(IDBtnTimerHrUp, "+1h").Small().Secondary().Clicked() {
+				state.TimerModalHours = (state.TimerModalHours + 1) % 24
+			}
+			if f.Button(IDBtnTimerMin10Down, "-10m").Small().Secondary().Clicked() {
+				state.TimerModalMinutes = (state.TimerModalMinutes + 50) % 60
+			}
+			if f.Button(IDBtnTimerMinDown, "-1m").Small().Secondary().Clicked() {
+				state.TimerModalMinutes = (state.TimerModalMinutes + 59) % 60
+			}
+			if f.Button(IDBtnTimerMinUp, "+1m").Small().Secondary().Clicked() {
+				state.TimerModalMinutes = (state.TimerModalMinutes + 1) % 60
+			}
+			if f.Button(IDBtnTimerMin10Up, "+10m").Small().Secondary().Clicked() {
+				state.TimerModalMinutes = (state.TimerModalMinutes + 10) % 60
+			}
+			if f.Button(IDBtnTimerSecDown, "-15s").Small().Secondary().Clicked() {
+				state.TimerModalSeconds = (state.TimerModalSeconds + 45) % 60
+			}
+			if f.Button(IDBtnTimerSecUp, "+15s").Small().Secondary().Clicked() {
+				state.TimerModalSeconds = (state.TimerModalSeconds + 15) % 60
+			}
+		})
+
+		// Save Button
+		f.Row().Justify(flex.End).Gap(8).Children(func() {
+			saveKey := "timer.save_new"
+			if isEditing {
+				saveKey = "timer.save_edit"
+			}
+			saveLabel := fmt.Sprintf(state.T(saveKey), durDisplay)
+			if f.Button(IDBtnSaveTimerModal, saveLabel).Clicked() {
+				saveTimerFromModal(state)
+			}
+		})
+	})
+}
+
+func saveTimerFromModal(state *AppState) {
+	name := strings.TrimSpace(state.TimerNameField.Text())
+	if name == "" {
+		name = state.T("timer.default_custom")
+	}
+	dur := time.Duration(state.TimerModalHours)*time.Hour +
+		time.Duration(state.TimerModalMinutes)*time.Minute +
+		time.Duration(state.TimerModalSeconds)*time.Second
+	if dur <= 0 {
+		dur = time.Minute
+	}
+
+	if state.EditingTimerID != "" {
+		state.TimerMgr.UpdateTimer(state.EditingTimerID, name, dur)
+	} else {
+		state.TimerMgr.AddTimer(name, dur)
+	}
+	state.Persist()
+	state.ShowTimerModal = false
+	state.EditingTimerID = ""
+}
+
+func cleanPresetLabel(label string) string {
+	if idx := strings.Index(label, " ("); idx > 0 {
+		return strings.TrimSpace(label[:idx])
+	}
+	return label
 }

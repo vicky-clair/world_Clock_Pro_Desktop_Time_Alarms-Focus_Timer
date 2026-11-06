@@ -54,14 +54,21 @@ the-world-clock-on-the-desktop/
 │   │   ├── alarm.go              # Alarm model, next trigger calculation, repeat summary formatting
 │   │   ├── scheduler.go          # Alarm scheduler, per-minute idempotent firing, snooze & dismiss
 │   │   └── alarm_test.go
+│   ├── audio/
+│   │   ├── synth.go              # Pure-Go procedural 16-bit PCM WAV synthesizer (alarm chimes & seamless ambient loops)
+│   │   ├── audio.go              # Audio playback state coordinator, volume fade-out & sound preview
+│   │   ├── player_windows.go     # Windows native winmm.dll (PlaySoundW / waveOutSetVolume) async driver
+│   │   └── audio_test.go
 │   ├── clock/
 │   │   ├── clock.go              # 12H/24H formatting, exact boundary delay calculation, analog hand geometry
+│   │   ├── location.go           # OS Country/Region, representative city & local timezone resolver
+│   │   ├── location_windows.go   # Windows Kernel32 native GeoName, LocaleName & TimeZone detector
 │   │   └── clock_test.go
 │   ├── i18n/
 │   │   ├── i18n.go               # Full EN / ZH / JA translation dictionaries & localized date formatter
 │   │   └── i18n_test.go
 │   ├── rss/
-│   │   ├── rss.go                # Curated Tech/World/Science news store & category filtering
+│   │   ├── rss.go                # "On This Day in History" Baidu Baike / Wikipedia API fetcher & offline archive
 │   │   └── rss_test.go
 │   ├── sleep/
 │   │   ├── sleep.go              # Sleep & ambient sound session state machine & linear volume fade-out

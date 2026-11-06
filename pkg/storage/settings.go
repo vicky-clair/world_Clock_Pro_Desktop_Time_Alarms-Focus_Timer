@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"worldclock/pkg/alarm"
+	"worldclock/pkg/timer"
 	"worldclock/pkg/wallpaper"
 	"worldclock/pkg/world"
 )
@@ -41,6 +42,7 @@ type Settings struct {
 	ActiveProfile  string           `json:"activeProfile"`  // 当前激活的配置文件名称（"Default" 或 "Work"）
 	WorldCities    []world.UserCity `json:"worldCities"`    // 用户已添加的世界时钟城市列表
 	Alarms         []alarm.Alarm    `json:"alarms"`         // 用户已配置的闹钟列表
+	Timers         []timer.Timer    `json:"timers"`         // 用户已配置的倒计时任务列表（支持自定义增删改持久化）
 	Topmost        bool             `json:"topmost"`        // 悬浮小窗是否置顶
 	PopoutMode     bool             `json:"popoutMode"`     // 是否处于紧凑型桌面悬浮小窗模式
 	TempFahrenheit bool             `json:"tempFahrenheit"` // 是否使用华氏度 (°F) 显示气温
@@ -64,6 +66,7 @@ func DefaultSettings() Settings {
 		Theme:          ThemeOlive,
 		ActiveProfile:  "Default",
 		WorldCities:    world.DefaultCities(),
+		Timers:         timer.DefaultTimers(),
 		Topmost:        false,
 		PopoutMode:     false,
 		TempFahrenheit: false,
@@ -124,6 +127,10 @@ func (s *Store) Get() Settings {
 		cp.Alarms = make([]alarm.Alarm, len(s.settings.Alarms))
 		copy(cp.Alarms, s.settings.Alarms)
 	}
+	if s.settings.Timers != nil {
+		cp.Timers = make([]timer.Timer, len(s.settings.Timers))
+		copy(cp.Timers, s.settings.Timers)
+	}
 	if len(s.settings.Wallpaper.ImagePaths) > 0 {
 		cp.Wallpaper.ImagePaths = make([]string, len(s.settings.Wallpaper.ImagePaths))
 		copy(cp.Wallpaper.ImagePaths, s.settings.Wallpaper.ImagePaths)
@@ -145,11 +152,15 @@ func (s *Store) Update(fn func(*Settings)) error {
 func unmarshalSettingsWithDefaults(data []byte) (Settings, error) {
 	loaded := DefaultSettings()
 	loaded.WorldCities = nil // 用于区分 JSON 中缺省/null 与显式空切片 "[]"
+	loaded.Timers = nil      // 用于区分 JSON 中缺省/null 与显式空切片 "[]"（用户删空所有倒计时任务）
 	if err := json.Unmarshal(data, &loaded); err != nil {
 		return Settings{}, err
 	}
 	if loaded.WorldCities == nil {
 		loaded.WorldCities = world.DefaultCities()
+	}
+	if loaded.Timers == nil {
+		loaded.Timers = timer.DefaultTimers()
 	}
 	if loaded.CloseBehavior != CloseBehaviorMinimize && loaded.CloseBehavior != CloseBehaviorExit {
 		loaded.CloseBehavior = CloseBehaviorMinimize

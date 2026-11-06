@@ -54,14 +54,21 @@ the-world-clock-on-the-desktop/
 │   │   ├── alarm.go              # 闹钟数据模型、下次触发时间计算、重复周期摘要
 │   │   ├── scheduler.go          # 闹钟调度器、分钟级幂等触发、贪睡（Snooze）与解除
 │   │   └── alarm_test.go
+│   ├── audio/
+│   │   ├── synth.go              # 纯 Go 程序化 16-bit PCM WAV 音频合成器（闹钟泛音琶音与无缝循环白噪音）
+│   │   ├── audio.go              # 闹钟响铃、助眠环境音循环、音量线性衰减与试听状态机
+│   │   ├── player_windows.go     # Windows 原生 winmm.dll (PlaySoundW / waveOutSetVolume) 异步播放实现
+│   │   └── audio_test.go
 │   ├── clock/
 │   │   ├── clock.go              # 12H/24H 格式化、整秒/整分重绘延迟计算、模拟表盘三角几何计算
+│   │   ├── location.go           # 操作系统所在国家/地区、代表城市与本地时区自动识别
+│   │   ├── location_windows.go   # Windows Kernel32 区域与系统时区原生检测
 │   │   └── clock_test.go
 │   ├── i18n/
 │   │   ├── i18n.go               # 中 (zh) / 英 (en) / 日 (ja) 全量翻译键值表与本地化日期格式
 │   │   └── i18n_test.go
 │   ├── rss/
-│   │   ├── rss.go                # 每日科技/国际/科学资讯流存储与分类过滤
+│   │   ├── rss.go                # “历史上的今天”百度百科 / Wikipedia API 异步拉取、HTML 清洗与离线档案库
 │   │   └── rss_test.go
 │   ├── sleep/
 │   │   ├── sleep.go              # 睡眠与白噪音会话状态机、末段音量线性渐弱算法
@@ -70,7 +77,7 @@ the-world-clock-on-the-desktop/
 │   │   ├── settings.go           # JSON 配置持久化、深拷贝快照、.bak 自动备份与损坏恢复
 │   │   └── storage_test.go
 │   ├── timer/
-│   │   ├── timer.go              # 多路并行倒计时器管理与进度百分比计算
+│   │   ├── timer.go              # 多路倒计时器数据模型、增删改查、导出/导入与进度百分比计算
 │   │   ├── stopwatch.go          # 百分之一秒精度单调时钟秒表与计圈（Lap）历史
 │   │   └── timer_test.go
 │   ├── tracker/

@@ -28,7 +28,7 @@ func NewAppConfig(state *AppState) app.Config {
 		Width:       840,
 		Height:      580,
 		Invalidator: &inv,
-		TextInput:   flex.Fields(&state.CitySearchField),
+		TextInput:   flex.Fields(&state.CitySearchField, &state.TimerNameField),
 	}
 
 	// Paint 是核心声明式绘制函数：每帧根据当前状态声明界面布局，并按需规划下一次唤醒时间。

@@ -85,6 +85,14 @@ type AppState struct {
 	NewAlarmWeekdays   [7]bool            // 新建闹钟的自定义星期掩码
 	NewAlarmSound      string             // 新建闹钟选中的铃声名称 ("Classic Chime", "Gentle Chime", "Digital Bell")
 
+	// 倒计时任务新建/编辑面板状态
+	ShowTimerModal    bool       // 是否展开“新建/编辑倒计时任务”面板
+	EditingTimerID    string     // 正在编辑的任务 ID（为空表示新建自定义任务）
+	TimerNameField    flex.Field // 倒计时任务名称输入框组件状态
+	TimerModalHours   int        // 倒计时设定小时 (0-23)
+	TimerModalMinutes int        // 倒计时设定分钟 (0-59)
+	TimerModalSeconds int        // 倒计时设定秒数 (0-59)
+
 	// Flex 声明式布局视图容器（跨帧复用内部布局缓冲区以实现零额外分配）
 	View flex.View
 
@@ -103,7 +111,7 @@ func NewAppState(store *storage.Store) *AppState {
 	// Initialize managers with persisted data
 	worldMgr := world.NewManager(s.WorldCities)
 	alarmSched := alarm.NewScheduler(s.Alarms)
-	timerMgr := timer.NewManager()
+	timerMgr := timer.NewManagerWithTimers(s.Timers)
 	sw := timer.NewStopwatch()
 	wSvc := weather.NewService()
 	tr := tracker.NewTracker(nil)
@@ -123,31 +131,34 @@ func NewAppState(store *storage.Store) *AppState {
 	}
 
 	return &AppState{
-		Store:            store,
-		World:            worldMgr,
-		Scheduler:        alarmSched,
-		TimerMgr:         timerMgr,
-		Stopwatch:        sw,
-		Weather:          wSvc,
-		Tracker:          tr,
-		Sleep:            sl,
-		News:             news,
-		Wallpaper:        wpMgr,
-		Audio:            audioEng,
-		ActiveTab:        activeTab,
-		IsPopout:         s.PopoutMode,
-		NewsCategory:     "All",
-		SleepDuration:    30 * time.Minute,
-		SleepSound:       sleep.SoundRain,
-		SettingsTab:      "font",
-		ScrollY:          0,
-		CityModalScrollY: 0,
-		NewAlarmHour:     8,
-		NewAlarmMinute:   0,
-		NewAlarmTitle:    "New Alarm",
-		NewAlarmSchedule: alarm.ScheduleDaily,
-		NewAlarmWeekdays: weekdays,
-		NewAlarmSound:    "Classic Chime",
+		Store:             store,
+		World:             worldMgr,
+		Scheduler:         alarmSched,
+		TimerMgr:          timerMgr,
+		Stopwatch:         sw,
+		Weather:           wSvc,
+		Tracker:           tr,
+		Sleep:             sl,
+		News:              news,
+		Wallpaper:         wpMgr,
+		Audio:             audioEng,
+		ActiveTab:         activeTab,
+		IsPopout:          s.PopoutMode,
+		NewsCategory:      "All",
+		SleepDuration:     30 * time.Minute,
+		SleepSound:        sleep.SoundRain,
+		SettingsTab:       "font",
+		ScrollY:           0,
+		CityModalScrollY:  0,
+		NewAlarmHour:      8,
+		NewAlarmMinute:    0,
+		NewAlarmTitle:     "New Alarm",
+		NewAlarmSchedule:  alarm.ScheduleDaily,
+		NewAlarmWeekdays:  weekdays,
+		NewAlarmSound:     "Classic Chime",
+		TimerModalHours:   0,
+		TimerModalMinutes: 10,
+		TimerModalSeconds: 0,
 	}
 }
 
@@ -171,17 +182,19 @@ func (a *AppState) Persist() {
 	_ = a.Store.Update(func(cfg *storage.Settings) {
 		cfg.WorldCities = a.World.Cities()
 		cfg.Alarms = a.Scheduler.Alarms()
+		cfg.Timers = a.TimerMgr.ExportTimers()
 		cfg.PopoutMode = a.IsPopout
 		cfg.Wallpaper = a.Wallpaper.Config()
 	})
 }
 
 // UpdateSettings updates settings in Store while guaranteeing that live WorldCities, Alarms,
-// PopoutMode, and Wallpaper state are always synchronized before writing to disk.
+// Timers, PopoutMode, and Wallpaper state are always synchronized before writing to disk.
 func (a *AppState) UpdateSettings(fn func(*storage.Settings)) {
 	_ = a.Store.Update(func(cfg *storage.Settings) {
 		cfg.WorldCities = a.World.Cities()
 		cfg.Alarms = a.Scheduler.Alarms()
+		cfg.Timers = a.TimerMgr.ExportTimers()
 		cfg.PopoutMode = a.IsPopout
 		cfg.Wallpaper = a.Wallpaper.Config()
 		if fn != nil {

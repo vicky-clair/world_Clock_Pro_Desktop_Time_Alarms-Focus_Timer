@@ -54,14 +54,21 @@ the-world-clock-on-the-desktop/
 │   │   ├── alarm.go              # アラームデータモデル、次回トリガー計算、繰り返し要約
 │   │   ├── scheduler.go          # アラームスケジューラ、分単位の冪等発火、スヌーズと停止
 │   │   └── alarm_test.go
+│   ├── audio/
+│   │   ├── synth.go              # 純Goプロシージャル 16-bit PCM WAV 音声合成器（アラーム音＆環境音シームレスループ）
+│   │   ├── audio.go              # アラーム鳴動・睡眠環境音ループ・音量減衰・試聴ステート管理
+│   │   ├── player_windows.go     # Windows ネイティブ winmm.dll (PlaySoundW / waveOutSetVolume) 非同期再生
+│   │   └── audio_test.go
 │   ├── clock/
 │   │   ├── clock.go              # 12H/24Hフォーマット、秒/分境界遅延計算、アナログ針の座標計算
+│   │   ├── location.go           # OSの国・地域、代表都市および現地タイムゾーンの自動検出
+│   │   ├── location_windows.go   # Windows Kernel32 ネイティブ地域・タイムゾーン検出
 │   │   └── clock_test.go
 │   ├── i18n/
 │   │   ├── i18n.go               # 日 (ja) / 中 (zh) / 英 (en) 翻訳辞書と日付ローカライザ
 │   │   └── i18n_test.go
 │   ├── rss/
-│   │   ├── rss.go                # 厳選ニュースフィード管理とカテゴリフィルタリング
+│   │   ├── rss.go                # 「今日は何の日（歴史）」Baidu Baike / Wikipedia API 非同期取得＆アーカイブ
 │   │   └── rss_test.go
 │   ├── sleep/
 │   │   ├── sleep.go              # スリープ＆環境音セッション管理、終了前の音量フェードアウト計算

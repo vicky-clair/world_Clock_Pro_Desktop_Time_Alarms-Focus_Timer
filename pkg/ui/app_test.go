@@ -1315,3 +1315,74 @@ func TestCountryDisplayAudioAndHistoryToday(t *testing.T) {
 		t.Fatal("expected '历史上的今天' title on screen")
 	}
 }
+
+func TestTimerPersistenceCustomCreateEditAndDelete(t *testing.T) {
+	state, driver := setupTestApp(t)
+	defer driver.Close()
+
+	clickID(t, driver, TabTimersID)
+	initialTimers := state.TimerMgr.Timers()
+	if len(initialTimers) != 3 {
+		t.Fatalf("expected 3 default timers initially, got %d", len(initialTimers))
+	}
+
+	// 1. Delete the first timer ("timer-tea") and verify it stays deleted after reloading from disk
+	if !clickID(t, driver, TimerDeleteID("timer-tea")) {
+		t.Fatal("failed to click delete button on timer-tea")
+	}
+	if len(state.TimerMgr.Timers()) != 2 {
+		t.Fatalf("expected 2 timers after deleting timer-tea, got %d", len(state.TimerMgr.Timers()))
+	}
+
+	reloadedStore1 := storage.NewStore(state.Store.FilePath())
+	reloadedState1 := NewAppState(reloadedStore1)
+	if len(reloadedState1.TimerMgr.Timers()) != 2 {
+		t.Fatalf("deleted timer reappeared on reload: expected 2 timers, got %d", len(reloadedState1.TimerMgr.Timers()))
+	}
+
+	// 2. Edit an existing timer ("timer-break") via the Edit button
+	if !clickID(t, driver, TimerEditID("timer-break")) {
+		t.Fatal("failed to click Edit button on timer-break")
+	}
+	if !state.ShowTimerModal || state.EditingTimerID != "timer-break" {
+		t.Fatal("expected Timer modal to open in edit mode for timer-break")
+	}
+	state.TimerNameField.SetText("Custom Reading Task")
+	clickID(t, driver, IDBtnTimerMin10Up) // 5m + 10m = 15m
+	if !clickID(t, driver, IDBtnSaveTimerModal) {
+		t.Fatal("failed to click Save button in Timer modal")
+	}
+
+	// Verify edit persisted to disk
+	reloadedStore2 := storage.NewStore(state.Store.FilePath())
+	reloadedState2 := NewAppState(reloadedStore2)
+	var foundEdited bool
+	for _, tm := range reloadedState2.TimerMgr.Timers() {
+		if tm.ID == "timer-break" && tm.Name == "Custom Reading Task" && tm.Duration == 15*time.Minute {
+			foundEdited = true
+			break
+		}
+	}
+	if !foundEdited {
+		t.Fatal("expected edited timer-break ('Custom Reading Task', 15m) to persist across reload")
+	}
+
+	// 3. Create a brand new custom timer via "+ Custom Timer" modal
+	if !clickID(t, driver, IDBtnOpenTimerModal) {
+		t.Fatal("failed to click + Custom Timer button")
+	}
+	clickID(t, driver, IDBtnTimerPresetNap) // 20m preset
+	state.TimerNameField.SetText("Afternoon Nap")
+	if !clickID(t, driver, IDBtnSaveTimerModal) {
+		t.Fatal("failed to click Save New Timer button")
+	}
+	if len(state.TimerMgr.Timers()) != 3 {
+		t.Fatalf("expected 3 timers after adding custom timer, got %d", len(state.TimerMgr.Timers()))
+	}
+
+	reloadedStore3 := storage.NewStore(state.Store.FilePath())
+	reloadedState3 := NewAppState(reloadedStore3)
+	if len(reloadedState3.TimerMgr.Timers()) != 3 {
+		t.Fatalf("expected 3 persisted timers on reload, got %d", len(reloadedState3.TimerMgr.Timers()))
+	}
+}

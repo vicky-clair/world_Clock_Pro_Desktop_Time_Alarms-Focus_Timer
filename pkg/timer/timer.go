@@ -55,34 +55,84 @@ type Manager struct {
 	timers []*Timer
 }
 
+// DefaultTimers 返回首次启动时的默认三组常用倒计时预设（泡茶 3m、番茄专注 25m、短休 5m）。
+func DefaultTimers() []Timer {
+	return []Timer{
+		{
+			ID:        "timer-tea",
+			Name:      "Tea Timer",
+			Duration:  3 * time.Minute,
+			Remaining: 3 * time.Minute,
+			State:     StateIdle,
+		},
+		{
+			ID:        "timer-pomodoro",
+			Name:      "Pomodoro Focus",
+			Duration:  25 * time.Minute,
+			Remaining: 25 * time.Minute,
+			State:     StateIdle,
+		},
+		{
+			ID:        "timer-break",
+			Name:      "Short Break",
+			Duration:  5 * time.Minute,
+			Remaining: 5 * time.Minute,
+			State:     StateIdle,
+		},
+	}
+}
+
 // NewManager 创建包含三组常用预设（泡茶 3m、番茄专注 25m、短休 5m）的倒计时管理器。
 // NewManager creates a timer manager with standard presets.
 func NewManager() *Manager {
-	return &Manager{
-		timers: []*Timer{
-			{
-				ID:        "timer-tea",
-				Name:      "Tea Timer",
-				Duration:  3 * time.Minute,
-				Remaining: 3 * time.Minute,
-				State:     StateIdle,
-			},
-			{
-				ID:        "timer-pomodoro",
-				Name:      "Pomodoro Focus",
-				Duration:  25 * time.Minute,
-				Remaining: 25 * time.Minute,
-				State:     StateIdle,
-			},
-			{
-				ID:        "timer-break",
-				Name:      "Short Break",
-				Duration:  5 * time.Minute,
-				Remaining: 5 * time.Minute,
-				State:     StateIdle,
-			},
-		},
+	return NewManagerWithTimers(nil)
+}
+
+// NewManagerWithTimers 根据持久化存储中的初始切片创建倒计时管理器。
+// 当 initial == nil 时加载默认预设；当 initial 为非 nil（包括用户主动删空后的空切片 []）时严格按用户配置恢复。
+func NewManagerWithTimers(initial []Timer) *Manager {
+	src := initial
+	if src == nil {
+		src = DefaultTimers()
 	}
+	list := make([]*Timer, 0, len(src))
+	for _, item := range src {
+		d := item.Duration
+		if d <= 0 {
+			d = time.Minute
+		}
+		rem := item.Remaining
+		if rem <= 0 || rem > d {
+			rem = d
+		}
+		list = append(list, &Timer{
+			ID:        item.ID,
+			Name:      item.Name,
+			Duration:  d,
+			Remaining: d,
+			State:     StateIdle,
+		})
+	}
+	return &Manager{
+		timers: list,
+	}
+}
+
+// ExportTimers 导出当前所有倒计时任务的值切片副本，用于 JSON 持久化保存。
+func (m *Manager) ExportTimers() []Timer {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	out := make([]Timer, len(m.timers))
+	for i, t := range m.timers {
+		out[i] = Timer{
+			ID:        t.ID,
+			Name:      t.Name,
+			Duration:  t.Duration,
+			Remaining: t.Duration,
+			State:     StateIdle,
+		}
+	}
+	return out
 }
 
 // Timers 返回所有倒计时器指针切片的副本。
@@ -100,6 +150,9 @@ func (m *Manager) Timers() []*Timer {
 func (m *Manager) AddTimer(name string, d time.Duration) *Timer {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if d <= 0 {
+		d = time.Minute
+	}
 	t := &Timer{
 		ID:        fmt.Sprintf("timer-%d", time.Now().UnixNano()),
 		Name:      name,
@@ -109,6 +162,28 @@ func (m *Manager) AddTimer(name string, d time.Duration) *Timer {
 	}
 	m.timers = append(m.timers, t)
 	return t
+}
+
+// UpdateTimer 修改指定 ID 倒计时任务的名称与设定时长，并将其重置为新的初始时长。
+func (m *Manager) UpdateTimer(id string, name string, d time.Duration) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if d <= 0 {
+		d = time.Minute
+	}
+	for _, t := range m.timers {
+		if t.ID == id {
+			if name != "" {
+				t.Name = name
+			}
+			t.Duration = d
+			t.Remaining = d
+			t.State = StateIdle
+			t.deadline = time.Time{}
+			return true
+		}
+	}
+	return false
 }
 
 // DeleteTimer 根据 ID 删除对应的倒计时器。

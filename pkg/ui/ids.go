@@ -89,11 +89,29 @@ var (
 	IDBtnAlarmPreviewSound = Tree.ID(featAlarms, "alarm-snd-preview")
 
 	// Timers Controls
-	IDBtnAddTimerCustom = Tree.ID(featTimers, "btn-add-timer-custom")
-	IDBtnSwStart        = Tree.ID(featTimers, "btn-sw-start")
-	IDBtnSwPause        = Tree.ID(featTimers, "btn-sw-pause")
-	IDBtnSwReset        = Tree.ID(featTimers, "btn-sw-reset")
-	IDBtnSwLap          = Tree.ID(featTimers, "btn-sw-lap")
+	IDBtnAddTimerCustom     = Tree.ID(featTimers, "btn-add-timer-custom")
+	IDBtnOpenTimerModal     = Tree.ID(featTimers, "btn-open-timer-modal")
+	IDBtnCloseTimerModal    = Tree.ID(featTimers, "btn-close-timer-modal")
+	IDBtnSaveTimerModal     = Tree.ID(featTimers, "btn-save-timer-modal")
+	IDInputTimerName        = Tree.ID(featTimers, "input-timer-name")
+	IDBtnTimerPresetTea     = Tree.ID(featTimers, "timer-preset-tea")
+	IDBtnTimerPresetNoodle  = Tree.ID(featTimers, "timer-preset-noodle")
+	IDBtnTimerPresetNap     = Tree.ID(featTimers, "timer-preset-nap")
+	IDBtnTimerPresetPomo    = Tree.ID(featTimers, "timer-preset-pomo")
+	IDBtnTimerPresetRead    = Tree.ID(featTimers, "timer-preset-read")
+	IDBtnTimerPresetWorkout = Tree.ID(featTimers, "timer-preset-workout")
+	IDBtnTimerHrDown        = Tree.ID(featTimers, "timer-hr-down")
+	IDBtnTimerHrUp          = Tree.ID(featTimers, "timer-hr-up")
+	IDBtnTimerMin10Down     = Tree.ID(featTimers, "timer-min10-down")
+	IDBtnTimerMinDown       = Tree.ID(featTimers, "timer-min-down")
+	IDBtnTimerMinUp         = Tree.ID(featTimers, "timer-min-up")
+	IDBtnTimerMin10Up       = Tree.ID(featTimers, "timer-min10-up")
+	IDBtnTimerSecDown       = Tree.ID(featTimers, "timer-sec-down")
+	IDBtnTimerSecUp         = Tree.ID(featTimers, "timer-sec-up")
+	IDBtnSwStart            = Tree.ID(featTimers, "btn-sw-start")
+	IDBtnSwPause            = Tree.ID(featTimers, "btn-sw-pause")
+	IDBtnSwReset            = Tree.ID(featTimers, "btn-sw-reset")
+	IDBtnSwLap              = Tree.ID(featTimers, "btn-sw-lap")
 	// Tracker Controls
 	IDBtnTrackerStart    = Tree.ID(featTracker, "btn-tracker-start")
 	IDBtnTrackerPause    = Tree.ID(featTracker, "btn-tracker-pause")
@@ -266,4 +284,8 @@ func TimerResetID(timerID string) ui.ID {
 
 func TimerDeleteID(timerID string) ui.ID {
 	return Tree.ID(featTimers, "del-"+timerID)
+}
+
+func TimerEditID(timerID string) ui.ID {
+	return Tree.ID(featTimers, "edit-"+timerID)
 }
