@@ -14,6 +14,7 @@ import (
 	"github.com/vivaui/viva/ui"
 )
 
+// DrawSettings 渲染设置与偏好中心（包含字体定制、壁纸与轮播图、语言与温度单位、时钟与关闭按钮行为、关于与配置文件五大子标签页）。
 // DrawSettings renders configuration preferences with sub-tabs, full scrolling, and wallpaper controls.
 func DrawSettings(f *flex.Frame, state *AppState, theme ui.Theme) {
 	cfg := state.Store.Get()

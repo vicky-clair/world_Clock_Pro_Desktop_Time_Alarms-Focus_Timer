@@ -1,3 +1,4 @@
+// Package ui 实现基于 Viva GPU 原生框架的声明式桌面界面、帧重绘调度、主题配色与交互事件路由。
 package ui
 
 import (
@@ -14,6 +15,7 @@ import (
 	"github.com/vivaui/viva/ui"
 )
 
+// NewAppConfig 构建 World Clock Pro 应用的 Viva 窗口配置、绘制回调与生命周期钩子。
 // NewAppConfig creates the Viva app configuration for the World Clock application.
 func NewAppConfig(state *AppState) app.Config {
 	var inv app.Invalidator
@@ -28,13 +30,14 @@ func NewAppConfig(state *AppState) app.Config {
 		TextInput:   flex.Fields(&state.CitySearchField),
 	}
 
+	// Paint 是核心声明式绘制函数：每帧根据当前状态声明界面布局，并按需规划下一次唤醒时间。
 	cfg.Paint = func(canvas *ui.Canvas, size ui.Size) {
-		// Update per-frame instant
+		// 1. 记录当前帧统一时间戳，保证同一帧内所有时钟读数完全一致
 		now := time.Now()
 		state.Now = now
 		state.UTC = now.UTC()
 
-		// Advance wallpaper slideshow if deadline is due (O(1) zero-allocation check when not due)
+		// 2. 检查壁纸轮播是否到达切换时间点（未到期时为 O(1) 零内存分配检查）
 		if state.Wallpaper.AdvanceIfDue(now) {
 			state.Persist()
 		}
@@ -42,17 +45,17 @@ func NewAppConfig(state *AppState) app.Config {
 		settings := state.Store.Get()
 		theme := BuildTheme(settings.Theme, state.Wallpaper.Config().Enabled, state.Wallpaper.Config().CardOpacity, settings.UIFontColor)
 
-		// Check for alarms to ring
+		// 3. 检查当前分钟是否有闹钟应当触发响铃
 		state.Scheduler.CheckTriggers(now)
 
-		// Advance background timers, tracker, and sleep mode regardless of active tab
+		// 4. 无论当前处于哪个标签页，同步推进后台专注计时器、睡眠模式和倒计时器进度
 		state.Tracker.Update(now)
 		state.Sleep.Update(now)
 		for _, t := range state.TimerMgr.Timers() {
 			t.Update(now)
 		}
 
-		// Check if any fast-ticking timer or stopwatch is running
+		// 5. 判断是否存在需要高频刷新（约 25 FPS）的活动秒表、倒计时或番茄钟
 		fastTick := false
 		if state.Stopwatch.State() == timer.StateRunning {
 			fastTick = true
@@ -67,10 +70,11 @@ func NewAppConfig(state *AppState) app.Config {
 		if trStatus == "Working" || trStatus == "Short Break" || trStatus == "Big Break" {
 			fastTick = true
 		}
-		// Strictly adhere to Viva idle rule:
-		// No continuous polling! Schedule exact redraw only when needed:
+
+		// 6. 严格遵守 Viva 框架“空闲零重绘”准则：
+		// 绝不运行后台忙碌轮询！仅在需要更新画面的精确时刻预约下一帧重绘：
 		if fastTick {
-			canvas.RequestFrameIn(40 * time.Millisecond) // ~25 fps when stopwatch/timer running
+			canvas.RequestFrameIn(40 * time.Millisecond) // 秒表/倒计时运行期间按 40ms (~25 fps) 刷新
 		} else {
 			delay := clock.NextBoundaryDelay(now, settings.ShowSeconds)
 			if wpDelay := state.Wallpaper.NextSlideDelay(now); wpDelay > 0 && wpDelay < delay {
@@ -79,13 +83,14 @@ func NewAppConfig(state *AppState) app.Config {
 			canvas.RequestFrameIn(delay)
 		}
 
-		// Draw root background
+		// 7. 绘制窗口根背景色与自定义壁纸图层
 		bounds := ui.Rect{Width: size.Width, Height: size.Height}
 		canvas.Fill(bounds, theme.Background)
 		if state.Wallpaper.Config().Enabled {
 			state.Wallpaper.Draw(canvas, bounds, theme)
 		}
-		// Draw UI tree
+
+		// 8. 绘制声明式 Flex UI 组件树
 		state.View.Draw(canvas, theme, bounds, func(f *flex.Frame) {
 			if state.IsPopout {
 				DrawPopoutClock(f, state, theme)
@@ -93,10 +98,10 @@ func NewAppConfig(state *AppState) app.Config {
 			}
 
 			f.Column().Fill().Children(func() {
-				// Global Top Navigation and Ringing Alarm Alert
+				// 顶部全局导航栏与响铃提醒横幅
 				DrawHeader(f, state, theme)
 
-				// Active Tab Screen
+				// 当前激活的功能标签页视图
 				f.Column().Fill().Children(func() {
 					switch state.ActiveTab {
 					case TabClock:
@@ -125,14 +130,17 @@ func NewAppConfig(state *AppState) app.Config {
 		})
 	}
 
+	// 鼠标滚轮事件转发给 Flex 滚动容器处理
 	cfg.OnScroll = func(event ui.ScrollEvent) ui.EventResult {
 		return state.View.Wheel(event)
 	}
 
+	// 跨线程唤醒回调：在 UI 主线程安全消费待处理的窗口恢复或壁纸文件加载请求
 	cfg.OnWake = func() {
 		state.ProcessPendingWake()
 	}
 
+	// 窗口关闭按钮（✕）拦截回调：支持“最小化到后台系统托盘”或“直接退出程序”
 	cfg.OnCloseRequest = func(allow func()) {
 		state.Persist()
 		if state.ForceQuit || state.Store.Get().CloseBehavior == storage.CloseBehaviorExit {
@@ -149,10 +157,12 @@ func NewAppConfig(state *AppState) app.Config {
 		allow()
 	}
 
+	// 窗口销毁前兜底保存最新状态
 	cfg.OnClosed = func() {
 		state.Persist()
 	}
 
+	// 支持将本地图片文件或整个图片文件夹直接拖拽进窗口设置为壁纸/轮播图
 	cfg.OnFileDrop = func(event ui.FileDropEvent) ui.EventResult {
 		if event.Phase == ui.FileDropDrop && len(event.Paths) > 0 {
 			first := event.Paths[0]
@@ -183,6 +193,7 @@ func NewAppConfig(state *AppState) app.Config {
 	return cfg
 }
 
+// BuildStatusIcon 生成系统托盘使用的 32x32 像素高清时钟图标（RGBA 格式）。
 // BuildStatusIcon generates a crisp 32x32 straight-RGBA clock icon for the system tray.
 func BuildStatusIcon() app.StatusIcon {
 	const sz = 32

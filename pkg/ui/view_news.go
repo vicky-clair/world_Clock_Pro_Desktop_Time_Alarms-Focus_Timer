@@ -8,6 +8,7 @@ import (
 	"github.com/vivaui/viva/ui"
 )
 
+// DrawNews 渲染每日精选资讯阅读器（支持按全部/科技/国际/科学分类过滤与中英日三语对照本地化）。
 // DrawNews renders the news and RSS feed aggregator screen.
 func DrawNews(f *flex.Frame, state *AppState, theme ui.Theme) {
 	category := state.NewsCategory

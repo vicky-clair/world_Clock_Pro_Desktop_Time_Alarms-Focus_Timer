@@ -2,23 +2,24 @@ package ui
 
 import "github.com/vivaui/viva/ui"
 
+// Tree 保存全局唯一的 Viva 控件身份标识树（ui.Tree），用于在跨帧绘制时稳定追踪焦点、悬停与点击命中。
 // Tree holds the static identity tree for the World Clock application.
 var (
 	Tree = ui.Tree{}
 
-	// Features / Areas
-	featNav     = Tree.Feature("nav")
-	featHeader  = Tree.Feature("header")
-	featClock   = Tree.Feature("clock")
-	featWorld   = Tree.Feature("world")
-	featAlarms  = Tree.Feature("alarms")
-	featTimers  = Tree.Feature("timers")
-	featPopout  = Tree.Feature("popout")
-	featTracker = Tree.Feature("tracker")
-	featSleep   = Tree.Feature("sleep")
-	featNews    = Tree.Feature("news")
-	featSetting = Tree.Feature("settings")
-	featDialog  = Tree.Feature("dialog")
+	// 功能分区（Features / Areas）
+	featNav     = Tree.Feature("nav")      // 顶部导航栏区域
+	featHeader  = Tree.Feature("header")   // 顶部闹钟提醒横幅区域
+	featClock   = Tree.Feature("clock")    // 主时钟区域
+	featWorld   = Tree.Feature("world")    // 世界时钟与选城面板区域
+	featAlarms  = Tree.Feature("alarms")   // 闹钟列表与新建面板区域
+	featTimers  = Tree.Feature("timers")   // 倒计时与秒表区域
+	featPopout  = Tree.Feature("popout")   // 桌面悬浮小窗区域
+	featTracker = Tree.Feature("tracker")  // 专注计时器（番茄钟）区域
+	featSleep   = Tree.Feature("sleep")    // 睡眠与环境音区域
+	featNews    = Tree.Feature("news")     // 资讯阅读区域
+	featSetting = Tree.Feature("settings") // 设置与偏好区域
+	featDialog  = Tree.Feature("dialog")   // 全局模态对话框区域
 
 	// Navigation Tabs
 	TabClockID    = Tree.ID(featNav, "tab-clock")

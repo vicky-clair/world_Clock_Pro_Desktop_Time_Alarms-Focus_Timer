@@ -7,9 +7,10 @@ import (
 	"github.com/vivaui/viva/ui"
 )
 
+// DrawHeader 渲染顶部全局分段导航栏以及正在触发的闹钟响铃提醒横幅。
 // DrawHeader renders the top navigation bar and active alarm alert if triggered.
 func DrawHeader(f *flex.Frame, state *AppState, theme ui.Theme) {
-	// Check for actively ringing alarm
+	// 检查是否有正在响铃的闹钟，若有则在顶部渲染醒目的红色横幅（支持贪睡 5 分钟与解除）
 	ringing := state.Scheduler.Ringing()
 	if ringing != nil {
 		f.Row().FillWidth().Pad(12).Background(theme.Danger).Items(flex.Center).Gap(16).Children(func() {

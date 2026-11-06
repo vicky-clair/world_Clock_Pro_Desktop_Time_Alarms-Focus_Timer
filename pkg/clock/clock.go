@@ -1,3 +1,4 @@
+// Package clock 提供核心时间格式化、整秒/整分精确重绘边界计算以及模拟表盘指针几何坐标计算。
 package clock
 
 import (
@@ -6,14 +7,16 @@ import (
 	"time"
 )
 
+// ClockStyle 定义主时钟的渲染样式（数字时钟或模拟表盘）。
 // ClockStyle defines how the clock is rendered.
 type ClockStyle string
 
 const (
-	StyleDigital ClockStyle = "digital"
-	StyleAnalog  ClockStyle = "analog"
+	StyleDigital ClockStyle = "digital" // 数字时钟模式
+	StyleAnalog  ClockStyle = "analog"  // 模拟表盘指针模式
 )
 
+// FormatTime 根据 24 小时制/12 小时制及是否显示秒数，格式化给定时间并返回时间字符串与 AM/PM 标识。
 // FormatTime formats a time into hours, minutes, and optional seconds based on 24h/12h preference.
 func FormatTime(t time.Time, is24H, showSeconds bool) (timeStr string, period string) {
 	hour := t.Hour()
@@ -39,6 +42,7 @@ func FormatTime(t time.Time, is24H, showSeconds bool) (timeStr string, period st
 	return timeStr, period
 }
 
+// FormatDate 按照完整格式或简短格式输出英文日期字符串。
 // FormatDate formats date according to full or short preference.
 func FormatDate(t time.Time, full bool) string {
 	if full {
@@ -47,6 +51,8 @@ func FormatDate(t time.Time, full bool) string {
 	return t.Format("Mon, Jan 2, 2006")
 }
 
+// NextBoundaryDelay 计算距离下一个整秒（若不显示秒数则为下一个整分）的精确等待时长。
+// 用于遵守 Viva 框架的“空闲零重绘”准则，无需后台轮询定时器。
 // NextBoundaryDelay computes the time duration until the next second (or next minute if seconds hidden).
 func NextBoundaryDelay(now time.Time, showSeconds bool) time.Duration {
 	if showSeconds {
@@ -65,12 +71,14 @@ func NextBoundaryDelay(now time.Time, showSeconds bool) time.Duration {
 	return delay
 }
 
+// HandCoord 表示模拟表盘指针端点或刻度线的二维坐标。
 // HandCoord represents an endpoint for an analog clock hand or tick mark.
 type HandCoord struct {
 	X float32
 	Y float32
 }
 
+// AnalogGeometry 保存模拟时钟表盘的圆心、半径、时/分/秒针端点以及 12 个整点刻度线坐标。
 // AnalogGeometry computes coordinates for an analog clock face.
 type AnalogGeometry struct {
 	CenterX float32
@@ -85,12 +93,14 @@ type AnalogGeometry struct {
 	HourTickOut [12]HandCoord
 }
 
+// ComputeAnalogGeometry 根据圆心 (cx, cy)、半径 radius 和当前时间 t 计算表盘指针与刻度坐标。
 // ComputeAnalogGeometry computes the positions for center, hands, and hour marks.
 func ComputeAnalogGeometry(cx, cy, radius float32, t time.Time) AnalogGeometry {
 	sec := float32(t.Second()) + float32(t.Nanosecond())/1e9
 	min := float32(t.Minute()) + sec/60.0
 	hr := float32(t.Hour()%12) + min/60.0
 
+	// 角度转换为弧度，12 点钟方向对应 -pi/2
 	// Angles in radians, 12 o'clock is -pi/2
 	secAngle := (sec/60.0)*2*math.Pi - math.Pi/2
 	minAngle := (min/60.0)*2*math.Pi - math.Pi/2
@@ -118,6 +128,7 @@ func ComputeAnalogGeometry(cx, cy, radius float32, t time.Time) AnalogGeometry {
 		},
 	}
 
+	// 计算 12 个整点刻度线的内外端点
 	tickInner := radius * 0.85
 	tickOuter := radius * 0.95
 	for i := range 12 {

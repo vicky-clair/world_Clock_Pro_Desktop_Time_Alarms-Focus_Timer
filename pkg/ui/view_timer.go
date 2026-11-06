@@ -42,6 +42,7 @@ func localizeTimerState(state *AppState, st timer.State) string {
 	}
 }
 
+// DrawTimers 渲染多路倒计时器列表与百分之一秒高精度计圈秒表视图。
 // DrawTimers renders countdown timers and high-precision stopwatch.
 func DrawTimers(f *flex.Frame, state *AppState, theme ui.Theme) {
 	now := state.Now

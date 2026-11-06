@@ -1,14 +1,17 @@
+// Package i18n 提供简体中文 (zh)、英文 (en) 与日文 (ja) 的全量界面翻译词典及本地化日期格式化工具。
 package i18n
 
+// Language 标识应用支持的界面语言代码。
 // Language identifies a supported locale.
 type Language string
 
 const (
-	LangEN Language = "en"
-	LangZH Language = "zh"
-	LangJA Language = "ja"
+	LangEN Language = "en" // 英文 (English)
+	LangZH Language = "zh" // 简体中文
+	LangJA Language = "ja" // 日文 (日本語)
 )
 
+// Languages 返回所有支持的语言代码及其原生显示名称列表。
 // Languages returns all supported languages with display names.
 func Languages() []struct {
 	Code Language

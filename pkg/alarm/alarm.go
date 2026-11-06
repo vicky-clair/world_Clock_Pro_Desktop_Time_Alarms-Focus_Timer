@@ -1,3 +1,4 @@
+// Package alarm 实现闹钟数据模型、周期性触发时间推算、贪睡（Snooze）与闹钟调度管理。
 package alarm
 
 import (
@@ -5,30 +6,33 @@ import (
 	"time"
 )
 
+// ScheduleType 描述闹钟的重复周期类型。
 // ScheduleType describes the recurrence pattern of an alarm.
 type ScheduleType string
 
 const (
-	ScheduleOneTime ScheduleType = "one_time"
-	ScheduleDaily   ScheduleType = "daily"
-	ScheduleWeekly  ScheduleType = "weekly"
+	ScheduleOneTime ScheduleType = "one_time" // 仅响铃一次（解除后自动关闭）
+	ScheduleDaily   ScheduleType = "daily"    // 每天重复
+	ScheduleWeekly  ScheduleType = "weekly"   // 按指定的星期几重复
 )
 
+// Alarm 表示用户配置的单条闹钟记录。
 // Alarm represents a user-configured alarm.
 type Alarm struct {
-	ID            string       `json:"id"`
-	Title         string       `json:"title"`
-	Hour          int          `json:"hour"`         // 0-23
-	Minute        int          `json:"minute"`       // 0-59
-	ScheduleType  ScheduleType `json:"scheduleType"` // one_time, daily, weekly
-	DaysOfWeek    [7]bool      `json:"daysOfWeek"`   // index 0: Sunday, 1: Monday ... 6: Saturday
-	IsEnabled     bool         `json:"isEnabled"`
-	SnoozeMinutes int          `json:"snoozeMinutes"` // default 5 or 10
-	Sound         string       `json:"sound"`
+	ID            string       `json:"id"`            // 闹钟唯一标识符
+	Title         string       `json:"title"`         // 闹钟标题/标签
+	Hour          int          `json:"hour"`          // 小时 (0-23)
+	Minute        int          `json:"minute"`        // 分钟 (0-59)
+	ScheduleType  ScheduleType `json:"scheduleType"`  // 重复类型：one_time, daily, weekly
+	DaysOfWeek    [7]bool      `json:"daysOfWeek"`    // 星期掩码（下标 0 为周日，1 为周一 ... 6 为周六）
+	IsEnabled     bool         `json:"isEnabled"`     // 是否启用
+	SnoozeMinutes int          `json:"snoozeMinutes"` // 贪睡延后分钟数（默认 5 分钟）
+	Sound         string       `json:"sound"`         // 铃声名称
 }
 
+// NextOccurrence 计算在给定参考时间 after 之后的下一次触发时刻。
+// 若闹钟未启用或无有效后续触发时刻，返回 ok = false。
 // NextOccurrence computes the next trigger time for an alarm after the given reference instant.
-// If the alarm is disabled or has no valid future occurrence, ok is false.
 func (a *Alarm) NextOccurrence(after time.Time) (time.Time, bool) {
 	if !a.IsEnabled {
 		return time.Time{}, false
@@ -37,7 +41,7 @@ func (a *Alarm) NextOccurrence(after time.Time) (time.Time, bool) {
 	loc := after.Location()
 	year, month, day := after.Date()
 
-	// Candidate on the same day
+	// 构造当天的候选触发时刻
 	candidate := time.Date(year, month, day, a.Hour, a.Minute, 0, 0, loc)
 
 	switch a.ScheduleType {
@@ -45,7 +49,7 @@ func (a *Alarm) NextOccurrence(after time.Time) (time.Time, bool) {
 		if candidate.After(after) {
 			return candidate, true
 		}
-		// If already past today, candidate tomorrow
+		// 若当天时间已过，则顺延至次日同一时刻
 		nextDay := candidate.AddDate(0, 0, 1)
 		return nextDay, true
 
@@ -56,7 +60,7 @@ func (a *Alarm) NextOccurrence(after time.Time) (time.Time, bool) {
 		return candidate.AddDate(0, 0, 1), true
 
 	case ScheduleWeekly:
-		// Check next 14 days
+		// 向后扫描未来 14 天，查找第一个匹配星期掩码的日期
 		for d := range 14 {
 			c := candidate.AddDate(0, 0, d)
 			if c.After(after) {
@@ -72,6 +76,7 @@ func (a *Alarm) NextOccurrence(after time.Time) (time.Time, bool) {
 	return time.Time{}, false
 }
 
+// FormatTime 根据 24 小时制或 12 小时制格式化闹钟时间（例如 "07:30" 或 "07:30 AM"）。
 // FormatTime formats the alarm time as HH:MM with optional AM/PM.
 func (a *Alarm) FormatTime(is24H bool) string {
 	h := a.Hour
@@ -90,6 +95,7 @@ func (a *Alarm) FormatTime(is24H bool) string {
 	return fmt.Sprintf("%02d:%02d %s", h12, m, period)
 }
 
+// RepeatSummary 返回可读的重复规则摘要字符串（如 "Once"、"Daily"、"Weekdays"、"Weekends"）。
 // RepeatSummary returns a human-readable summary of the repeat rule.
 func (a *Alarm) RepeatSummary() string {
 	switch a.ScheduleType {

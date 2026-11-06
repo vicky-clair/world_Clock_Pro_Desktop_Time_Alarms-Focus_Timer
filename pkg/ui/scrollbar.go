@@ -5,6 +5,7 @@ import (
 	"github.com/vivaui/viva/ui"
 )
 
+// DrawScrollbar 为可滚动区域 ScrollArea 绘制现代圆角轨道与自适应比例胶囊滑块。
 // DrawScrollbar paints a modern, sleek vertical scrollbar track and pill thumb for a ScrollArea.
 func DrawScrollbar(canvas *ui.Canvas, areaBox flex.Box, ss *flex.ScrollState, theme ui.Theme) {
 	if ss == nil || ss.Content <= ss.Viewport || ss.Viewport <= 0 {

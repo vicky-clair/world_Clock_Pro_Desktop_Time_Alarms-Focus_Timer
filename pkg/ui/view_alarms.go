@@ -60,6 +60,7 @@ func localizeRepeatSummary(state *AppState, a alarm.Alarm) string {
 	}
 }
 
+// DrawAlarms 渲染闹钟管理列表与新建闹钟面板。
 // DrawAlarms renders the alarm manager and new alarm dialog.
 func DrawAlarms(f *flex.Frame, state *AppState, theme ui.Theme) {
 	cfg := state.Store.Get()

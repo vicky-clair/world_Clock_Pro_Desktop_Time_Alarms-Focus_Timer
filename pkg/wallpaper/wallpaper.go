@@ -1,3 +1,6 @@
+// Package wallpaper 实现零常驻后台开销的桌面背景与壁纸轮播引擎。
+// 采用“仅索引路径 + 按需单张解码 + 自动 1080p 降采样 + Fisher-Yates 不重复洗牌”架构，
+// 确保即使导入数千张高分辨率照片轮播也不会影响电脑内存与 CPU/GPU 性能。
 package wallpaper
 
 import (
@@ -17,6 +20,7 @@ import (
 	"github.com/vivaui/viva/ui"
 )
 
+// FitMode 定义背景壁纸在窗口中的缩放与对齐模式。
 // FitMode describes how the background image is positioned and scaled.
 type FitMode string
 
@@ -28,6 +32,7 @@ const (
 	FitCenter  FitMode = "center"  // 居中 (Original size centered)
 )
 
+// SlideshowOrder 定义多张壁纸轮播时的切换顺序模式。
 // SlideshowOrder describes how multiple wallpaper photos are rotated.
 type SlideshowOrder string
 
@@ -36,26 +41,29 @@ const (
 	OrderSequential SlideshowOrder = "sequential" // 顺序播放 (In-order loop)
 )
 
+// maxWallpaperDim 限制解码驻留内存的壁纸最大边长为 1920 像素（1080p），避免 4K/8K 原图挤占内存与显存带宽。
 // maxWallpaperDim caps decoded in-memory wallpaper dimensions so 4K/8K photos
 // never bloat RAM or GPU upload bandwidth.
 const maxWallpaperDim = 1920
 
+// Config 表示壁纸与自动轮播的持久化配置参数。
 // Config represents wallpaper and slideshow settings.
 type Config struct {
-	Enabled          bool           `json:"enabled"`
-	ImagePath        string         `json:"imagePath"` // empty means built-in artistic preset
-	Preset           PresetID       `json:"preset"`    // "grid", "aurora", "forest", "sunset"
-	FitMode          FitMode        `json:"fitMode"`
-	Opacity          float32        `json:"opacity"`          // 0.0 to 1.0
-	CardOpacity      float32        `json:"cardOpacity"`      // 0.2 to 1.0
-	SlideshowEnabled bool           `json:"slideshowEnabled"` // whether carousel rotation is active
-	IntervalMinutes  int            `json:"intervalMinutes"`  // 5, 10, or 15 minutes
-	SlideshowOrder   SlideshowOrder `json:"slideshowOrder"`   // "shuffle" or "sequential"
-	ImagePaths       []string       `json:"imagePaths,omitempty"`
-	FolderPath       string         `json:"folderPath,omitempty"`
-	CurrentIndex     int            `json:"currentIndex"`
+	Enabled          bool           `json:"enabled"`              // 是否启用自定义/预设壁纸背景
+	ImagePath        string         `json:"imagePath"`            // 当前显示的图片路径（为空则使用内置艺术预设）
+	Preset           PresetID       `json:"preset"`               // 内置预设 ID ("grid", "aurora", "forest", "sunset")
+	FitMode          FitMode        `json:"fitMode"`              // 适应模式
+	Opacity          float32        `json:"opacity"`              // 背景壁纸不透明度 (0.0 ~ 1.0)
+	CardOpacity      float32        `json:"cardOpacity"`          // 卡片毛玻璃不透明度 (0.2 ~ 1.0)
+	SlideshowEnabled bool           `json:"slideshowEnabled"`     // 是否开启多图轮播
+	IntervalMinutes  int            `json:"intervalMinutes"`      // 轮播间隔分钟数 (1, 5, 10, 15)
+	SlideshowOrder   SlideshowOrder `json:"slideshowOrder"`       // 播放顺序 ("shuffle" 或 "sequential")
+	ImagePaths       []string       `json:"imagePaths,omitempty"` // 轮播图路径索引列表
+	FolderPath       string         `json:"folderPath,omitempty"` // 轮播图所属文件夹路径
+	CurrentIndex     int            `json:"currentIndex"`         // 当前播放到的图片下标
 }
 
+// DefaultConfig 返回默认的壁纸与轮播配置。
 // DefaultConfig returns clean default wallpaper configuration.
 func DefaultConfig() Config {
 	return Config{

@@ -1,3 +1,4 @@
+// Package rss 管理内置与自定义资讯文章列表，支持按类别（全部/科技/国际/科学）过滤与去重添加。
 package rss
 
 import (
@@ -6,23 +7,26 @@ import (
 	"time"
 )
 
+// Article 表示单篇新闻资讯条目。
 // Article represents a news item.
 type Article struct {
-	ID          string    `json:"id"`
-	Title       string    `json:"title"`
-	Source      string    `json:"source"`
-	Category    string    `json:"category"`
-	Link        string    `json:"link"`
-	Summary     string    `json:"summary"`
-	PublishedAt time.Time `json:"publishedAt"`
+	ID          string    `json:"id"`          // 文章唯一 ID
+	Title       string    `json:"title"`       // 文章标题
+	Source      string    `json:"source"`      // 来源媒体名称
+	Category    string    `json:"category"`    // 所属分类 ("Tech", "World", "Science")
+	Link        string    `json:"link"`        // 原文链接
+	Summary     string    `json:"summary"`     // 摘要内容
+	PublishedAt time.Time `json:"publishedAt"` // 发布时间
 }
 
+// FeedStore 并发安全地管理资讯文章集合，支持分类检索与去重插入。
 // FeedStore manages RSS news articles with category filtering and deduplication.
 type FeedStore struct {
 	mu       sync.RWMutex
 	articles []Article
 }
 
+// NewFeedStore 创建并填充精选资讯文章的 FeedStore 实例。
 // NewFeedStore creates a news feed store populated with curated news items.
 func NewFeedStore() *FeedStore {
 	store := &FeedStore{}
@@ -30,6 +34,7 @@ func NewFeedStore() *FeedStore {
 	return store
 }
 
+// populateCurated 初始化内置精选科技、国际时讯与科学文章。
 func (s *FeedStore) populateCurated() {
 	now := time.Now()
 	s.articles = []Article{
@@ -72,6 +77,7 @@ func (s *FeedStore) populateCurated() {
 	}
 }
 
+// Articles 返回按分类（"All"、"Tech"、"World"、"Science"）过滤后的资讯文章切片副本。
 // Articles returns articles filtered by category ("All", "Tech", "World", "Science").
 func (s *FeedStore) Articles(category string) []Article {
 	s.mu.RLock()
@@ -92,6 +98,7 @@ func (s *FeedStore) Articles(category string) []Article {
 	return res
 }
 
+// AddArticle 向列表头部插入一篇新文章；若 ID 或 Link 已存在则返回 false 拒绝重复插入。
 // AddArticle adds an article if not duplicate by link or ID.
 func (s *FeedStore) AddArticle(a Article) bool {
 	s.mu.Lock()

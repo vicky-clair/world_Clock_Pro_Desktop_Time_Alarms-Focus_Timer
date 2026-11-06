@@ -12,6 +12,7 @@ import (
 	"worldclock/pkg/weather"
 )
 
+// DrawMainClock 渲染主时钟屏幕（支持数字毛玻璃大字时钟、矢量模拟表盘、实时天气快照以及底部快捷控制栏）。
 // DrawMainClock renders the primary clock screen (digital or analog).
 func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	cfg := state.Store.Get()

@@ -10,6 +10,7 @@ import (
 	"github.com/vivaui/viva/ui"
 )
 
+// DrawWorldClock 渲染多城市世界时钟列表、全球 193 国搜索添加面板以及重复添加提醒对话框。
 // DrawWorldClock renders the multi-city world clock screen and city picker modal.
 func DrawWorldClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	cfg := state.Store.Get()

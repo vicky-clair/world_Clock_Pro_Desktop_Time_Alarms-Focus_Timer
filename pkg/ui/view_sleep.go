@@ -12,6 +12,7 @@ import (
 	"github.com/vivaui/viva/ui"
 )
 
+// DrawSleepMode 渲染低亮度护眼睡眠时钟、环境音选择与音量渐弱倒计时界面。
 // DrawSleepMode renders the minimal low-light sleep and ambient relaxation screen.
 func DrawSleepMode(f *flex.Frame, state *AppState, theme ui.Theme) {
 	now := state.Now

@@ -1,21 +1,23 @@
 package world
 
+// City 表示单个国家首都或重要城市的地理、中英日多语言名称与 IANA 时区元数据。
 // City represents a city entry with geographic and timezone metadata.
 type City struct {
-	ID             string  `json:"id"`
-	Name           string  `json:"name"`
-	NameZH         string  `json:"nameZH,omitempty"`
-	NameJA         string  `json:"nameJA,omitempty"`
-	Country        string  `json:"country"`
-	CountryZH      string  `json:"countryZH,omitempty"`
-	CountryJA      string  `json:"countryJA,omitempty"`
-	CountryCode    string  `json:"countryCode"`
-	Continent      string  `json:"continent,omitempty"`
-	IanaTimeZoneID string  `json:"ianaTimeZoneId"`
-	Latitude       float64 `json:"latitude"`
-	Longitude      float64 `json:"longitude"`
+	ID             string  `json:"id"`                  // 城市或国家唯一标识 ID
+	Name           string  `json:"name"`                // 英文城市/首都名
+	NameZH         string  `json:"nameZH,omitempty"`    // 简体中文城市/首都名
+	NameJA         string  `json:"nameJA,omitempty"`    // 日文城市/首都名
+	Country        string  `json:"country"`             // 英文国家名
+	CountryZH      string  `json:"countryZH,omitempty"` // 简体中文国家名
+	CountryJA      string  `json:"countryJA,omitempty"` // 日文国家名
+	CountryCode    string  `json:"countryCode"`         // ISO 两位国家代码
+	Continent      string  `json:"continent,omitempty"` // 所属大洲
+	IanaTimeZoneID string  `json:"ianaTimeZoneId"`      // IANA 标准时区 ID（如 "Asia/Shanghai"）
+	Latitude       float64 `json:"latitude"`            // 纬度
+	Longitude      float64 `json:"longitude"`           // 经度
 }
 
+// LocalizedCountry 返回指定语言（"zh", "ja", "en"）下的国家名称。
 // LocalizedCountry returns the country name in the requested language ("zh", "ja", "en").
 func (c City) LocalizedCountry(lang string) string {
 	switch lang {
@@ -454,6 +456,7 @@ func BuiltinCities() []City {
 	}
 }
 
+// cityAliases 将早期版本的首都 ID（如 "beijing"）映射到 193 国目录的标准国家 ID（如 "china"）。
 var cityAliases = map[string]string{
 	"beijing":   "china",
 	"tokyo":     "japan",
@@ -465,6 +468,7 @@ var cityAliases = map[string]string{
 	"seoul":     "south-korea",
 }
 
+// CanonicalCityID 将首都别名 ID（如 "beijing"）解析为规范的 193 国目录 ID（如 "china"）。
 // CanonicalCityID resolves legacy capital city IDs (such as "beijing") to their canonical 193-catalog ID (such as "china").
 func CanonicalCityID(id string) string {
 	if alias, ok := cityAliases[id]; ok {
@@ -473,6 +477,7 @@ func CanonicalCityID(id string) string {
 	return id
 }
 
+// SameCityID 判断两个城市 ID 是否指向同一个城市/首都条目（自动兼容历史首都别名）。
 // SameCityID reports whether two city IDs refer to the same city entry (accounting for legacy aliases).
 func SameCityID(a, b string) bool {
 	if a == b {
@@ -481,6 +486,7 @@ func SameCityID(a, b string) bool {
 	return CanonicalCityID(a) == CanonicalCityID(b)
 }
 
+// FindCityByID 根据城市 ID 在全球 193 国目录及内置重要城市目录中查找对应的 City 元数据。
 // FindCityByID returns a city by its ID from the 193 global countries or builtin cities.
 func FindCityByID(id string) (City, bool) {
 	// If id is a distinct non-capital builtin city, return its exact metadata first.

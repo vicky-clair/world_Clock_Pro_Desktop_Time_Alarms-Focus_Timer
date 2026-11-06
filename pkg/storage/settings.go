@@ -1,3 +1,4 @@
+// Package storage 负责用户配置的并发安全读取、深拷贝快照隔离、JSON 持久化以及 .bak 自动容灾备份与损坏恢复。
 package storage
 
 import (
@@ -11,44 +12,48 @@ import (
 	"worldclock/pkg/world"
 )
 
+// ThemeType 定义应用视觉主题名称。
 // ThemeType names the visual theme.
 type ThemeType string
 
 const (
-	ThemeDark  ThemeType = "dark"
-	ThemeLight ThemeType = "light"
-	ThemeOlive ThemeType = "olive"
-	ThemeNord  ThemeType = "nord"
+	ThemeDark  ThemeType = "dark"  // 深邃暗黑主题
+	ThemeLight ThemeType = "light" // 明亮清爽主题
+	ThemeOlive ThemeType = "olive" // 经典橄榄绿主题
+	ThemeNord  ThemeType = "nord"  // 极地冰蓝 (Nord) 主题
 )
 
+// CloseBehaviorMinimize 与 CloseBehaviorExit 定义用户点击窗口右上角关闭按钮（✕）时的行为。
 // CloseBehaviorType defines what happens when the user clicks the window close (X) button.
 const (
-	CloseBehaviorMinimize = "minimize"
-	CloseBehaviorExit     = "exit"
+	CloseBehaviorMinimize = "minimize" // 隐藏窗口并最小化到后台系统托盘
+	CloseBehaviorExit     = "exit"     // 直接退出整个应用程序
 )
 
+// Settings 聚合所有需要持久化到磁盘的用户偏好设置、世界时钟城市列表、闹钟与壁纸轮播配置。
 // Settings represents all persistent user preferences and data.
 type Settings struct {
-	TimeFormat24H  bool             `json:"timeFormat24H"`
-	ShowSeconds    bool             `json:"showSeconds"`
-	ShowFullDate   bool             `json:"showFullDate"`
-	ClockStyle     string           `json:"clockStyle"` // "digital" or "analog"
-	Theme          ThemeType        `json:"theme"`
-	ActiveProfile  string           `json:"activeProfile"`
-	WorldCities    []world.UserCity `json:"worldCities"`
-	Alarms         []alarm.Alarm    `json:"alarms"`
-	Topmost        bool             `json:"topmost"`
-	PopoutMode     bool             `json:"popoutMode"`
-	TempFahrenheit bool             `json:"tempFahrenheit"`
-	Language       string           `json:"language"` // "zh", "en", "ja"
-	Wallpaper      wallpaper.Config `json:"wallpaper"`
-	ClockFontSize  int              `json:"clockFontSize"`  // e.g. 48, 64, 76, 88
-	ClockFontColor string           `json:"clockFontColor"` // e.g. "white", "gold", "olive", "cyan", "purple", "coral"
-	UIFontColor    string           `json:"uiFontColor"`    // e.g. "default", "white", "black", "gold", "cyan", "purple", "olive"
-	FontScale      float32          `json:"fontScale"`      // e.g. 0.9, 1.0, 1.1, 1.2
-	CloseBehavior  string           `json:"closeBehavior"`  // "minimize" or "exit"
+	TimeFormat24H  bool             `json:"timeFormat24H"`  // 是否使用 24 小时制
+	ShowSeconds    bool             `json:"showSeconds"`    // 是否显示秒数
+	ShowFullDate   bool             `json:"showFullDate"`   // 是否显示完整日期格式
+	ClockStyle     string           `json:"clockStyle"`     // 时钟样式："digital"（数字）或 "analog"（模拟表盘）
+	Theme          ThemeType        `json:"theme"`          // 当前视觉主题
+	ActiveProfile  string           `json:"activeProfile"`  // 当前激活的配置文件名称（"Default" 或 "Work"）
+	WorldCities    []world.UserCity `json:"worldCities"`    // 用户已添加的世界时钟城市列表
+	Alarms         []alarm.Alarm    `json:"alarms"`         // 用户已配置的闹钟列表
+	Topmost        bool             `json:"topmost"`        // 悬浮小窗是否置顶
+	PopoutMode     bool             `json:"popoutMode"`     // 是否处于紧凑型桌面悬浮小窗模式
+	TempFahrenheit bool             `json:"tempFahrenheit"` // 是否使用华氏度 (°F) 显示气温
+	Language       string           `json:"language"`       // 界面语言："zh"（中文）、"en"（英文）、"ja"（日文）
+	Wallpaper      wallpaper.Config `json:"wallpaper"`      // 壁纸与轮播配置
+	ClockFontSize  int              `json:"clockFontSize"`  // 主时钟字号像素（如 48, 64, 76, 88）
+	ClockFontColor string           `json:"clockFontColor"` // 主时钟文字配色（如 "white", "gold", "olive", "cyan", "purple", "coral"）
+	UIFontColor    string           `json:"uiFontColor"`    // 全局界面文字颜色（如 "default", "white", "black" 等）
+	FontScale      float32          `json:"fontScale"`      // 字体缩放比例（如 0.9, 1.0, 1.1, 1.2）
+	CloseBehavior  string           `json:"closeBehavior"`  // 关闭按钮行为："minimize"（最小化到托盘）或 "exit"（直接退出）
 }
 
+// DefaultSettings 返回包含默认世界时钟城市与推荐偏好的初始配置。
 // DefaultSettings returns fresh default settings.
 func DefaultSettings() Settings {
 	return Settings{
@@ -62,7 +67,7 @@ func DefaultSettings() Settings {
 		Topmost:        false,
 		PopoutMode:     false,
 		TempFahrenheit: false,
-		Language:       "zh", // Default to Chinese as user prefers
+		Language:       "zh", // 默认使用简体中文界面
 		Wallpaper:      wallpaper.DefaultConfig(),
 		ClockFontSize:  64,
 		ClockFontColor: "white",
@@ -72,6 +77,7 @@ func DefaultSettings() Settings {
 	}
 }
 
+// Store 负责并发安全地加载、更新和持久化用户配置。
 // Store handles thread-safe loading and persisting of settings.
 type Store struct {
 	mu       sync.RWMutex
@@ -79,6 +85,7 @@ type Store struct {
 	settings Settings
 }
 
+// NewStore 创建配置存储实例；若 filePath 为空，则默认使用用户配置目录下的 settings.json。
 // NewStore creates a new storage store. If path is empty, uses the user config directory.
 func NewStore(filePath string) *Store {
 	if filePath == "" {
@@ -97,11 +104,13 @@ func NewStore(filePath string) *Store {
 	return s
 }
 
+// FilePath 返回当前配置文件在磁盘上的完整路径。
 // FilePath returns the path to the settings JSON file.
 func (s *Store) FilePath() string {
 	return s.filePath
 }
 
+// Get 返回当前配置的深拷贝快照（对切片执行独立拷贝，防止外部修改污染内部状态）。
 // Get returns a deep copy of current settings.
 func (s *Store) Get() Settings {
 	s.mu.RLock()
@@ -122,6 +131,7 @@ func (s *Store) Get() Settings {
 	return cp
 }
 
+// Update 在写锁保护下执行配置修改回调 fn，并立即持久化到磁盘。
 // Update updates the current settings and persists them.
 func (s *Store) Update(fn func(*Settings)) error {
 	s.mu.Lock()
@@ -130,9 +140,11 @@ func (s *Store) Update(fn func(*Settings)) error {
 	return s.saveLocked()
 }
 
+// unmarshalSettingsWithDefaults 解析 JSON 字节流并补齐缺失字段的默认值；
+// 同时严格区分 JSON 中的 null/未定义（回退为默认 4 个城市）与显式空数组 "[]"（用户主动清空了所有城市）。
 func unmarshalSettingsWithDefaults(data []byte) (Settings, error) {
 	loaded := DefaultSettings()
-	loaded.WorldCities = nil // allow distinguishing JSON "null"/missing vs explicit "[]"
+	loaded.WorldCities = nil // 用于区分 JSON 中缺省/null 与显式空切片 "[]"
 	if err := json.Unmarshal(data, &loaded); err != nil {
 		return Settings{}, err
 	}
@@ -151,6 +163,7 @@ func unmarshalSettingsWithDefaults(data []byte) (Settings, error) {
 	return loaded, nil
 }
 
+// Load 从磁盘加载配置文件；若主文件缺失或因异常断电损坏，自动尝试从 .bak 备份文件自愈恢复。
 // Load loads settings from file if it exists (with automatic backup recovery).
 func (s *Store) Load() error {
 	s.mu.Lock()
@@ -158,7 +171,7 @@ func (s *Store) Load() error {
 
 	data, err := os.ReadFile(s.filePath)
 	if err != nil {
-		// Try backup file if primary does not exist or failed to read
+		// 主文件读取失败时尝试从 .bak 备份文件恢复
 		if bakData, bakErr := os.ReadFile(s.filePath + ".bak"); bakErr == nil && len(bakData) > 0 {
 			if loaded, uErr := unmarshalSettingsWithDefaults(bakData); uErr == nil {
 				s.settings = loaded
@@ -174,7 +187,7 @@ func (s *Store) Load() error {
 
 	loaded, err := unmarshalSettingsWithDefaults(data)
 	if err != nil {
-		// Primary file corrupted; attempt recovery from backup
+		// 主文件 JSON 损坏时自动从 .bak 备份恢复并写回主文件
 		if bakData, bakErr := os.ReadFile(s.filePath + ".bak"); bakErr == nil && len(bakData) > 0 {
 			if bakLoaded, uErr := unmarshalSettingsWithDefaults(bakData); uErr == nil {
 				s.settings = bakLoaded
@@ -189,6 +202,7 @@ func (s *Store) Load() error {
 	return nil
 }
 
+// Save 将当前内存中的配置持久化写入磁盘。
 // Save persists current settings to disk.
 func (s *Store) Save() error {
 	s.mu.Lock()
@@ -196,6 +210,7 @@ func (s *Store) Save() error {
 	return s.saveLocked()
 }
 
+// saveLocked 在覆写主配置文件前，先将上一份有效配置备份至 .bak 文件，确保任何时刻至少有一份完整有效的数据。
 func (s *Store) saveLocked() error {
 	dir := filepath.Dir(s.filePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {

@@ -19,71 +19,73 @@ import (
 	"worldclock/pkg/world"
 )
 
+// Tab 表示顶部导航栏激活的功能屏幕枚举。
 // Tab represents an active navigation screen.
 type Tab string
 
 const (
-	TabClock    Tab = "clock"
-	TabWorld    Tab = "world"
-	TabAlarms   Tab = "alarms"
-	TabTimers   Tab = "timers"
-	TabTracker  Tab = "tracker"
-	TabSleep    Tab = "sleep"
-	TabNews     Tab = "news"
-	TabSettings Tab = "settings"
-	TabPopout   Tab = "popout"
+	TabClock    Tab = "clock"    // 主时钟页
+	TabWorld    Tab = "world"    // 世界时钟页
+	TabAlarms   Tab = "alarms"   // 闹钟管理页
+	TabTimers   Tab = "timers"   // 倒计时与秒表页
+	TabTracker  Tab = "tracker"  // 生产力专注计时（番茄钟）页
+	TabSleep    Tab = "sleep"    // 睡眠与环境音页
+	TabNews     Tab = "news"     // 每日资讯页
+	TabSettings Tab = "settings" // 设置与偏好页
+	TabPopout   Tab = "popout"   // 桌面悬浮小窗模式
 )
 
+// AppState 聚合应用程序运行时的所有领域管理器、窗口句柄、跨线程唤醒队列以及界面临时交互状态。
 // AppState holds the full runtime application state.
 type AppState struct {
-	Store     *storage.Store
-	World     *world.Manager
-	Scheduler *alarm.Scheduler
-	TimerMgr  *timer.Manager
-	Stopwatch *timer.Stopwatch
-	Weather   *weather.Service
-	Tracker   *tracker.Tracker
-	Sleep     *sleep.Session
-	News      *rss.FeedStore
-	Wallpaper *wallpaper.Manager
+	Store     *storage.Store     // 配置持久化存储
+	World     *world.Manager     // 世界时钟管理器
+	Scheduler *alarm.Scheduler   // 闹钟调度器
+	TimerMgr  *timer.Manager     // 多倒计时管理器
+	Stopwatch *timer.Stopwatch   // 高精度秒表
+	Weather   *weather.Service   // 城市天气服务
+	Tracker   *tracker.Tracker   // 番茄专注计时器
+	Sleep     *sleep.Session     // 睡眠助眠会话
+	News      *rss.FeedStore     // 资讯流存储
+	Wallpaper *wallpaper.Manager // 壁纸与轮播引擎
 
-	Invalidator *app.Invalidator
-	Window      *app.Window
-	Application *app.Application
-	ForceQuit   bool
+	Invalidator *app.Invalidator // 跨线程触发窗口重绘与 OnWake 的通知器
+	Window      *app.Window      // 当前主窗口引用
+	Application *app.Application // 当前 Viva 应用实例引用
+	ForceQuit   bool             // 是否由系统托盘菜单发起强制退出
 
-	wakeMu                 sync.Mutex
-	pendingShowWindow      bool
-	pendingWallpaperFiles  []string
-	pendingWallpaperFolder string
+	wakeMu                 sync.Mutex // 保护跨线程唤醒队列的互斥锁
+	pendingShowWindow      bool       // 是否存在待处理的恢复显示主窗口请求
+	pendingWallpaperFiles  []string   // 异步文件选择框选中的待加载壁纸文件列表
+	pendingWallpaperFolder string     // 异步文件夹选择框选中的待加载壁纸目录
 
-	ActiveTab Tab
-	IsPopout  bool
+	ActiveTab Tab  // 当前激活的功能标签页
+	IsPopout  bool // 是否处于紧凑型悬浮小窗模式
 
-	// Auxiliary UI state
-	NewsCategory       string
-	SleepDuration      time.Duration
-	SleepSound         sleep.AmbientSound
-	SettingsTab        string // "font", "wallpaper", "lang", "clock", "about"
-	ScrollY            float32
-	CityModalScrollY   float32
-	ShowAddCityModal   bool
-	DuplicateCityAlert string
-	SelectedContinent  string
-	CitySearchQuery    string
-	CitySearchField    flex.Field
-	lastFieldText      string
-	ShowNewAlarmModal  bool
-	NewAlarmTitle      string
-	NewAlarmHour       int
-	NewAlarmMinute     int
-	NewAlarmSchedule   alarm.ScheduleType
-	NewAlarmWeekdays   [7]bool
+	// 界面辅助交互状态
+	NewsCategory       string             // 资讯页当前选中的分类过滤
+	SleepDuration      time.Duration      // 睡眠页选中的倒计时时长
+	SleepSound         sleep.AmbientSound // 睡眠页选中的环境音
+	SettingsTab        string             // 设置页当前选中的子分类 ("font", "wallpaper", "lang", "clock", "about")
+	ScrollY            float32            // 通用垂直滚动偏移量
+	CityModalScrollY   float32            // 选城弹窗滚动偏移量
+	ShowAddCityModal   bool               // 是否展开“添加世界时钟城市”面板
+	DuplicateCityAlert string             // 重复添加城市提醒弹窗的城市名称（非空时展示模态对话框）
+	SelectedContinent  string             // 选城面板当前选中的大洲过滤条件
+	CitySearchQuery    string             // 选城面板当前输入的搜索关键词
+	CitySearchField    flex.Field         // 选城搜索文本输入框组件状态
+	lastFieldText      string             // 上一帧搜索框文本快照，用于检测用户输入变化
+	ShowNewAlarmModal  bool               // 是否展开“新建闹钟”面板
+	NewAlarmTitle      string             // 新建闹钟的标题
+	NewAlarmHour       int                // 新建闹钟的小时 (0-23)
+	NewAlarmMinute     int                // 新建闹钟的分钟 (0-59)
+	NewAlarmSchedule   alarm.ScheduleType // 新建闹钟的重复规则
+	NewAlarmWeekdays   [7]bool            // 新建闹钟的自定义星期掩码
 
-	// Flex layout view (keeps layout buffers across frames)
+	// Flex 声明式布局视图容器（跨帧复用内部布局缓冲区以实现零额外分配）
 	View flex.View
 
-	// Cached clock instant for deterministic per-frame rendering
+	// 当前帧统一的本地时间与 UTC 时间戳快照
 	Now time.Time
 	UTC time.Time
 }

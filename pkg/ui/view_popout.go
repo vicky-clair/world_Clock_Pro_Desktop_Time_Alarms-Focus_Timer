@@ -11,6 +11,7 @@ import (
 	"github.com/vivaui/viva/ui"
 )
 
+// DrawPopoutClock 渲染紧凑型桌面悬浮小窗时钟视图（支持一键还原至完整多标签主窗口）。
 // DrawPopoutClock renders the compact popout clock widget.
 func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	cfg := state.Store.Get()

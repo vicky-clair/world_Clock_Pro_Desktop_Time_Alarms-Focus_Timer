@@ -9,6 +9,7 @@ import (
 	"github.com/vivaui/viva/ui"
 )
 
+// DrawTracker 渲染生产力专注计时器（番茄工作法）界面与累计统计数据卡片。
 // DrawTracker renders the productivity time tracker and Pomodoro break manager.
 func DrawTracker(f *flex.Frame, state *AppState, theme ui.Theme) {
 	now := state.Now

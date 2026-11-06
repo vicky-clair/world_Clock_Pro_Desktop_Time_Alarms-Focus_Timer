@@ -6,25 +6,28 @@ import (
 	"time"
 )
 
+// LapRecord 表示秒表记录的单圈分段成绩。
 // LapRecord represents a recorded lap.
 type LapRecord struct {
-	Index        int           `json:"index"`
-	LapTime      time.Duration `json:"lapTime"`
-	TotalTime    time.Duration `json:"totalTime"`
-	LapDisplay   string        `json:"lapDisplay"`
-	TotalDisplay string        `json:"totalDisplay"`
+	Index        int           `json:"index"`        // 圈数序号（从 1 开始）
+	LapTime      time.Duration `json:"lapTime"`      // 本圈用时
+	TotalTime    time.Duration `json:"totalTime"`    // 累计总用时
+	LapDisplay   string        `json:"lapDisplay"`   // 本圈用时格式化字符串
+	TotalDisplay string        `json:"totalDisplay"` // 累计总用时格式化字符串
 }
 
+// Stopwatch 提供高精度单调秒表计时与计圈功能。
 // Stopwatch provides high precision monotonic stopwatch timing.
 type Stopwatch struct {
 	mu           sync.RWMutex
-	state        State
-	startTime    time.Time
-	accumulated  time.Duration
-	lastLapTotal time.Duration
-	laps         []LapRecord
+	state        State         // 当前秒表状态
+	startTime    time.Time     // 本段启动时刻
+	accumulated  time.Duration // 之前暂停段累计的时长
+	lastLapTotal time.Duration // 上一圈记录时的累计总时长
+	laps         []LapRecord   // 历史计圈列表
 }
 
+// NewStopwatch 创建一个处于空闲状态的秒表实例。
 // NewStopwatch creates a new stopwatch.
 func NewStopwatch() *Stopwatch {
 	return &Stopwatch{
@@ -32,6 +35,7 @@ func NewStopwatch() *Stopwatch {
 	}
 }
 
+// State 返回秒表当前状态。
 // State returns current stopwatch state.
 func (s *Stopwatch) State() State {
 	s.mu.RLock()
@@ -39,6 +43,7 @@ func (s *Stopwatch) State() State {
 	return s.state
 }
 
+// Start 启动秒表正向计时。
 // Start begins stopwatch counting.
 func (s *Stopwatch) Start(now time.Time) {
 	s.mu.Lock()
@@ -50,6 +55,7 @@ func (s *Stopwatch) Start(now time.Time) {
 	s.state = StateRunning
 }
 
+// Pause 暂停秒表并累加已走过的时间。
 // Pause pauses the stopwatch.
 func (s *Stopwatch) Pause(now time.Time) {
 	s.mu.Lock()
@@ -61,6 +67,7 @@ func (s *Stopwatch) Pause(now time.Time) {
 	s.state = StatePaused
 }
 
+// Resume 恢复已暂停的秒表。
 // Resume resumes a paused stopwatch.
 func (s *Stopwatch) Resume(now time.Time) {
 	s.mu.Lock()
@@ -72,6 +79,7 @@ func (s *Stopwatch) Resume(now time.Time) {
 	s.state = StateRunning
 }
 
+// Reset 清空秒表累计时间与所有计圈记录，恢复至归零状态。
 // Reset clears the stopwatch back to zero.
 func (s *Stopwatch) Reset() {
 	s.mu.Lock()
@@ -83,6 +91,7 @@ func (s *Stopwatch) Reset() {
 	s.startTime = time.Time{}
 }
 
+// Elapsed 返回截至给定时刻 now 的秒表总计经过时长。
 // Elapsed returns current elapsed duration.
 func (s *Stopwatch) Elapsed(now time.Time) time.Duration {
 	s.mu.RLock()
@@ -93,6 +102,7 @@ func (s *Stopwatch) Elapsed(now time.Time) time.Duration {
 	return s.accumulated
 }
 
+// Lap 在当前累计时间点记录一圈分段成绩（Lap Split）。
 // Lap records a lap split at current elapsed time.
 func (s *Stopwatch) Lap(now time.Time) (LapRecord, bool) {
 	s.mu.Lock()
@@ -118,6 +128,7 @@ func (s *Stopwatch) Lap(now time.Time) (LapRecord, bool) {
 	return rec, true
 }
 
+// Laps 返回已记录的所有计圈历史切片副本。
 // Laps returns a copy of recorded laps.
 func (s *Stopwatch) Laps() []LapRecord {
 	s.mu.RLock()
@@ -127,6 +138,7 @@ func (s *Stopwatch) Laps() []LapRecord {
 	return res
 }
 
+// FormatPrecision 将时间段格式化为带百分之一秒（1/100s）精度的 MM:SS.cc 或 HH:MM:SS.cc 字符串。
 // FormatPrecision formats a duration into MM:SS.cc (centiseconds, 1/100s).
 func FormatPrecision(d time.Duration) string {
 	if d < 0 {

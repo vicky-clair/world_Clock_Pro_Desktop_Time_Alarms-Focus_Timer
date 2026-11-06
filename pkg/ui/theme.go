@@ -6,6 +6,7 @@ import (
 	"github.com/vivaui/viva/ui"
 )
 
+// BuildTheme 根据用户选择的主题类型、壁纸开启状态、卡片毛玻璃透明度与全局字体配色构建 Viva ui.Theme。
 // BuildTheme constructs a Viva ui.Theme based on the theme setting.
 func BuildTheme(themeType storage.ThemeType, wallpaperEnabled bool, cardOpacity float32, uiFontColor string) ui.Theme {
 	var t ui.Theme

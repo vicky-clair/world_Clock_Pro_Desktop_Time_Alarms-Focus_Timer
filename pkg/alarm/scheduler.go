@@ -6,23 +6,26 @@ import (
 	"time"
 )
 
+// RingingAlarm 表示当前正在响铃提醒的闹钟状态。
 // RingingAlarm represents an actively triggering alarm alert.
 type RingingAlarm struct {
-	AlarmID     string
-	Title       string
-	TriggerTime time.Time
-	SnoozeCount int
+	AlarmID     string    // 触发的闹钟 ID
+	Title       string    // 闹钟标题
+	TriggerTime time.Time // 触发时间戳
+	SnoozeCount int       // 已贪睡次数
 }
 
+// Scheduler 负责闹钟列表的并发安全存储、周期匹配、幂等触发检查与贪睡管理。
 // Scheduler handles alarm storage, recurrence scheduling, and firing.
 type Scheduler struct {
 	mu          sync.RWMutex
-	alarms      []Alarm
-	lastFired   map[string]int64 // alarmID -> unix minute to prevent re-firing in same minute
-	ringing     *RingingAlarm
-	snoozeUntil time.Time
+	alarms      []Alarm          // 闹钟列表
+	lastFired   map[string]int64 // 记录每个闹钟上次触发的 Unix 分钟数，防止同一分钟内重复触发
+	ringing     *RingingAlarm    // 当前正在响铃的闹钟（无则为 nil）
+	snoozeUntil time.Time        // 贪睡静音截止时间
 }
 
+// NewScheduler 创建闹钟调度器；若传入的 initial 为 nil，则初始化两条默认示例闹钟。
 // NewScheduler creates a new alarm scheduler with initial alarms or sensible defaults when initial is nil.
 func NewScheduler(initial []Alarm) *Scheduler {
 	s := &Scheduler{
@@ -31,11 +34,11 @@ func NewScheduler(initial []Alarm) *Scheduler {
 	}
 	if s.alarms == nil {
 		var weekdays [7]bool
-		weekdays[1] = true // Mon
-		weekdays[2] = true // Tue
-		weekdays[3] = true // Wed
-		weekdays[4] = true // Thu
-		weekdays[5] = true // Fri
+		weekdays[1] = true // 周一 Mon
+		weekdays[2] = true // 周二 Tue
+		weekdays[3] = true // 周三 Wed
+		weekdays[4] = true // 周四 Thu
+		weekdays[5] = true // 周五 Fri
 
 		s.alarms = []Alarm{
 			{
@@ -64,6 +67,7 @@ func NewScheduler(initial []Alarm) *Scheduler {
 	return s
 }
 
+// Alarms 返回所有闹钟的深拷贝切片。
 // Alarms returns a copy of all alarms.
 func (s *Scheduler) Alarms() []Alarm {
 	s.mu.RLock()
@@ -73,6 +77,7 @@ func (s *Scheduler) Alarms() []Alarm {
 	return res
 }
 
+// AddAlarm 新增一条闹钟并返回其生成的唯一 ID。
 // AddAlarm adds an alarm.
 func (s *Scheduler) AddAlarm(a Alarm) string {
 	s.mu.Lock()
@@ -87,6 +92,7 @@ func (s *Scheduler) AddAlarm(a Alarm) string {
 	return a.ID
 }
 
+// UpdateAlarm 根据 ID 更新已有闹钟配置。
 // UpdateAlarm updates an existing alarm.
 func (s *Scheduler) UpdateAlarm(a Alarm) bool {
 	s.mu.Lock()
@@ -100,6 +106,7 @@ func (s *Scheduler) UpdateAlarm(a Alarm) bool {
 	return false
 }
 
+// DeleteAlarm 根据 ID 删除指定闹钟。
 // DeleteAlarm removes an alarm by ID.
 func (s *Scheduler) DeleteAlarm(id string) bool {
 	s.mu.Lock()
@@ -119,6 +126,7 @@ func (s *Scheduler) DeleteAlarm(id string) bool {
 	return true
 }
 
+// ToggleAlarm 切换指定闹钟的启用/停用状态，并返回切换后的新状态。
 // ToggleAlarm toggles an alarm's enabled state.
 func (s *Scheduler) ToggleAlarm(id string) bool {
 	s.mu.Lock()
@@ -132,6 +140,7 @@ func (s *Scheduler) ToggleAlarm(id string) bool {
 	return false
 }
 
+// Ringing 返回当前正在响铃的闹钟对象（若处于正常空闲状态则返回 nil）。
 // Ringing returns the currently ringing alarm, if any.
 func (s *Scheduler) Ringing() *RingingAlarm {
 	s.mu.RLock()
@@ -139,12 +148,13 @@ func (s *Scheduler) Ringing() *RingingAlarm {
 	return s.ringing
 }
 
+// Dismiss 解除当前正在响铃的闹钟；若该闹钟为一次性闹钟（ScheduleOneTime），则自动将其设为停用。
 // Dismiss dismisses the currently ringing alarm.
 func (s *Scheduler) Dismiss() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.ringing != nil {
-		// If OneTime alarm, disable it after dismiss
+		// 一次性闹钟在解除后自动关闭
 		for i := range s.alarms {
 			if s.alarms[i].ID == s.ringing.AlarmID && s.alarms[i].ScheduleType == ScheduleOneTime {
 				s.alarms[i].IsEnabled = false
@@ -155,7 +165,7 @@ func (s *Scheduler) Dismiss() {
 	s.snoozeUntil = time.Time{}
 }
 
-// Snooze delays the currently ringing alarm by snoozeMinutes.
+// SnoozeAt 将当前响铃闹钟延后 minutes 分钟（基于传入的参考时间 now）。
 // SnoozeAt delays the currently ringing alarm until now + minutes.
 func (s *Scheduler) SnoozeAt(now time.Time, minutes int) {
 	s.mu.Lock()
@@ -170,24 +180,26 @@ func (s *Scheduler) SnoozeAt(now time.Time, minutes int) {
 	s.ringing.SnoozeCount++
 }
 
+// Snooze 将当前响铃闹钟从当前系统时间起延后 minutes 分钟。
 // Snooze delays the currently ringing alarm by snoozeMinutes from now.
 func (s *Scheduler) Snooze(minutes int) {
 	s.SnoozeAt(time.Now(), minutes)
 }
 
+// CheckTriggers 检查给定时间点 now 是否有闹钟应当触发。
+// 若处于贪睡静音期内则返回 nil；贪睡到期或新闹钟命中时返回对应的 *RingingAlarm。
 // CheckTriggers checks if any alarm should fire at the given time.
-// Returns the ringing alarm if newly triggered or still active.
 func (s *Scheduler) CheckTriggers(now time.Time) *RingingAlarm {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// If currently snoozed, check if snooze expired
+	// 若当前已有响铃中的闹钟，检查其是否处于贪睡静音期
 	if s.ringing != nil {
 		if !s.snoozeUntil.IsZero() {
 			if now.Before(s.snoozeUntil) {
-				return nil // still in snooze quiet period
+				return nil // 仍在贪睡静音期内
 			}
-			// Snooze expired, re-trigger
+			// 贪睡期结束，重新恢复响铃提醒
 			s.snoozeUntil = time.Time{}
 			return s.ringing
 		}
@@ -207,7 +219,7 @@ func (s *Scheduler) CheckTriggers(now time.Time) *RingingAlarm {
 			continue
 		}
 
-		// Check repeat schedule match
+		// 检查重复周期是否匹配当天
 		matches := false
 		switch alm.ScheduleType {
 		case ScheduleOneTime, ScheduleDaily:
@@ -220,7 +232,7 @@ func (s *Scheduler) CheckTriggers(now time.Time) *RingingAlarm {
 			continue
 		}
 
-		// Idempotency: don't fire twice in the same minute
+		// 幂等防重：同一分钟内已触发过的闹钟不再重复触发
 		if s.lastFired[alm.ID] == currentMinute {
 			continue
 		}
