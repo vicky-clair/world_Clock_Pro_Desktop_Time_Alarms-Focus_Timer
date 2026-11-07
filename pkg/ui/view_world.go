@@ -55,8 +55,16 @@ func DrawWorldClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 							})
 
 							// Right: Date & Badges
-							f.Column().Width(200).Gap(4).Children(func() {
-								f.Text(snap.DateDisplay).FontSize(13).Color(theme.MutedForeground)
+							f.Column().Width(230).Gap(4).Children(func() {
+								f.Row().Gap(8).Items(flex.Center).Children(func() {
+									f.Text(snap.DateDisplay).FontSize(13).Color(theme.MutedForeground)
+									if cfg.ShowHolidays {
+										cityHolidays := clock.GetHolidays(snap.LocalTime, snap.City.CountryCode)
+										if len(cityHolidays) > 0 {
+											f.Text(clock.FormatShortHoliday(cityHolidays, string(state.Lang()))).FontSize(12).Bold().Color(theme.Primary)
+										}
+									}
+								})
 								wSnap := state.Weather.GetWeather(cityID)
 								tempStr := weather.FormatTemperature(wSnap.TempCelsius, cfg.TempFahrenheit)
 								dayDiffStr := snap.DayDiff

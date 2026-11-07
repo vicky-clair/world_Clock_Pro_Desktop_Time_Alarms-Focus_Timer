@@ -65,6 +65,8 @@ the-world-clock-on-the-desktop/
 │   │   ├── location_windows.go   # Windows Kernel32 native GeoName, LocaleName & TimeZone detector
 │   │   ├── lunar.go              # Offline Chinese Lunar Calendar (1900-2050), GanZhi, Zodiac & Dual Solar/Lunar Calendar
 │   │   ├── lunar_test.go
+│   │   ├── holiday.go            # World national holidays, 24 Solar Terms, Lunar festivals & internet/shopping events (1024, Black Friday, Double 11)
+│   │   ├── holiday_test.go
 │   │   └── clock_test.go
 │   ├── i18n/
 │   │   ├── i18n.go               # Full EN / ZH / JA translation dictionaries & localized date formatter

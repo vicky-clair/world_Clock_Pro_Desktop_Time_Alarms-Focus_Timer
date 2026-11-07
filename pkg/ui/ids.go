@@ -156,6 +156,7 @@ var (
 	IDOptShowSeconds        = Tree.ID(featSetting, "opt-show-seconds")
 	IDOptFormat24H          = Tree.ID(featSetting, "opt-format-24h")
 	IDOptFullDate           = Tree.ID(featSetting, "opt-full-date")
+	IDOptShowHolidays       = Tree.ID(featSetting, "opt-show-holidays")
 	IDOptStyleDigital       = Tree.ID(featSetting, "opt-style-digital")
 	IDOptStyleAnalog        = Tree.ID(featSetting, "opt-style-analog")
 	IDOptPopoutPosTop       = Tree.ID(featSetting, "opt-popout-pos-top")

@@ -65,6 +65,8 @@ the-world-clock-on-the-desktop/
 │   │   ├── location_windows.go   # Windows Kernel32 ネイティブ地域・タイムゾーン検出
 │   │   ├── lunar.go              # 高精度旧暦・太陰暦アルゴリズム (1900-2050)、干支・十二支・太陽暦/旧暦両対応
 │   │   ├── lunar_test.go
+│   │   ├── holiday.go            # 世界各国の祝日、二十四節気、旧暦行事、ネット記念日（1024、ブラックフライデー、独身の日等）
+│   │   ├── holiday_test.go
 │   │   └── clock_test.go
 │   ├── i18n/
 │   │   ├── i18n.go               # 日 (ja) / 中 (zh) / 英 (en) 翻訳辞書と日付ローカライザ

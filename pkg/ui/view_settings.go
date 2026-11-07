@@ -870,6 +870,27 @@ func drawSettingsClock(f *flex.Frame, state *AppState, theme ui.Theme, cfg stora
 		f.Divider()
 
 		f.Row().Items(flex.Center).Children(func() {
+			f.Column().Gap(2).Children(func() {
+				f.Text(state.T("settings.show_holidays"))
+				f.Text(state.T("settings.holidays_desc")).FontSize(12).Muted()
+			})
+			f.Spacer()
+			btnHolidays := f.Button(IDOptShowHolidays, state.T("settings.show_holidays_off"))
+			if cfg.ShowHolidays {
+				btnHolidays.Label(state.T("settings.show_holidays_on")).Outline()
+			} else {
+				btnHolidays.Secondary()
+			}
+			if btnHolidays.Clicked() {
+				state.UpdateSettings(func(s *storage.Settings) {
+					s.ShowHolidays = !s.ShowHolidays
+				})
+			}
+		})
+
+		f.Divider()
+
+		f.Row().Items(flex.Center).Children(func() {
 			f.Text(state.T("settings.clockface"))
 			f.Spacer()
 			f.Row().Gap(8).Children(func() {

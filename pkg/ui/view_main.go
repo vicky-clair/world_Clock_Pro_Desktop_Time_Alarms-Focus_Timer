@@ -24,6 +24,13 @@ func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	// 获取公历（阳历）与农历（阴历）本地化双历文本
 	solarStr, lunarStr := clock.FormatDualCalendar(now, langStr)
 
+	// 获取今日法定节日、传统农历节日、二十四节气与网络特色节日（如1024程序员节、黑五打折、双11等）
+	var holidayBadge string
+	if cfg.ShowHolidays {
+		holidays := clock.GetHolidays(now, sysLoc.CountryCode)
+		holidayBadge = clock.FormatHolidayBadge(holidays, langStr)
+	}
+
 	primaryCity := sysLoc.WeatherID
 	if primaryCity == "" {
 		primaryCity = "beijing"
@@ -59,6 +66,11 @@ func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 			})
 			f.Text(solarStr).FontSize(26).Bold().Color(theme.Foreground)
 			f.Text(lunarStr).FontSize(22).Bold().Color(theme.MutedForeground)
+			if holidayBadge != "" {
+				f.Row().PadX(14).PadY(4).Background(theme.Muted).Radius(10).Items(flex.Center).Children(func() {
+					f.Text(holidayBadge).FontSize(18).Bold().Color(theme.Primary)
+				})
+			}
 			f.Row().Items(flex.Center).Gap(10).Children(func() {
 				f.Text(locationBadge).FontSize(22).Bold().Color(theme.Foreground)
 				f.Text("•").FontSize(20).Muted()
@@ -87,6 +99,13 @@ func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 				// 阳历与农历双历展示（清晰放大）
 				f.Text(solarStr).FontSize(28).Bold().Color(theme.Foreground)
 				f.Text(lunarStr).FontSize(24).Bold().Color(theme.MutedForeground)
+
+				// 当日传统节日、二十四节气或网络特色节日（如1024程序员节、黑五打折、双11等）
+				if holidayBadge != "" {
+					f.Row().PadX(16).PadY(6).Background(theme.Muted).Radius(12).Items(flex.Center).Children(func() {
+						f.Text(holidayBadge).FontSize(20).Bold().Color(theme.Primary)
+					})
+				}
 
 				// 底部实时天气快照（独立呈现，无国家/城市重复文字）
 				f.Row().Items(flex.Center).PadX(16).PadY(6).Background(theme.Muted).Radius(12).Gap(8).Children(func() {

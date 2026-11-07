@@ -1491,3 +1491,37 @@ func TestPopoutClockPositionButtons(t *testing.T) {
 		t.Fatalf("expected PopoutPosition to be 'top' via settings, got '%s'", state.Store.Get().PopoutPosition)
 	}
 }
+
+func TestHolidayDisplayAndSettingsToggle(t *testing.T) {
+	state, driver := setupTestApp(t)
+	defer driver.Close()
+
+	// Switch language to zh
+	clickID(t, driver, TabSettingsID)
+	clickID(t, driver, IDSettingsTabLanguage)
+	clickID(t, driver, IDLangZH)
+	clickID(t, driver, TabClockID)
+
+	// Since current date is 2026-11-07, it matches solar term 立冬
+	snap := driver.Snapshot()
+	if !hasLabel(snap, "立冬") {
+		t.Fatal("expected solar term '立冬' to be displayed on Nov 7")
+	}
+
+	// Navigate to Settings -> Clock and toggle ShowHolidays OFF
+	clickID(t, driver, TabSettingsID)
+	clickID(t, driver, IDSettingsTabClock)
+	if !clickID(t, driver, IDOptShowHolidays) {
+		t.Fatal("failed to click IDOptShowHolidays toggle button")
+	}
+	if state.Store.Get().ShowHolidays {
+		t.Fatal("expected ShowHolidays to be false")
+	}
+
+	// Verify '立冬' is now hidden
+	clickID(t, driver, TabClockID)
+	snapHidden := driver.Snapshot()
+	if hasLabel(snapHidden, "立冬") {
+		t.Fatal("expected '立冬' holiday badge to be hidden when ShowHolidays is false")
+	}
+}

@@ -65,6 +65,8 @@ the-world-clock-on-the-desktop/
 │   │   ├── location_windows.go   # Windows Kernel32 区域与系统时区原生检测
 │   │   ├── lunar.go              # 高精度离线农历算法 (1900-2050)、天干地支、生肖与公历/农历双历格式化
 │   │   ├── lunar_test.go
+│   │   ├── holiday.go            # 世界各国法定节日、二十四节气、农历民俗与网络特色节日（1024程序员节、黑五打折、双11等）
+│   │   ├── holiday_test.go
 │   │   └── clock_test.go
 │   ├── i18n/
 │   │   ├── i18n.go               # 中 (zh) / 英 (en) / 日 (ja) 全量翻译键值表与本地化日期格式

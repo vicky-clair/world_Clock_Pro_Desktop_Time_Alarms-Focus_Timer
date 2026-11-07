@@ -41,6 +41,7 @@ type Settings struct {
 	TimeFormat24H  bool             `json:"timeFormat24H"`  // 是否使用 24 小时制
 	ShowSeconds    bool             `json:"showSeconds"`    // 是否显示秒数
 	ShowFullDate   bool             `json:"showFullDate"`   // 是否显示完整日期格式
+	ShowHolidays   bool             `json:"showHolidays"`   // 是否在主时钟、悬浮时钟与世界时钟中显示今日公历、农历节气与网络节日
 	ClockStyle     string           `json:"clockStyle"`     // 时钟样式："digital"（数字）或 "analog"（模拟表盘）
 	Theme          ThemeType        `json:"theme"`          // 当前视觉主题
 	ActiveProfile  string           `json:"activeProfile"`  // 当前激活的配置文件名称（"Default" 或 "Work"）
@@ -67,6 +68,7 @@ func DefaultSettings() Settings {
 		TimeFormat24H:  true,
 		ShowSeconds:    true,
 		ShowFullDate:   true,
+		ShowHolidays:   true,
 		ClockStyle:     "digital",
 		Theme:          ThemeOlive,
 		ActiveProfile:  "Default",

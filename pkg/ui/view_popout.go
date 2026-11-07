@@ -22,6 +22,12 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	timeStr, period := clock.FormatTime(now, cfg.TimeFormat24H, cfg.ShowSeconds)
 	solarStr, lunarStr := clock.FormatDualCalendar(now, langStr)
 
+	var holidayBadge string
+	if cfg.ShowHolidays {
+		holidays := clock.GetHolidays(now, sysLoc.CountryCode)
+		holidayBadge = clock.FormatHolidayBadge(holidays, langStr)
+	}
+
 	pos := cfg.PopoutPosition
 	if pos == "" {
 		pos = storage.PopoutPosCenter
@@ -125,6 +131,9 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 			})
 			f.Text(solarStr).FontSize(22).Bold().Color(theme.Foreground)
 			f.Text(lunarStr).FontSize(18).Color(theme.MutedForeground)
+			if holidayBadge != "" {
+				f.Text(holidayBadge).FontSize(16).Bold().Color(theme.Primary)
+			}
 			f.Row().Items(flex.Center).Gap(8).Children(func() {
 				f.Text(locationBadge).FontSize(18).Bold().Color(theme.Primary)
 				f.Text("•").FontSize(16).Muted()
@@ -149,6 +158,13 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 				// 阳历与农历双历
 				f.Text(solarStr).FontSize(24).Bold().Color(theme.Foreground)
 				f.Text(lunarStr).FontSize(20).Color(theme.MutedForeground)
+
+				// 今日节日与节气
+				if holidayBadge != "" {
+					f.Row().PadX(14).PadY(5).Background(theme.Muted).Radius(10).Children(func() {
+						f.Text(holidayBadge).FontSize(17).Bold().Color(theme.Primary)
+					})
+				}
 
 				// 天气快照
 				f.Row().PadX(14).PadY(5).Background(theme.Muted).Radius(10).Children(func() {
