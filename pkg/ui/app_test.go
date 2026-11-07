@@ -1525,3 +1525,20 @@ func TestHolidayDisplayAndSettingsToggle(t *testing.T) {
 		t.Fatal("expected '立冬' holiday badge to be hidden when ShowHolidays is false")
 	}
 }
+
+func TestHolidayDisplayWhenNoHoliday(t *testing.T) {
+	badgeZH := clock.FormatHolidayBadge(nil, "zh")
+	if !strings.Contains(badgeZH, "今日节日：无") {
+		t.Fatalf("expected '今日节日：无' when no holidays, got '%s'", badgeZH)
+	}
+
+	badgeEN := clock.FormatHolidayBadge(nil, "en")
+	if !strings.Contains(badgeEN, "Today's Holiday: None") {
+		t.Fatalf("expected 'Today's Holiday: None' when no holidays, got '%s'", badgeEN)
+	}
+
+	badgeJA := clock.FormatHolidayBadge(nil, "ja")
+	if !strings.Contains(badgeJA, "なし") {
+		t.Fatalf("expected 'なし' when no holidays, got '%s'", badgeJA)
+	}
+}

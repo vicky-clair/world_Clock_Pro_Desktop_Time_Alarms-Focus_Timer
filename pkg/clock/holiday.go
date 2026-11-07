@@ -688,10 +688,17 @@ func GetHolidays(t time.Time, countryCode string) []Holiday {
 	return list
 }
 
-// FormatHolidayBadge 返回用于主时钟与悬浮时钟展示的今日节日完整徽章文本。若当日无节日则返回空字符串。
+// FormatHolidayBadge 返回用于主时钟与悬浮时钟展示的今日节日完整徽章文本。若当日无节日则明确标注“无”。
 func FormatHolidayBadge(holidays []Holiday, lang string) string {
 	if len(holidays) == 0 {
-		return ""
+		switch lang {
+		case "ja":
+			return "🎉 今日の祝日・記念日：なし"
+		case "en":
+			return "🎉 Today's Holiday: None"
+		default:
+			return "🎉 今日节日：无"
+		}
 	}
 
 	var parts []string

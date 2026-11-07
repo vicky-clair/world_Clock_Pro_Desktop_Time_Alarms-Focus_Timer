@@ -97,4 +97,20 @@ func TestGetHolidays(t *testing.T) {
 	if !strings.Contains(short, "立冬") {
 		t.Fatalf("unexpected short holiday string: %s", short)
 	}
+
+	// 7. Test FormatHolidayBadge when there are no holidays (should display "无")
+	emptyZH := FormatHolidayBadge(nil, "zh")
+	if emptyZH != "🎉 今日节日：无" {
+		t.Fatalf("expected '🎉 今日节日：无', got '%s'", emptyZH)
+	}
+
+	emptyEN := FormatHolidayBadge(nil, "en")
+	if emptyEN != "🎉 Today's Holiday: None" {
+		t.Fatalf("expected '🎉 Today's Holiday: None', got '%s'", emptyEN)
+	}
+
+	emptyJA := FormatHolidayBadge(nil, "ja")
+	if emptyJA != "🎉 今日の祝日・記念日：なし" {
+		t.Fatalf("expected '🎉 今日の祝日・記念日：なし', got '%s'", emptyJA)
+	}
 }
