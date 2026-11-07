@@ -159,6 +159,7 @@ func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	})
 }
 
+// drawAnalogFace 使用 Viva 原生 Canvas Path 绘制高精度矢量模拟时钟表盘（包含外圈圆盘、12 小时刻度、平滑时针、分针、秒针与中心圆盖）。
 func drawAnalogFace(f *flex.Frame, now time.Time, theme ui.Theme, faceSize float32) {
 	if faceSize <= 0 {
 		faceSize = 280

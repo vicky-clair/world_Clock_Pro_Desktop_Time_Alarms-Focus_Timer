@@ -41,6 +41,7 @@ func (l LunarDate) FormatJA() string {
 	return fmt.Sprintf("旧暦：%s(%s) %s%d月%d日", l.GanZhiYear, l.ZodiacJA(), leapStr, l.Month, l.Day)
 }
 
+// ZodiacEN 返回当前农历生肖动物的英文名称（如 "Horse", "Dragon"）。
 func (l LunarDate) ZodiacEN() string {
 	idx := (l.Year - 4) % 12
 	if idx < 0 {
@@ -50,6 +51,7 @@ func (l LunarDate) ZodiacEN() string {
 	return enAnimals[idx]
 }
 
+// ZodiacJA 返回当前农历生肖动物的日文名称（如 "午・うま"）。
 func (l LunarDate) ZodiacJA() string {
 	idx := (l.Year - 4) % 12
 	if idx < 0 {

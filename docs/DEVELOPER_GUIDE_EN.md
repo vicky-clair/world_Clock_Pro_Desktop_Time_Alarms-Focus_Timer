@@ -18,6 +18,10 @@
    - [4.4 Zero-Overhead Wallpaper Carousel Engine (`pkg/wallpaper`)](#44-zero-overhead-wallpaper-carousel-engine)
    - [4.5 Crash-Safe Persistence & `.bak` Auto-Recovery (`pkg/storage`)](#45-crash-safe-persistence--bak-auto-recovery)
    - [4.6 Trilingual Localization Engine (`pkg/i18n`)](#46-trilingual-localization-engine)
+   - [4.7 Dual Lunar Calendar & Zodiac Engine (`pkg/clock/lunar.go`)](#47-dual-lunar-calendar--zodiac-engine)
+   - [4.8 World Holidays, 24 Solar Terms & Tech/Shopping Festivals (`pkg/clock/holiday.go`)](#48-world-holidays-24-solar-terms--techshopping-festivals)
+   - [4.9 Popout Clock & 3-Way Vertical Alignment (`pkg/ui/view_popout.go`)](#49-popout-clock--3-way-vertical-alignment)
+   - [4.10 Custom Timers CRUD & Persistence Safety (`pkg/timer` & `pkg/ui/view_timer.go`)](#410-custom-timers-crud--persistence-safety)
 5. [Viva UI Development Conventions](#5-viva-ui-development-conventions)
 6. [Headless Testing & Verification (`app.Driver`)](#6-headless-testing--verification-appdriver)
 7. [Windows Build, PE Resource Embedding & Authenticode Signing](#7-windows-build-pe-resource-embedding--authenticode-signing)
@@ -238,6 +242,39 @@ In [`pkg/storage/settings.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/p
 - `LangEN` (English): Uses **`ON` / `OFF`** for toggle states.
 - `LangZH` (Simplified Chinese): Uses natural Chinese **`是` / `否`** for toggle states.
 - `LangJA` (Japanese): Uses natural Japanese **`はい` / `いいえ`** for toggle states.
+
+### 4.7 Dual Lunar Calendar & Zodiac Engine
+
+In [`pkg/clock/lunar.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/clock/lunar.go), an offline astronomical conversion table covers 151 years (1900 to 2050):
+1. **Compact Hex Bitmask (`lunarInfo`)**: Encodes leap months, solar/lunar month sizes (29 or 30 days), and leap days into 24-bit compact hex words with zero external network or CGO dependencies.
+2. **Heavenly Stems, Earthly Branches & Zodiac**: Accurately computes the sexagenary cycle and animal zodiac signs (e.g., Year 2026 -> `丙午年 (马年)` / `Lunar Year of the Horse` / `旧暦 丙午年(馬年)`).
+3. **Dual Calendar Formatter**: `FormatDualCalendar(now, lang)` emits localized Gregorian and Lunar date strings (`📅 Solar: ...` and `🌙 Lunar ...`) side by side on both the main clock and popout widgets.
+
+### 4.8 World Holidays, 24 Solar Terms & Tech/Shopping Festivals
+
+In [`pkg/clock/holiday.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/clock/holiday.go):
+1. **Centennial 24 Solar Terms Algorithm**: Evaluates exact astronomical solar terms (Lidong, Winter Solstice, Spring Equinox, etc.) across 2000–2099 via the `computeSolarTermDay` empirical formula.
+2. **Dynamic & Relative Observances**:
+   - Thanksgiving (4th Thursday in November), Black Friday (`Thanksgiving + 1`), Cyber Monday (`Thanksgiving + 4`);
+   - International Programmers' Day (Day 256 of the year);
+   - Mother's Day (2nd Sunday in May), Father's Day (3rd Sunday in June).
+3. **Tech & E-Commerce Festivals**: 1024 Programmers' Day (Oct 24), Double 11 (Nov 11), Double 12 (Dec 12), 618 Shopping Festival, 520 Love Day, Pi Day (Mar 14), Star Wars Day (May 4), World Emoji Day (Jul 17).
+4. **National Holidays & "None" Fallback**: Complete national holiday coverage for CN, US, JP, GB, and FR. When no holiday falls on the current date, cleanly displays "🎉 Today's Holiday: None" (ZH: "🎉 今日节日：无", JA: "🎉 今日の祝日・記念日：なし").
+5. **Per-City World Clock Integration**: Every city in the World Clock view inspects its local date and country code to present active holidays in that specific timezone.
+
+### 4.9 Popout Clock & 3-Way Vertical Alignment
+
+In [`pkg/ui/view_popout.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/view_popout.go):
+1. **High-Contrast 88px Typography**: Enlarged digital readout alongside the dual calendar and holiday indicators.
+2. **Top / Center / Bottom Alignment**: Integrated header buttons **[⬆ Top]**, **[⏺ Center]**, and **[⬇ Bottom]** dynamically distribute stretchable `f.Spacer()` elements to pin the clock to the top, center, or bottom of the window.
+3. **Configuration Persistence**: The choice is recorded in `Settings.PopoutPosition` (`top`, `center`, `bottom`) and mirrored in the Clock Settings tab.
+
+### 4.10 Custom Timers CRUD & Persistence Safety
+
+In [`pkg/timer/timer.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/timer/timer.go) and [`pkg/ui/view_timer.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/view_timer.go):
+1. **Custom Timer Creation & Editing**: Users can create custom timers with custom names and exact `HH:MM:SS` durations, supported by 6 built-in presets (Tea, Noodles, Nap, Pomodoro, Reading, Workout).
+2. **Inline Edit & Instant Deletion**: Each timer card provides `[✎ Edit]` and `[✕]` buttons; updates reset the timer duration, and deletions immediately synchronize to `settings.json`.
+3. **Zero-Resurrection Guarantee**: `NewManagerWithTimers(initial []Timer)` strictly distinguishes `nil` (fresh install) from non-`nil` slices (persisted state, even if empty), preventing deleted timers from ever reappearing on app restart.
 
 ---
 
