@@ -61,8 +61,10 @@ the-world-clock-on-the-desktop/
 │   │   └── audio_test.go
 │   ├── clock/
 │   │   ├── clock.go              # 12H/24Hフォーマット、秒/分境界遅延計算、アナログ針の座標計算
-│   │   ├── location.go           # OSの国・地域、代表都市および現地タイムゾーンの自動検出
+│   │   ├── location.go           # OSの国・地域、代表都市および現地タイムゾーンの自动検出
 │   │   ├── location_windows.go   # Windows Kernel32 ネイティブ地域・タイムゾーン検出
+│   │   ├── lunar.go              # 高精度旧暦・太陰暦アルゴリズム (1900-2050)、干支・十二支・太陽暦/旧暦両対応
+│   │   ├── lunar_test.go
 │   │   └── clock_test.go
 │   ├── i18n/
 │   │   ├── i18n.go               # 日 (ja) / 中 (zh) / 英 (en) 翻訳辞書と日付ローカライザ

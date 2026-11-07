@@ -1386,3 +1386,55 @@ func TestTimerPersistenceCustomCreateEditAndDelete(t *testing.T) {
 		t.Fatalf("expected 3 persisted timers on reload, got %d", len(reloadedState3.TimerMgr.Timers()))
 	}
 }
+
+func TestClockDualCalendarAndNonDuplicateText(t *testing.T) {
+	state, driver := setupTestApp(t)
+	defer driver.Close()
+
+	// Switch language to zh via UI
+	clickID(t, driver, TabSettingsID)
+	clickID(t, driver, IDSettingsTabLanguage)
+	if !clickID(t, driver, IDLangZH) {
+		t.Fatal("failed to click ZH language button")
+	}
+	if state.Lang() != "zh" {
+		t.Fatalf("expected zh language, got %s", state.Lang())
+	}
+	if !clickID(t, driver, TabClockID) {
+		t.Fatal("failed to navigate back to TabClock")
+	}
+
+	snap := driver.Snapshot()
+
+	// Assert presence of both Solar (公历) and Lunar (农历) calendars
+	if !hasLabel(snap, "公历") {
+		t.Fatal("expected '公历' (Solar calendar) in Chinese main clock view")
+	}
+	if !hasLabel(snap, "农历") {
+		t.Fatal("expected '农历' (Lunar calendar) in Chinese main clock view")
+	}
+
+	// Verify no duplicate location text
+	badgeCount := 0
+	for _, l := range snap.Labels {
+		if strings.Contains(l.Value, "所在国家/地区") {
+			badgeCount++
+		}
+	}
+	if badgeCount != 1 {
+		t.Fatalf("expected location badge to appear exactly once, got %d times", badgeCount)
+	}
+
+	// Switch to Popout mode and verify dual calendar
+	if !clickID(t, driver, TabPopoutID) {
+		t.Fatal("failed to click Popout tab")
+	}
+	popSnap := driver.Snapshot()
+
+	if !hasLabel(popSnap, "公历") {
+		t.Fatal("expected '公历' in Popout mode")
+	}
+	if !hasLabel(popSnap, "农历") {
+		t.Fatal("expected '农历' in Popout mode")
+	}
+}

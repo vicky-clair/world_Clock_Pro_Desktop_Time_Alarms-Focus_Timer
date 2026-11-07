@@ -63,6 +63,8 @@ the-world-clock-on-the-desktop/
 │   │   ├── clock.go              # 12H/24H formatting, exact boundary delay calculation, analog hand geometry
 │   │   ├── location.go           # OS Country/Region, representative city & local timezone resolver
 │   │   ├── location_windows.go   # Windows Kernel32 native GeoName, LocaleName & TimeZone detector
+│   │   ├── lunar.go              # Offline Chinese Lunar Calendar (1900-2050), GanZhi, Zodiac & Dual Solar/Lunar Calendar
+│   │   ├── lunar_test.go
 │   │   └── clock_test.go
 │   ├── i18n/
 │   │   ├── i18n.go               # Full EN / ZH / JA translation dictionaries & localized date formatter

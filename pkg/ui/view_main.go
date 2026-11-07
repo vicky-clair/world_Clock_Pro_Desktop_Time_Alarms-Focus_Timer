@@ -7,13 +7,12 @@ import (
 	"github.com/vivaui/viva/flex"
 	"github.com/vivaui/viva/ui"
 	"worldclock/pkg/clock"
-	"worldclock/pkg/i18n"
 	"worldclock/pkg/storage"
 	"worldclock/pkg/weather"
 )
 
-// DrawMainClock 渲染主时钟屏幕（自动识别并展示当前电脑所在国家/地区与系统本地时间，支持数字毛玻璃大字时钟、矢量模拟表盘、实时天气快照以及底部快捷控制栏）。
-// DrawMainClock renders the primary clock screen (digital or analog).
+// DrawMainClock 渲染主时钟屏幕（自动识别并展示当前电脑所在国家/地区与系统本地时间，支持阳历与农历双历展示、超大字体数字时钟、矢量模拟表盘、实时天气快照以及底部快捷控制栏）。
+// DrawMainClock renders the primary clock screen (digital or analog) with dual solar & lunar calendar.
 func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	cfg := state.Store.Get()
 	now := state.Now.Local()
@@ -22,7 +21,8 @@ func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	locationBadge := sysLoc.FormatBadge(langStr)
 
 	timeStr, period := clock.FormatTime(now, cfg.TimeFormat24H, cfg.ShowSeconds)
-	dateStr := i18n.FormatDateLocalized(state.Lang(), int(now.Month()), now.Day(), now.Year(), int(now.Weekday()), cfg.ShowFullDate)
+	// 获取公历（阳历）与农历（阴历）本地化双历文本
+	solarStr, lunarStr := clock.FormatDualCalendar(now, langStr)
 
 	primaryCity := sysLoc.WeatherID
 	if primaryCity == "" {
@@ -46,51 +46,57 @@ func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 		condStr = state.T("weather.thunder")
 	}
 
-	f.Column().Fill().Pad(24).Gap(20).Items(flex.Center).Children(func() {
+	f.Column().Fill().Pad(24).Gap(18).Items(flex.Center).Children(func() {
 		// Clock Display Area
 		if cfg.ClockStyle == string(clock.StyleAnalog) {
-			drawAnalogFace(f, now, theme)
-			// Text readout & country/region below analog face
-			f.Row().Items(flex.Baseline).Gap(8).Children(func() {
-				f.Text(timeStr).FontSize(32).Bold().Mono()
+			drawAnalogFace(f, now, theme, 280)
+			// Text readout & country/region below analog face (放大至近两倍)
+			f.Row().Items(flex.Baseline).Gap(10).Children(func() {
+				f.Text(timeStr).FontSize(56).Bold().Mono()
 				if period != "" {
-					f.Text(period).FontSize(18).Bold().Color(theme.Primary)
+					f.Text(period).FontSize(32).Bold().Color(theme.Primary)
 				}
 			})
-			f.Text(dateStr).FontSize(15).Color(theme.MutedForeground)
-			f.Row().Items(flex.Center).Gap(8).Children(func() {
-				f.Text(locationBadge).FontSize(13).Bold().Color(theme.Foreground)
-				f.Text("•").FontSize(12).Muted()
-				f.Text(fmt.Sprintf("%s %s (%s)", wSnap.Icon, tempStr, condStr)).FontSize(13).Bold().Color(theme.Primary)
+			f.Text(solarStr).FontSize(26).Bold().Color(theme.Foreground)
+			f.Text(lunarStr).FontSize(22).Bold().Color(theme.MutedForeground)
+			f.Row().Items(flex.Center).Gap(10).Children(func() {
+				f.Text(locationBadge).FontSize(22).Bold().Color(theme.Foreground)
+				f.Text("•").FontSize(20).Muted()
+				f.Text(fmt.Sprintf("%s %s (%s)", wSnap.Icon, tempStr, condStr)).FontSize(22).Bold().Color(theme.Primary)
 			})
 		} else {
 			// Digital Clock Display with Frosted Glass Card
-			f.Column().Pad(36).Background(theme.Card).Radius(16).Border(1, theme.Border).Items(flex.Center).Gap(14).Children(func() {
-				// 顶部显示当前电脑所在国家/地区与本地时区徽章
-				f.Row().PadX(14).PadY(5).Background(theme.Muted).Radius(12).Items(flex.Center).Gap(8).Children(func() {
-					f.Text(locationBadge).FontSize(13).Bold().Color(theme.Primary)
+			// 主时钟字号整体放大近两倍，文字清晰醒目无重复内容
+			mainTimeFontSize := state.EffectiveClockFontSize() * 1.8
+			f.Column().Pad(36).Background(theme.Card).Radius(20).Border(1, theme.Border).Items(flex.Center).Gap(14).Children(func() {
+				// 顶部显示当前电脑所在国家/地区与本地时区徽章（唯一呈现位置，杜绝重复）
+				f.Row().PadX(18).PadY(8).Background(theme.Muted).Radius(14).Items(flex.Center).Gap(8).Children(func() {
+					f.Text(locationBadge).FontSize(22).Bold().Color(theme.Primary)
 				})
 
-				f.Row().Items(flex.Center).Gap(16).Children(func() {
-					f.Text(timeStr).FontSize(state.EffectiveClockFontSize()).Bold().Mono().Color(state.ClockColor(theme))
+				// 超大数字时钟主体
+				f.Row().Items(flex.Center).Gap(18).Children(func() {
+					f.Text(timeStr).FontSize(mainTimeFontSize).Bold().Mono().Color(state.ClockColor(theme))
 					if period != "" {
-						f.Row().Items(flex.Center).PadX(10).PadY(4).Background(theme.Muted).Radius(8).Children(func() {
-							f.Text(period).FontSize(18).Bold().Color(theme.Primary)
+						f.Row().Items(flex.Center).PadX(14).PadY(6).Background(theme.Muted).Radius(10).Children(func() {
+							f.Text(period).FontSize(32).Bold().Color(theme.Primary)
 						})
 					}
 				})
-				f.Text(dateStr).FontSize(18).Color(theme.MutedForeground)
 
-				f.Row().Items(flex.Center).Gap(8).Children(func() {
-					f.Text(fmt.Sprintf("%s · %s (%s)", sysLoc.CountryName(langStr), sysLoc.CityName(langStr), sysLoc.UTCOffset)).FontSize(13).Muted()
-					f.Text("•").FontSize(12).Muted()
-					f.Text(fmt.Sprintf("%s %s (%s)", wSnap.Icon, tempStr, condStr)).FontSize(13).Bold().Color(theme.Primary)
+				// 阳历与农历双历展示（清晰放大）
+				f.Text(solarStr).FontSize(28).Bold().Color(theme.Foreground)
+				f.Text(lunarStr).FontSize(24).Bold().Color(theme.MutedForeground)
+
+				// 底部实时天气快照（独立呈现，无国家/城市重复文字）
+				f.Row().Items(flex.Center).PadX(16).PadY(6).Background(theme.Muted).Radius(12).Gap(8).Children(func() {
+					f.Text(fmt.Sprintf("%s %s (%s)", wSnap.Icon, tempStr, condStr)).FontSize(22).Bold().Color(theme.Primary)
 				})
 			})
 		}
 
 		// Floating Modern Controls Dock
-		f.Row().PadX(18).PadY(10).Background(theme.Card).Radius(24).Border(1, theme.Border).Items(flex.Center).Gap(10).Children(func() {
+		f.Row().PadX(20).PadY(12).Background(theme.Card).Radius(24).Border(1, theme.Border).Items(flex.Center).Gap(12).Children(func() {
 			formatLabel := state.T("clock.12h")
 			if cfg.TimeFormat24H {
 				formatLabel = state.T("clock.24h")
@@ -134,8 +140,11 @@ func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	})
 }
 
-func drawAnalogFace(f *flex.Frame, now time.Time, theme ui.Theme) {
-	slot := f.Slot().Size(240, 240)
+func drawAnalogFace(f *flex.Frame, now time.Time, theme ui.Theme, faceSize float32) {
+	if faceSize <= 0 {
+		faceSize = 280
+	}
+	slot := f.Slot().Size(faceSize, faceSize)
 	rect := slot.Rect()
 	canvas := f.Canvas()
 
@@ -143,7 +152,7 @@ func drawAnalogFace(f *flex.Frame, now time.Time, theme ui.Theme) {
 	cy := rect.Y + rect.Height/2
 	radius := rect.Width / 2 * 0.92
 	if radius <= 0 {
-		radius = 100
+		radius = faceSize / 2 * 0.92
 	}
 
 	// Draw background circle / face
@@ -165,7 +174,7 @@ func drawAnalogFace(f *flex.Frame, now time.Time, theme ui.Theme) {
 		tickPath := pb.Path(rect.Width, rect.Height)
 		canvas.DrawPath(tickPath, rect, ui.PathStyle{
 			Stroke:      theme.MutedForeground,
-			StrokeWidth: 2,
+			StrokeWidth: 2.5,
 		})
 	}
 
@@ -176,7 +185,7 @@ func drawAnalogFace(f *flex.Frame, now time.Time, theme ui.Theme) {
 	pbHr.LineTo(geom.HourHand.X, geom.HourHand.Y)
 	canvas.DrawPath(pbHr.Path(rect.Width, rect.Height), rect, ui.PathStyle{
 		Stroke:      theme.Foreground,
-		StrokeWidth: 5,
+		StrokeWidth: 6,
 	})
 
 	// Minute hand
@@ -186,7 +195,7 @@ func drawAnalogFace(f *flex.Frame, now time.Time, theme ui.Theme) {
 	pbMin.LineTo(geom.MinuteHand.X, geom.MinuteHand.Y)
 	canvas.DrawPath(pbMin.Path(rect.Width, rect.Height), rect, ui.PathStyle{
 		Stroke:      theme.Primary,
-		StrokeWidth: 3.5,
+		StrokeWidth: 4,
 	})
 
 	// Second hand
@@ -196,14 +205,14 @@ func drawAnalogFace(f *flex.Frame, now time.Time, theme ui.Theme) {
 	pbSec.LineTo(geom.SecondHand.X, geom.SecondHand.Y)
 	canvas.DrawPath(pbSec.Path(rect.Width, rect.Height), rect, ui.PathStyle{
 		Stroke:      theme.Danger,
-		StrokeWidth: 1.5,
+		StrokeWidth: 2,
 	})
 
 	// Center cap
 	canvas.Rounded(ui.Rect{
-		X:      cx - 5,
-		Y:      cy - 5,
-		Width:  10,
-		Height: 10,
-	}, 5, theme.Danger)
+		X:      cx - 6,
+		Y:      cy - 6,
+		Width:  12,
+		Height: 12,
+	}, 6, theme.Danger)
 }

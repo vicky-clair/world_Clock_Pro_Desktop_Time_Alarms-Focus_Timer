@@ -63,6 +63,8 @@ the-world-clock-on-the-desktop/
 │   │   ├── clock.go              # 12H/24H 格式化、整秒/整分重绘延迟计算、模拟表盘三角几何计算
 │   │   ├── location.go           # 操作系统所在国家/地区、代表城市与本地时区自动识别
 │   │   ├── location_windows.go   # Windows Kernel32 区域与系统时区原生检测
+│   │   ├── lunar.go              # 高精度离线农历算法 (1900-2050)、天干地支、生肖与公历/农历双历格式化
+│   │   ├── lunar_test.go
 │   │   └── clock_test.go
 │   ├── i18n/
 │   │   ├── i18n.go               # 中 (zh) / 英 (en) / 日 (ja) 全量翻译键值表与本地化日期格式

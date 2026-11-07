@@ -4,31 +4,55 @@ import (
 	"fmt"
 
 	"worldclock/pkg/clock"
-	"worldclock/pkg/i18n"
 	"worldclock/pkg/storage"
+	"worldclock/pkg/weather"
 
 	"github.com/vivaui/viva/flex"
 	"github.com/vivaui/viva/ui"
 )
 
-// DrawPopoutClock 渲染紧凑型桌面悬浮小窗时钟视图（显示电脑所在国家/地区与本地时间，支持一键还原至完整多标签主窗口）。
-// DrawPopoutClock renders the compact popout clock widget.
+// DrawPopoutClock 渲染紧凑型桌面悬浮小窗时钟视图（显示电脑所在国家/地区与本地时间，支持阳历与农历双历、超大字号清晰展示与一键还原）。
+// DrawPopoutClock renders the optimized popout clock widget with enlarged typography and dual solar & lunar calendar.
 func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	cfg := state.Store.Get()
 	now := state.Now.Local()
 	sysLoc := clock.DetectSystemLocation(now)
-	locationBadge := sysLoc.FormatBadge(string(state.Lang()))
+	langStr := string(state.Lang())
+	locationBadge := sysLoc.FormatBadge(langStr)
 	timeStr, period := clock.FormatTime(now, cfg.TimeFormat24H, cfg.ShowSeconds)
-	dateStr := i18n.FormatDateLocalized(state.Lang(), int(now.Month()), now.Day(), now.Year(), int(now.Weekday()), cfg.ShowFullDate)
+	solarStr, lunarStr := clock.FormatDualCalendar(now, langStr)
 
-	f.Column().Fill().Pad(16).Background(theme.Background).Items(flex.Center).Gap(12).Children(func() {
-		// Header controls
+	primaryCity := sysLoc.WeatherID
+	if primaryCity == "" {
+		primaryCity = "beijing"
+	}
+	wSnap := state.Weather.GetWeather(primaryCity)
+	tempStr := weather.FormatTemperature(wSnap.TempCelsius, cfg.TempFahrenheit)
+	condStr := string(wSnap.Condition)
+	switch wSnap.Condition {
+	case weather.ConditionSunny:
+		condStr = state.T("weather.sunny")
+	case weather.ConditionPartlyCloudy:
+		condStr = state.T("weather.partly_cloudy")
+	case weather.ConditionCloudy:
+		condStr = state.T("weather.cloudy")
+	case weather.ConditionRainy:
+		condStr = state.T("weather.rainy")
+	case weather.ConditionSnowy:
+		condStr = state.T("weather.snowy")
+	case weather.ConditionThunder:
+		condStr = state.T("weather.thunder")
+	}
+	weatherText := fmt.Sprintf("%s %s (%s)", wSnap.Icon, tempStr, condStr)
+
+	f.Column().Fill().Pad(20).Background(theme.Background).Items(flex.Center).Gap(16).Children(func() {
+		// Header controls: 置顶锁定与一键还原
 		f.Row().FillWidth().Items(flex.Center).Children(func() {
 			pinLabel := state.T("popout.pin_off")
 			if cfg.Topmost {
 				pinLabel = state.T("popout.pin_on")
 			}
-			if f.Button(IDBtnPinPopout, pinLabel).Small().Ghost().Clicked() {
+			if f.Button(IDBtnPinPopout, pinLabel).Outline().Clicked() {
 				state.UpdateSettings(func(s *storage.Settings) {
 					s.Topmost = !s.Topmost
 				})
@@ -36,7 +60,7 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 
 			f.Spacer()
 
-			if f.Button(IDBtnExitPopout, state.T("nav.restore")).Small().Outline().Clicked() {
+			if f.Button(IDBtnExitPopout, state.T("nav.restore")).Clicked() {
 				state.IsPopout = false
 				state.ActiveTab = TabClock
 				state.Persist()
@@ -45,38 +69,58 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 
 		f.Spacer()
 
-		// Clock representation
+		// Clock representation: 整体超大字号呈现
 		if cfg.ClockStyle == string(clock.StyleAnalog) {
-			drawAnalogFace(f, now, theme)
-			f.Row().Items(flex.Baseline).Gap(6).Children(func() {
-				f.Text(timeStr).FontSize(24).Bold().Mono()
+			drawAnalogFace(f, now, theme, 260)
+			f.Row().Items(flex.Baseline).Gap(10).Children(func() {
+				f.Text(timeStr).FontSize(48).Bold().Mono()
 				if period != "" {
-					f.Text(period).FontSize(14).Bold().Color(theme.Primary)
+					f.Text(period).FontSize(26).Bold().Color(theme.Primary)
 				}
 			})
-			f.Text(locationBadge).FontSize(12).Color(theme.Primary)
+			f.Text(solarStr).FontSize(22).Bold().Color(theme.Foreground)
+			f.Text(lunarStr).FontSize(18).Color(theme.MutedForeground)
+			f.Row().Items(flex.Center).Gap(8).Children(func() {
+				f.Text(locationBadge).FontSize(18).Bold().Color(theme.Primary)
+				f.Text("•").FontSize(16).Muted()
+				f.Text(weatherText).FontSize(18).Bold().Color(theme.Foreground)
+			})
 		} else {
-			f.Column().Pad(20).Background(theme.Card).Radius(10).Border(1, theme.Border).Items(flex.Center).Gap(8).Children(func() {
-				f.Text(locationBadge).FontSize(12).Bold().Color(theme.Primary)
-				f.Row().Items(flex.Baseline).Gap(8).Children(func() {
-					f.Text(timeStr).FontSize(44).Bold().Mono().Color(state.ClockColor(theme))
+			// Digital Popout Clock: 超大字号数字时钟卡片 (88px 大时间 + 24px 双历 + 20px 徽章)
+			f.Column().Pad(32).Background(theme.Card).Radius(20).Border(1, theme.Border).Items(flex.Center).Gap(14).Children(func() {
+				// 所在国家/地区与本地时区徽章
+				f.Row().PadX(16).PadY(6).Background(theme.Muted).Radius(12).Items(flex.Center).Gap(8).Children(func() {
+					f.Text(locationBadge).FontSize(20).Bold().Color(theme.Primary)
+				})
+
+				// 超大数字时钟
+				f.Row().Items(flex.Baseline).Gap(12).Children(func() {
+					f.Text(timeStr).FontSize(88).Bold().Mono().Color(state.ClockColor(theme))
 					if period != "" {
-						f.Text(period).FontSize(18).Bold().Color(theme.Primary)
+						f.Text(period).FontSize(28).Bold().Color(theme.Primary)
 					}
 				})
-				f.Text(dateStr).FontSize(14).Color(theme.MutedForeground)
+
+				// 阳历与农历双历
+				f.Text(solarStr).FontSize(24).Bold().Color(theme.Foreground)
+				f.Text(lunarStr).FontSize(20).Color(theme.MutedForeground)
+
+				// 天气快照
+				f.Row().PadX(14).PadY(5).Background(theme.Muted).Radius(10).Children(func() {
+					f.Text(weatherText).FontSize(18).Bold().Color(theme.Primary)
+				})
 			})
 		}
 
 		f.Spacer()
 
-		// Mini footer
-		f.Row().Items(flex.Center).Gap(8).Children(func() {
+		// Footer controls
+		f.Row().Items(flex.Center).Gap(10).Children(func() {
 			formatLabel := state.T("clock.12h")
 			if cfg.TimeFormat24H {
 				formatLabel = state.T("clock.24h")
 			}
-			if f.Button(IDBtnToggle24H, formatLabel).Small().Ghost().Clicked() {
+			if f.Button(IDBtnToggle24H, formatLabel).Outline().Clicked() {
 				state.UpdateSettings(func(s *storage.Settings) {
 					s.TimeFormat24H = !s.TimeFormat24H
 				})
@@ -86,7 +130,7 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 			if cfg.ShowSeconds {
 				secLabel = state.T("clock.seconds_on")
 			}
-			if f.Button(IDBtnToggleSeconds, secLabel).Small().Ghost().Clicked() {
+			if f.Button(IDBtnToggleSeconds, secLabel).Outline().Clicked() {
 				state.UpdateSettings(func(s *storage.Settings) {
 					s.ShowSeconds = !s.ShowSeconds
 				})
@@ -96,7 +140,7 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 			if cfg.ClockStyle == string(clock.StyleAnalog) {
 				styleLabel = state.T("clock.style_analog")
 			}
-			if f.Button(IDBtnToggleStyle, styleLabel).Small().Ghost().Clicked() {
+			if f.Button(IDBtnToggleStyle, styleLabel).Outline().Clicked() {
 				state.UpdateSettings(func(s *storage.Settings) {
 					if s.ClockStyle == string(clock.StyleAnalog) {
 						s.ClockStyle = string(clock.StyleDigital)
@@ -105,6 +149,7 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 					}
 				})
 			}
+
 			profLabel := cfg.ActiveProfile
 			switch cfg.ActiveProfile {
 			case "Default", "":
@@ -112,7 +157,7 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 			case "Work":
 				profLabel = state.T("settings.profile_work")
 			}
-			f.Text(fmt.Sprintf(state.T("popout.profile_fmt"), profLabel)).FontSize(11).Muted()
+			f.Text(fmt.Sprintf(state.T("popout.profile_fmt"), profLabel)).FontSize(15).Muted()
 		})
 	})
 }
