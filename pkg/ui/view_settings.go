@@ -898,6 +898,50 @@ func drawSettingsClock(f *flex.Frame, state *AppState, theme ui.Theme, cfg stora
 				}
 			})
 		})
+
+		f.Divider()
+
+		f.Row().Items(flex.Center).Children(func() {
+			f.Text(state.T("settings.popout_pos"))
+			f.Spacer()
+			f.Row().Gap(8).Children(func() {
+				btnTop := f.Button(IDOptPopoutPosTop, state.T("popout.pos_top")).Small()
+				if cfg.PopoutPosition == storage.PopoutPosTop {
+					btnTop.Outline()
+				} else {
+					btnTop.Secondary()
+				}
+				if btnTop.Clicked() {
+					state.UpdateSettings(func(s *storage.Settings) {
+						s.PopoutPosition = storage.PopoutPosTop
+					})
+				}
+
+				btnCenter := f.Button(IDOptPopoutPosCenter, state.T("popout.pos_center")).Small()
+				if cfg.PopoutPosition == storage.PopoutPosCenter || cfg.PopoutPosition == "" {
+					btnCenter.Outline()
+				} else {
+					btnCenter.Secondary()
+				}
+				if btnCenter.Clicked() {
+					state.UpdateSettings(func(s *storage.Settings) {
+						s.PopoutPosition = storage.PopoutPosCenter
+					})
+				}
+
+				btnBottom := f.Button(IDOptPopoutPosBottom, state.T("popout.pos_bottom")).Small()
+				if cfg.PopoutPosition == storage.PopoutPosBottom {
+					btnBottom.Outline()
+				} else {
+					btnBottom.Secondary()
+				}
+				if btnBottom.Clicked() {
+					state.UpdateSettings(func(s *storage.Settings) {
+						s.PopoutPosition = storage.PopoutPosBottom
+					})
+				}
+			})
+		})
 	})
 
 	// Profiles

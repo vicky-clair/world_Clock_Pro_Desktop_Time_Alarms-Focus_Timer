@@ -110,7 +110,7 @@ the-world-clock-on-the-desktop/
 │       ├── view_sleep.go         # 极简暗光睡眠与环境音视图
 │       ├── view_news.go          # 资讯阅读视图与三语文章本地化
 │       ├── view_settings.go      # 五大分类设置视图（字体/壁纸轮播/语言与温度/时钟与关闭行为/关于）
-│       ├── view_popout.go        # 紧凑型桌面悬浮小窗视图
+│       ├── view_popout.go        # 紧凑型桌面悬浮小窗视图（支持顶/中/底三段垂直位置自由切换与双历大字）
 │       └── app_test.go           # 基于 app.Driver 的 17 组端到端无头 UI 交互测试
 ├── docs/
 │   ├── DEVELOPER_GUIDE_ZH.md     # 中文完整开发文档（本文档）

@@ -11,8 +11,8 @@ import (
 	"github.com/vivaui/viva/ui"
 )
 
-// DrawPopoutClock 渲染紧凑型桌面悬浮小窗时钟视图（显示电脑所在国家/地区与本地时间，支持阳历与农历双历、超大字号清晰展示与一键还原）。
-// DrawPopoutClock renders the optimized popout clock widget with enlarged typography and dual solar & lunar calendar.
+// DrawPopoutClock 渲染紧凑型桌面悬浮小窗时钟视图（显示电脑所在国家/地区与本地时间，支持阳历与农历双历、顶/中/底三段垂直位置自由切换与一键还原）。
+// DrawPopoutClock renders the optimized popout clock widget with enlarged typography, dual calendar, and top/center/bottom positioning.
 func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	cfg := state.Store.Get()
 	now := state.Now.Local()
@@ -21,6 +21,11 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	locationBadge := sysLoc.FormatBadge(langStr)
 	timeStr, period := clock.FormatTime(now, cfg.TimeFormat24H, cfg.ShowSeconds)
 	solarStr, lunarStr := clock.FormatDualCalendar(now, langStr)
+
+	pos := cfg.PopoutPosition
+	if pos == "" {
+		pos = storage.PopoutPosCenter
+	}
 
 	primaryCity := sysLoc.WeatherID
 	if primaryCity == "" {
@@ -46,7 +51,7 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	weatherText := fmt.Sprintf("%s %s (%s)", wSnap.Icon, tempStr, condStr)
 
 	f.Column().Fill().Pad(20).Background(theme.Background).Items(flex.Center).Gap(16).Children(func() {
-		// Header controls: 置顶锁定与一键还原
+		// Header controls: 置顶锁定、显示位置控制（顶、中间、底部）与一键还原
 		f.Row().FillWidth().Items(flex.Center).Children(func() {
 			pinLabel := state.T("popout.pin_off")
 			if cfg.Topmost {
@@ -60,6 +65,43 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 
 			f.Spacer()
 
+			// 位置切换按钮组：支持在顶、中间、底部显示
+			f.Row().Items(flex.Center).Gap(6).Children(func() {
+				f.Text(state.T("popout.pos_label") + ":").FontSize(14).Muted()
+
+				btnTop := f.Button(IDBtnPopoutPosTop, state.T("popout.pos_top")).Small()
+				if pos != storage.PopoutPosTop {
+					btnTop.Outline()
+				}
+				if btnTop.Clicked() {
+					state.UpdateSettings(func(s *storage.Settings) {
+						s.PopoutPosition = storage.PopoutPosTop
+					})
+				}
+
+				btnCenter := f.Button(IDBtnPopoutPosCenter, state.T("popout.pos_center")).Small()
+				if pos != storage.PopoutPosCenter {
+					btnCenter.Outline()
+				}
+				if btnCenter.Clicked() {
+					state.UpdateSettings(func(s *storage.Settings) {
+						s.PopoutPosition = storage.PopoutPosCenter
+					})
+				}
+
+				btnBottom := f.Button(IDBtnPopoutPosBottom, state.T("popout.pos_bottom")).Small()
+				if pos != storage.PopoutPosBottom {
+					btnBottom.Outline()
+				}
+				if btnBottom.Clicked() {
+					state.UpdateSettings(func(s *storage.Settings) {
+						s.PopoutPosition = storage.PopoutPosBottom
+					})
+				}
+			})
+
+			f.Spacer()
+
 			if f.Button(IDBtnExitPopout, state.T("nav.restore")).Clicked() {
 				state.IsPopout = false
 				state.ActiveTab = TabClock
@@ -67,7 +109,10 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 			}
 		})
 
-		f.Spacer()
+		// 垂直位置调度：居中或靠底时在上部插入弹性拉伸 Spacer
+		if pos == storage.PopoutPosCenter || pos == storage.PopoutPosBottom {
+			f.Spacer()
+		}
 
 		// Clock representation: 整体超大字号呈现
 		if cfg.ClockStyle == string(clock.StyleAnalog) {
@@ -112,7 +157,10 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 			})
 		}
 
-		f.Spacer()
+		// 垂直位置调度：居中或靠顶时在下部插入弹性拉伸 Spacer
+		if pos == storage.PopoutPosCenter || pos == storage.PopoutPosTop {
+			f.Spacer()
+		}
 
 		// Footer controls
 		f.Row().Items(flex.Center).Gap(10).Children(func() {

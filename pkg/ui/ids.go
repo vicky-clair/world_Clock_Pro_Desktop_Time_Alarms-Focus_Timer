@@ -141,8 +141,12 @@ var (
 	IDBtnRefreshHistory = Tree.ID(featNews, "btn-refresh-history")
 
 	// Popout Controls
-	IDBtnExitPopout = Tree.ID(featPopout, "btn-exit-popout")
-	IDBtnPinPopout  = Tree.ID(featPopout, "btn-pin-popout")
+	IDBtnExitPopout      = Tree.ID(featPopout, "btn-exit-popout")
+	IDBtnPinPopout       = Tree.ID(featPopout, "btn-pin-popout")
+	IDBtnPopoutPosTop    = Tree.ID(featPopout, "btn-popout-pos-top")
+	IDBtnPopoutPosCenter = Tree.ID(featPopout, "btn-popout-pos-center")
+	IDBtnPopoutPosBottom = Tree.ID(featPopout, "btn-popout-pos-bottom")
+
 	// Settings Controls
 	IDThemeOlive = Tree.ID(featSetting, "theme-olive")
 	IDThemeDark  = Tree.ID(featSetting, "theme-dark")
@@ -154,6 +158,9 @@ var (
 	IDOptFullDate           = Tree.ID(featSetting, "opt-full-date")
 	IDOptStyleDigital       = Tree.ID(featSetting, "opt-style-digital")
 	IDOptStyleAnalog        = Tree.ID(featSetting, "opt-style-analog")
+	IDOptPopoutPosTop       = Tree.ID(featSetting, "opt-popout-pos-top")
+	IDOptPopoutPosCenter    = Tree.ID(featSetting, "opt-popout-pos-center")
+	IDOptPopoutPosBottom    = Tree.ID(featSetting, "opt-popout-pos-bottom")
 	IDProfileDefault        = Tree.ID(featSetting, "profile-default")
 	IDProfileWork           = Tree.ID(featSetting, "profile-work")
 	IDOptTempFahrenheit     = Tree.ID(featSetting, "opt-temp-unit")

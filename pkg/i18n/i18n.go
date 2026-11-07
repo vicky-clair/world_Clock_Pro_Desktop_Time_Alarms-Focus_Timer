@@ -64,6 +64,10 @@ var messages = map[Language]map[string]string{
 		// Popout
 		"popout.pin_on":      "📌 Pin: ON",
 		"popout.pin_off":     "Pin: OFF",
+		"popout.pos_label":   "Position",
+		"popout.pos_top":     "⬆ Top",
+		"popout.pos_center":  "⏺ Center",
+		"popout.pos_bottom":  "⬇ Bottom",
 		"popout.profile_fmt": "%s Profile",
 
 		// World Clock
@@ -289,6 +293,7 @@ var messages = map[Language]map[string]string{
 		"settings.date_short":         "OFF (Short)",
 		"settings.date_full":          "ON (Full)",
 		"settings.clockface":          "Default Clock Face",
+		"settings.popout_pos":         "Popout Display Position",
 		"settings.temp_unit":          "Temperature Unit",
 		"settings.wallpaper":          "Background Wallpaper",
 		"settings.wallpaper_desc":     "Add a custom background image with fit and transparency controls:",
@@ -377,6 +382,10 @@ var messages = map[Language]map[string]string{
 		// Popout
 		"popout.pin_on":      "📌 置顶: 是",
 		"popout.pin_off":     "置顶: 否",
+		"popout.pos_label":   "显示位置",
+		"popout.pos_top":     "⬆ 顶部",
+		"popout.pos_center":  "⏺ 居中",
+		"popout.pos_bottom":  "⬇ 底部",
 		"popout.profile_fmt": "%s",
 
 		// World Clock
@@ -562,6 +571,7 @@ var messages = map[Language]map[string]string{
 		"settings.date_short":         "否 (简短日期)",
 		"settings.date_full":          "是 (完整日期)",
 		"settings.clockface":          "默认时钟样式",
+		"settings.popout_pos":         "悬浮时钟显示位置",
 		"settings.temp_unit":          "温度计量单位",
 		"settings.subtab_font":        "🔤 字体",
 		"settings.subtab_wallpaper":   "🖼️ 壁纸",
@@ -690,6 +700,10 @@ var messages = map[Language]map[string]string{
 		// Popout
 		"popout.pin_on":      "📌 最前面固定: はい",
 		"popout.pin_off":     "最前面固定: いいえ",
+		"popout.pos_label":   "表示位置",
+		"popout.pos_top":     "⬆ 上部",
+		"popout.pos_center":  "⏺ 中央",
+		"popout.pos_bottom":  "⬇ 下部",
 		"popout.profile_fmt": "%s",
 
 		// World Clock
@@ -875,6 +889,7 @@ var messages = map[Language]map[string]string{
 		"settings.date_short":         "いいえ (短縮日付)",
 		"settings.date_full":          "はい (完全な日付)",
 		"settings.clockface":          "デフォルト時計スタイル",
+		"settings.popout_pos":         "ポップアウト時鐘の表示位置",
 		"settings.temp_unit":          "温度の単位",
 		"settings.wallpaper":          "背景壁紙とフィット設定",
 		"settings.wallpaper_desc":     "ローカル画像の背景設定、表示フィット、透明度調整：",

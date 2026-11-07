@@ -110,7 +110,7 @@ the-world-clock-on-the-desktop/
 │       ├── view_sleep.go         # 暗所向けスリープ＆アンビエント画面
 │       ├── view_news.go          # 3言語対応ニュースリーダー画面
 │       ├── view_settings.go      # 設定画面（フォント / 壁紙スライドショー / 言語 / 時計・閉じる動作 / 情報）
-│       ├── view_popout.go        # コンパクトなデスクトップポップアウト小窓画面
+│       ├── view_popout.go        # コンパクトなデスクトップポップアウト小窓画面（上部・中央・下部の表示位置切替対応）
 │       └── app_test.go           # app.Driver による 17 個のエンドツーエンド・ヘッドレス UI テスト
 ├── docs/
 │   ├── DEVELOPER_GUIDE_ZH.md     # 中国語開発ガイド

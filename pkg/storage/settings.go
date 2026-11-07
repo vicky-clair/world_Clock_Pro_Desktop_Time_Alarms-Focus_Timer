@@ -29,6 +29,10 @@ const (
 const (
 	CloseBehaviorMinimize = "minimize" // 隐藏窗口并最小化到后台系统托盘
 	CloseBehaviorExit     = "exit"     // 直接退出整个应用程序
+
+	PopoutPosTop    = "top"    // 悬浮时钟靠顶显示
+	PopoutPosCenter = "center" // 悬浮时钟居中显示
+	PopoutPosBottom = "bottom" // 悬浮时钟靠底显示
 )
 
 // Settings 聚合所有需要持久化到磁盘的用户偏好设置、世界时钟城市列表、闹钟与壁纸轮播配置。
@@ -45,6 +49,7 @@ type Settings struct {
 	Timers         []timer.Timer    `json:"timers"`         // 用户已配置的倒计时任务列表（支持自定义增删改持久化）
 	Topmost        bool             `json:"topmost"`        // 悬浮小窗是否置顶
 	PopoutMode     bool             `json:"popoutMode"`     // 是否处于紧凑型桌面悬浮小窗模式
+	PopoutPosition string           `json:"popoutPosition"` // 悬浮时钟显示位置："top"（顶部）、"center"（居中）、"bottom"（底部）
 	TempFahrenheit bool             `json:"tempFahrenheit"` // 是否使用华氏度 (°F) 显示气温
 	Language       string           `json:"language"`       // 界面语言："zh"（中文）、"en"（英文）、"ja"（日文）
 	Wallpaper      wallpaper.Config `json:"wallpaper"`      // 壁纸与轮播配置
@@ -69,6 +74,7 @@ func DefaultSettings() Settings {
 		Timers:         timer.DefaultTimers(),
 		Topmost:        false,
 		PopoutMode:     false,
+		PopoutPosition: PopoutPosCenter,
 		TempFahrenheit: false,
 		Language:       "zh", // 默认使用简体中文界面
 		Wallpaper:      wallpaper.DefaultConfig(),
@@ -164,6 +170,9 @@ func unmarshalSettingsWithDefaults(data []byte) (Settings, error) {
 	}
 	if loaded.CloseBehavior != CloseBehaviorMinimize && loaded.CloseBehavior != CloseBehaviorExit {
 		loaded.CloseBehavior = CloseBehaviorMinimize
+	}
+	if loaded.PopoutPosition != PopoutPosTop && loaded.PopoutPosition != PopoutPosBottom {
+		loaded.PopoutPosition = PopoutPosCenter
 	}
 	if loaded.ClockFontSize <= 0 {
 		loaded.ClockFontSize = 64

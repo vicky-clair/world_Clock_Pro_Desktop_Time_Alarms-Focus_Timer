@@ -110,7 +110,7 @@ the-world-clock-on-the-desktop/
 │       ├── view_sleep.go         # Low-light ambient sleep mode screen
 │       ├── view_news.go          # News reader screen with localized articles
 │       ├── view_settings.go      # 5-tab settings screen (Font / Wallpaper / Language / Clock / About)
-│       ├── view_popout.go        # Compact desktop popout clock widget
+│       ├── view_popout.go        # Compact desktop popout clock widget (top/center/bottom position alignment & dual calendar)
 │       └── app_test.go           # 17 end-to-end headless UI tests powered by app.Driver
 ├── docs/
 │   ├── DEVELOPER_GUIDE_ZH.md     # Chinese Developer Guide

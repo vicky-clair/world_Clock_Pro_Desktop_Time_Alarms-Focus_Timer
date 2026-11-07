@@ -1438,3 +1438,56 @@ func TestClockDualCalendarAndNonDuplicateText(t *testing.T) {
 		t.Fatal("expected '农历' in Popout mode")
 	}
 }
+
+func TestPopoutClockPositionButtons(t *testing.T) {
+	state, driver := setupTestApp(t)
+	defer driver.Close()
+
+	// Switch to Popout mode
+	if !clickID(t, driver, TabPopoutID) {
+		t.Fatal("failed to click Popout tab")
+	}
+
+	// 1. Initial position should be center
+	if state.Store.Get().PopoutPosition != storage.PopoutPosCenter {
+		t.Fatalf("expected initial PopoutPosition to be 'center', got '%s'", state.Store.Get().PopoutPosition)
+	}
+
+	// 2. Click Top position button
+	if !clickID(t, driver, IDBtnPopoutPosTop) {
+		t.Fatal("failed to click IDBtnPopoutPosTop button")
+	}
+	if state.Store.Get().PopoutPosition != storage.PopoutPosTop {
+		t.Fatalf("expected PopoutPosition to be 'top', got '%s'", state.Store.Get().PopoutPosition)
+	}
+
+	// 3. Click Bottom position button
+	if !clickID(t, driver, IDBtnPopoutPosBottom) {
+		t.Fatal("failed to click IDBtnPopoutPosBottom button")
+	}
+	if state.Store.Get().PopoutPosition != storage.PopoutPosBottom {
+		t.Fatalf("expected PopoutPosition to be 'bottom', got '%s'", state.Store.Get().PopoutPosition)
+	}
+
+	// 4. Click Center position button
+	if !clickID(t, driver, IDBtnPopoutPosCenter) {
+		t.Fatal("failed to click IDBtnPopoutPosCenter button")
+	}
+	if state.Store.Get().PopoutPosition != storage.PopoutPosCenter {
+		t.Fatalf("expected PopoutPosition to be 'center', got '%s'", state.Store.Get().PopoutPosition)
+	}
+
+	// 5. Restore back to main window and check settings screen
+	if !clickID(t, driver, IDBtnExitPopout) {
+		t.Fatal("failed to click Restore button")
+	}
+	clickID(t, driver, TabSettingsID)
+	clickID(t, driver, IDSettingsTabClock)
+
+	if !clickID(t, driver, IDOptPopoutPosTop) {
+		t.Fatal("failed to click IDOptPopoutPosTop in settings")
+	}
+	if state.Store.Get().PopoutPosition != storage.PopoutPosTop {
+		t.Fatalf("expected PopoutPosition to be 'top' via settings, got '%s'", state.Store.Get().PopoutPosition)
+	}
+}
