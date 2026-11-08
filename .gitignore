@@ -1,12 +1,17 @@
-# Binaries and build outputs
+# Binaries, packaged software, and build output directories (do not upload to GitHub)
 /bin/
+/dist/
+/build/
 *.exe
-!dist/WorldClockPro.exe
 *.exe~
 *.dll
 *.so
 *.dylib
-/dist/go-build*/
+*.zip
+*.msix
+*.appx
+*.cer
+*.pfx
 
 # Test artifacts
 *.test

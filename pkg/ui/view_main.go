@@ -155,6 +155,12 @@ func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 				state.ActiveTab = TabPopout
 				state.Persist()
 			}
+
+			if cfg.EdgeDockEnabled {
+				if f.Button(IDBtnQuickEdgeBar, state.T("clock.edge_bar_mode")).Outline().Clicked() {
+					state.EnterEdgeBar("top")
+				}
+			}
 		})
 	})
 }

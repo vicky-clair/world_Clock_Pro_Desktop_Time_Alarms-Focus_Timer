@@ -38,53 +38,57 @@ const (
 // Settings 聚合所有需要持久化到磁盘的用户偏好设置、世界时钟城市列表、闹钟与壁纸轮播配置。
 // Settings represents all persistent user preferences and data.
 type Settings struct {
-	TimeFormat24H  bool             `json:"timeFormat24H"`  // 是否使用 24 小时制
-	ShowSeconds    bool             `json:"showSeconds"`    // 是否显示秒数
-	ShowFullDate   bool             `json:"showFullDate"`   // 是否显示完整日期格式
-	ShowHolidays   bool             `json:"showHolidays"`   // 是否在主时钟、悬浮时钟与世界时钟中显示今日公历、农历节气与网络节日
-	ClockStyle     string           `json:"clockStyle"`     // 时钟样式："digital"（数字）或 "analog"（模拟表盘）
-	Theme          ThemeType        `json:"theme"`          // 当前视觉主题
-	ActiveProfile  string           `json:"activeProfile"`  // 当前激活的配置文件名称（"Default" 或 "Work"）
-	WorldCities    []world.UserCity `json:"worldCities"`    // 用户已添加的世界时钟城市列表
-	Alarms         []alarm.Alarm    `json:"alarms"`         // 用户已配置的闹钟列表
-	Timers         []timer.Timer    `json:"timers"`         // 用户已配置的倒计时任务列表（支持自定义增删改持久化）
-	Topmost        bool             `json:"topmost"`        // 悬浮小窗是否置顶
-	PopoutMode     bool             `json:"popoutMode"`     // 是否处于紧凑型桌面悬浮小窗模式
-	PopoutPosition string           `json:"popoutPosition"` // 悬浮时钟显示位置："top"（顶部）、"center"（居中）、"bottom"（底部）
-	TempFahrenheit bool             `json:"tempFahrenheit"` // 是否使用华氏度 (°F) 显示气温
-	Language       string           `json:"language"`       // 界面语言："zh"（中文）、"en"（英文）、"ja"（日文）
-	Wallpaper      wallpaper.Config `json:"wallpaper"`      // 壁纸与轮播配置
-	ClockFontSize  int              `json:"clockFontSize"`  // 主时钟字号像素（如 48, 64, 76, 88）
-	ClockFontColor string           `json:"clockFontColor"` // 主时钟文字配色（如 "white", "gold", "olive", "cyan", "purple", "coral"）
-	UIFontColor    string           `json:"uiFontColor"`    // 全局界面文字颜色（如 "default", "white", "black" 等）
-	FontScale      float32          `json:"fontScale"`      // 字体缩放比例（如 0.9, 1.0, 1.1, 1.2）
-	CloseBehavior  string           `json:"closeBehavior"`  // 关闭按钮行为："minimize"（最小化到托盘）或 "exit"（直接退出）
+	TimeFormat24H   bool             `json:"timeFormat24H"`   // 是否使用 24 小时制
+	ShowSeconds     bool             `json:"showSeconds"`     // 是否显示秒数
+	ShowFullDate    bool             `json:"showFullDate"`    // 是否显示完整日期格式
+	ShowHolidays    bool             `json:"showHolidays"`    // 是否在主时钟、悬浮时钟与世界时钟中显示今日公历、农历节气与网络节日
+	ClockStyle      string           `json:"clockStyle"`      // 时钟样式："digital"（数字）或 "analog"（模拟表盘）
+	Theme           ThemeType        `json:"theme"`           // 当前视觉主题
+	ActiveProfile   string           `json:"activeProfile"`   // 当前激活的配置文件名称（"Default" 或 "Work"）
+	WorldCities     []world.UserCity `json:"worldCities"`     // 用户已添加的世界时钟城市列表
+	Alarms          []alarm.Alarm    `json:"alarms"`          // 用户已配置的闹钟列表
+	Timers          []timer.Timer    `json:"timers"`          // 用户已配置的倒计时任务列表（支持自定义增删改持久化）
+	Topmost         bool             `json:"topmost"`         // 悬浮小窗是否置顶
+	PopoutMode      bool             `json:"popoutMode"`      // 是否处于紧凑型桌面悬浮小窗模式
+	PopoutPosition  string           `json:"popoutPosition"`  // 悬浮时钟显示位置："top"（顶部）、"center"（居中）、"bottom"（底部）
+	TempFahrenheit  bool             `json:"tempFahrenheit"`  // 是否使用华氏度 (°F) 显示气温
+	Language        string           `json:"language"`        // 界面语言："zh"（中文）、"en"（英文）、"ja"（日文）
+	Wallpaper       wallpaper.Config `json:"wallpaper"`       // 壁纸与轮播配置
+	ClockFontSize   int              `json:"clockFontSize"`   // 主时钟字号像素（如 48, 64, 76, 88）
+	ClockFontColor  string           `json:"clockFontColor"`  // 主时钟文字配色（如 "white", "gold", "olive", "cyan", "purple", "coral"）
+	UIFontColor     string           `json:"uiFontColor"`     // 全局界面文字颜色（如 "default", "white", "black" 等）
+	FontScale       float32          `json:"fontScale"`       // 字体缩放比例（如 0.9, 1.0, 1.1, 1.2）
+	CloseBehavior   string           `json:"closeBehavior"`   // 关闭按钮行为："minimize"（最小化到托盘）或 "exit"（直接退出）
+	AutoStart       bool             `json:"autoStart"`       // 是否在操作系统登录时开机自动启动
+	EdgeDockEnabled bool             `json:"edgeDockEnabled"` // 窗口靠近屏幕边缘后是否自动缩小成一个状态条
 }
 
 // DefaultSettings 返回包含默认世界时钟城市与推荐偏好的初始配置。
 // DefaultSettings returns fresh default settings.
 func DefaultSettings() Settings {
 	return Settings{
-		TimeFormat24H:  true,
-		ShowSeconds:    true,
-		ShowFullDate:   true,
-		ShowHolidays:   true,
-		ClockStyle:     "digital",
-		Theme:          ThemeOlive,
-		ActiveProfile:  "Default",
-		WorldCities:    world.DefaultCities(),
-		Timers:         timer.DefaultTimers(),
-		Topmost:        false,
-		PopoutMode:     false,
-		PopoutPosition: PopoutPosCenter,
-		TempFahrenheit: false,
-		Language:       "zh", // 默认使用简体中文界面
-		Wallpaper:      wallpaper.DefaultConfig(),
-		ClockFontSize:  64,
-		ClockFontColor: "white",
-		UIFontColor:    "default",
-		FontScale:      1.0,
-		CloseBehavior:  CloseBehaviorMinimize,
+		TimeFormat24H:   true,
+		ShowSeconds:     true,
+		ShowFullDate:    true,
+		ShowHolidays:    true,
+		ClockStyle:      "digital",
+		Theme:           ThemeOlive,
+		ActiveProfile:   "Default",
+		WorldCities:     world.DefaultCities(),
+		Timers:          timer.DefaultTimers(),
+		Topmost:         false,
+		PopoutMode:      false,
+		PopoutPosition:  PopoutPosCenter,
+		TempFahrenheit:  false,
+		Language:        "zh", // 默认使用简体中文界面
+		Wallpaper:       wallpaper.DefaultConfig(),
+		ClockFontSize:   64,
+		ClockFontColor:  "white",
+		UIFontColor:     "default",
+		FontScale:       1.0,
+		CloseBehavior:   CloseBehaviorMinimize,
+		AutoStart:       false,
+		EdgeDockEnabled: true,
 	}
 }
 

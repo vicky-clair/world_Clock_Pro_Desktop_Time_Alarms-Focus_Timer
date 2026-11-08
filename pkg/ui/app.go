@@ -116,6 +116,10 @@ func NewAppConfig(state *AppState) app.Config {
 
 		// 8. 绘制声明式 Flex UI 组件树
 		state.View.Draw(canvas, theme, bounds, func(f *flex.Frame) {
+			if state.IsEdgeBar {
+				DrawEdgeBar(f, state, theme)
+				return
+			}
 			if state.IsPopout {
 				DrawPopoutClock(f, state, theme)
 				return
@@ -157,6 +161,14 @@ func NewAppConfig(state *AppState) app.Config {
 	// 鼠标滚轮事件转发给 Flex 滚动容器处理
 	cfg.OnScroll = func(event ui.ScrollEvent) ui.EventResult {
 		return state.View.Wheel(event)
+	}
+
+	// 窗口屏幕坐标与尺寸变化回调：当软件靠近屏幕边缘后，自动缩小为精简时间日期状态条
+	cfg.OnFrameChange = func(frame ui.Rect) {
+		if state.Window == nil && frame.X == 0 && frame.Y == 0 {
+			return
+		}
+		state.HandleFrameChange(frame)
 	}
 
 	// 跨线程唤醒回调：在 UI 主线程安全消费待处理的窗口恢复或壁纸文件加载请求

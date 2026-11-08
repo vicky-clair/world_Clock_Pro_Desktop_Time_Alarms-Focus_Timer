@@ -18,6 +18,10 @@ func main() {
 	// 1. 初始化 JSON 持久化存储与全局应用运行时状态
 	store := storage.NewStore("")
 	state := ui.NewAppState(store)
+	if store.Get().AutoStart {
+		// 若已开启开机自动启动，启动时同步刷新当前可执行文件绝对路径到系统注册表启动项
+		_ = ui.SyncSystemAutostart(true)
+	}
 
 	// 2. 严禁程序多开：通过 Viva 的 singleinstance 建立命名互斥锁与进程间通信 (IPC)。
 	// Disallow running multiple instances: if another copy is already running,

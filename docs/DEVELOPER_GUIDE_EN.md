@@ -22,6 +22,8 @@
    - [4.8 World Holidays, 24 Solar Terms & Tech/Shopping Festivals (`pkg/clock/holiday.go`)](#48-world-holidays-24-solar-terms--techshopping-festivals)
    - [4.9 Popout Clock & 3-Way Vertical Alignment (`pkg/ui/view_popout.go`)](#49-popout-clock--3-way-vertical-alignment)
    - [4.10 Custom Timers CRUD & Persistence Safety (`pkg/timer` & `pkg/ui/view_timer.go`)](#410-custom-timers-crud--persistence-safety)
+   - [4.11 System Autostart Integration (`pkg/ui/autostart.go` & `cmd/worldclock/main.go`)](#411-system-autostart-integration)
+   - [4.12 Auto-Shrink Edge Status Bar & Hysteresis Restore (`pkg/ui/edgebar.go` & `pkg/ui/view_edgebar.go`)](#412-auto-shrink-edge-status-bar--hysteresis-restore)
 5. [Viva UI Development Conventions](#5-viva-ui-development-conventions)
 6. [Headless Testing & Verification (`app.Driver`)](#6-headless-testing--verification-appdriver)
 7. [Windows Build, PE Resource Embedding & Authenticode Signing](#7-windows-build-pe-resource-embedding--authenticode-signing)
@@ -275,6 +277,21 @@ In [`pkg/timer/timer.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ti
 1. **Custom Timer Creation & Editing**: Users can create custom timers with custom names and exact `HH:MM:SS` durations, supported by 6 built-in presets (Tea, Noodles, Nap, Pomodoro, Reading, Workout).
 2. **Inline Edit & Instant Deletion**: Each timer card provides `[✎ Edit]` and `[✕]` buttons; updates reset the timer duration, and deletions immediately synchronize to `settings.json`.
 3. **Zero-Resurrection Guarantee**: `NewManagerWithTimers(initial []Timer)` strictly distinguishes `nil` (fresh install) from non-`nil` slices (persisted state, even if empty), preventing deleted timers from ever reappearing on app restart.
+
+### 4.11 System Autostart Integration
+
+In [`pkg/ui/autostart.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/autostart.go), [`pkg/ui/state.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/state.go), and [`cmd/worldclock/main.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/cmd/worldclock/main.go):
+1. **Native OS Login Registration**: Wraps Viva's `app.SetAutostart(app.Autostart{ID: "com.worldclockpro.desktop", Name: "World Clock Pro"}, enabled)` to manage the current user's login startup entry (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run` on Windows).
+2. **Explicit Enable / Disable Controls**: Provides side-by-side **`✅ Enable Autostart`** (`IDOptAutoStartEnable`) and **`🚫 Disable`** (`IDOptAutoStartDisable`) buttons in **Settings → ⏰ Clock**, persisting to `Settings.AutoStart`.
+3. **Test Isolation**: Automatically detects `go test` binaries via `isTestBinary()` so running unit tests never mutates the host machine's real startup registry.
+
+### 4.12 Auto-Shrink Edge Status Bar & Hysteresis Restore
+
+In [`pkg/ui/edgebar.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/edgebar.go), [`pkg/ui/view_edgebar.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/view_edgebar.go), and [`pkg/ui/window_windows.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/window_windows.go):
+1. **Screen-Edge Proximity Detection (`DetectScreenEdge`)**: Driven by `cfg.OnFrameChange`, queries the active monitor's work area (`MonitorFromPoint` / `GetMonitorInfoW`) and detects when the window approaches the top (`<= 42px`) or left/right/bottom (`<= 20px`) edges.
+2. **DPI-Aware Native Resize (`platformShrinkWindowToEdgeBar`)**: Saves the outer window rectangle (`GetWindowRect`) and resizes the window to a compact `560×118` (DPI-scaled) strip docked against the screen edge via `SetWindowPos`.
+3. **One-Click Restore with Hysteresis (`DrawEdgeBar` & `ExitEdgeBar`)**: Renders time, solar/lunar date, and a **`⤢ Restore Normal`** (`IDBtnRestoreEdgeBar`) button. Clicking restore returns the window to its saved size with a `64px` margin inside the monitor work area and sets `SuppressEdgeBarUntilMoveAway` until the window moves clearly inside the screen.
+4. **Prominent Enable / Disable Settings**: Places **`✅ Enable Edge Bar`** (`IDOptEdgeDockEnable`), **`🚫 Do Not Enable`** (`IDOptEdgeDockDisable`), and **`➖ Shrink to Bar Now`** (`IDBtnSettingsEdgeBarPreview`) at the top of **Settings → ⏰ Clock**.
 
 ---
 

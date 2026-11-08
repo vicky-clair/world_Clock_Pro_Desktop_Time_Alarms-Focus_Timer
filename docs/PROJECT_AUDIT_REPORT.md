@@ -144,5 +144,5 @@ flowchart TD
 | `worldclock/pkg/storage` | 2 | ✅ PASS | JSON 持久化、深拷贝隔离、`.bak` 损坏自动恢复、默认城市保留 |
 | `worldclock/pkg/world` | 5 | ✅ PASS | 193 国目录、中英日多语检索、`SameCityID` / `HasCity` 判重 |
 | `worldclock/pkg/wallpaper` | 4 | ✅ PASS | 1m/5m/10m/15m 轮播调度、随机洗牌不重复、1080p 降采样、2-slot LRU 缓存 |
-| `worldclock/pkg/ui` | 15 | ✅ PASS | 全功能视图交互、重复添加城市弹窗提醒、设置项跨页保存不丢城市、关闭按钮最小化/退出切换、三语 `是`/`否` 切换 |
-| 其余业务包 (`alarm`, `clock`, `i18n`, `rss`, `sleep`, `timer`, `tracker`, `weather`, `action`) | 18 | ✅ PASS | 闹钟调度、贪睡、精确秒/分重绘延迟、番茄钟状态机 |
+| `worldclock/pkg/ui` | 24 | ✅ PASS | 全功能视图交互、重复添加城市弹窗提醒、设置项跨页保存不丢城市、关闭按钮最小化/退出切换、开机自启开关、边缘状态条收缩与恢复、三语 `是`/`否` 切换 |
+| 其余业务包 (`alarm`, `audio`, `clock`, `i18n`, `rss`, `sleep`, `timer`, `tracker`, `weather`, `action`) | 22 | ✅ PASS | 闹钟调度、贪睡、精确秒/分重绘延迟、农历双历、全球节日与二十四节气、倒计时持久化、番茄钟状态机 |

@@ -20,27 +20,32 @@ var (
 	featNews    = Tree.Feature("news")     // 资讯阅读区域
 	featSetting = Tree.Feature("settings") // 设置与偏好区域
 	featDialog  = Tree.Feature("dialog")   // 全局模态对话框区域
+	featEdgeBar = Tree.Feature("edgebar")  // 屏幕边缘收缩状态条区域
 
-	// Navigation Tabs
-	TabClockID    = Tree.ID(featNav, "tab-clock")
-	TabWorldID    = Tree.ID(featNav, "tab-world")
-	TabAlarmsID   = Tree.ID(featNav, "tab-alarms")
-	TabTimersID   = Tree.ID(featNav, "tab-timers")
-	TabTrackerID  = Tree.ID(featNav, "tab-tracker")
-	TabSleepID    = Tree.ID(featNav, "tab-sleep")
-	TabNewsID     = Tree.ID(featNav, "tab-news")
-	TabSettingsID = Tree.ID(featNav, "tab-settings")
-	TabPopoutID   = Tree.ID(featNav, "tab-popout")
+	// 顶部全局导航标签页 ID (Navigation Tabs)
+	TabClockID    = Tree.ID(featNav, "tab-clock")    // 主时钟标签页
+	TabWorldID    = Tree.ID(featNav, "tab-world")    // 世界时钟标签页
+	TabAlarmsID   = Tree.ID(featNav, "tab-alarms")   // 闹钟管理标签页
+	TabTimersID   = Tree.ID(featNav, "tab-timers")   // 倒计时与秒表标签页
+	TabTrackerID  = Tree.ID(featNav, "tab-tracker")  // 专注计时器标签页
+	TabSleepID    = Tree.ID(featNav, "tab-sleep")    // 睡眠与白噪音标签页
+	TabNewsID     = Tree.ID(featNav, "tab-news")     // 历史上的今天标签页
+	TabSettingsID = Tree.ID(featNav, "tab-settings") // 设置与偏好标签页
+	TabPopoutID   = Tree.ID(featNav, "tab-popout")   // 悬浮时钟切换按钮
 
-	// Header controls
-	IDBtnSnooze  = Tree.ID(featHeader, "btn-snooze")
-	IDBtnDismiss = Tree.ID(featHeader, "btn-dismiss")
+	// 顶部闹钟响铃提醒横幅按钮 (Header Alert Controls)
+	IDBtnSnooze  = Tree.ID(featHeader, "btn-snooze")  // 贪睡 (+5分钟) 按钮
+	IDBtnDismiss = Tree.ID(featHeader, "btn-dismiss") // 关闭响铃按钮
 
-	// Main Clock Controls
-	IDBtnToggle24H     = Tree.ID(featClock, "btn-toggle-24h")
-	IDBtnToggleSeconds = Tree.ID(featClock, "btn-toggle-seconds")
-	IDBtnToggleStyle   = Tree.ID(featClock, "btn-toggle-style")
-	IDBtnQuickPopout   = Tree.ID(featClock, "btn-quick-popout")
+	// 主时钟底部快捷控制栏按钮 (Main Clock Dock Controls)
+	IDBtnToggle24H     = Tree.ID(featClock, "btn-toggle-24h")     // 12/24 小时制切换按钮
+	IDBtnToggleSeconds = Tree.ID(featClock, "btn-toggle-seconds") // 秒数显示开关按钮
+	IDBtnToggleStyle   = Tree.ID(featClock, "btn-toggle-style")   // 数字/指针表盘切换按钮
+	IDBtnQuickPopout   = Tree.ID(featClock, "btn-quick-popout")   // 进入悬浮时钟模式按钮
+	IDBtnQuickEdgeBar  = Tree.ID(featClock, "btn-quick-edgebar")  // 一键缩为边缘状态条按钮
+
+	// 屏幕边缘收缩状态条按钮 (Edge Bar Controls)
+	IDBtnRestoreEdgeBar = Tree.ID(featEdgeBar, "btn-restore-edgebar") // 从状态条恢复正常窗口按钮
 
 	// World Clock Controls
 	IDBtnAddCityModal         = Tree.ID(featWorld, "btn-add-city-modal")
@@ -153,20 +158,27 @@ var (
 	IDThemeLight = Tree.ID(featSetting, "theme-light")
 	IDThemeNord  = Tree.ID(featSetting, "theme-nord")
 
-	IDOptShowSeconds        = Tree.ID(featSetting, "opt-show-seconds")
-	IDOptFormat24H          = Tree.ID(featSetting, "opt-format-24h")
-	IDOptFullDate           = Tree.ID(featSetting, "opt-full-date")
-	IDOptShowHolidays       = Tree.ID(featSetting, "opt-show-holidays")
-	IDOptStyleDigital       = Tree.ID(featSetting, "opt-style-digital")
-	IDOptStyleAnalog        = Tree.ID(featSetting, "opt-style-analog")
-	IDOptPopoutPosTop       = Tree.ID(featSetting, "opt-popout-pos-top")
-	IDOptPopoutPosCenter    = Tree.ID(featSetting, "opt-popout-pos-center")
-	IDOptPopoutPosBottom    = Tree.ID(featSetting, "opt-popout-pos-bottom")
-	IDProfileDefault        = Tree.ID(featSetting, "profile-default")
-	IDProfileWork           = Tree.ID(featSetting, "profile-work")
-	IDOptTempFahrenheit     = Tree.ID(featSetting, "opt-temp-unit")
-	IDCloseBehaviorMinimize = Tree.ID(featSetting, "close-behavior-minimize")
-	IDCloseBehaviorExit     = Tree.ID(featSetting, "close-behavior-exit")
+	IDOptShowSeconds            = Tree.ID(featSetting, "opt-show-seconds")
+	IDOptFormat24H              = Tree.ID(featSetting, "opt-format-24h")
+	IDOptFullDate               = Tree.ID(featSetting, "opt-full-date")
+	IDOptShowHolidays           = Tree.ID(featSetting, "opt-show-holidays")
+	IDOptStyleDigital           = Tree.ID(featSetting, "opt-style-digital")
+	IDOptStyleAnalog            = Tree.ID(featSetting, "opt-style-analog")
+	IDOptPopoutPosTop           = Tree.ID(featSetting, "opt-popout-pos-top")
+	IDOptPopoutPosCenter        = Tree.ID(featSetting, "opt-popout-pos-center")
+	IDOptPopoutPosBottom        = Tree.ID(featSetting, "opt-popout-pos-bottom")
+	IDProfileDefault            = Tree.ID(featSetting, "profile-default")
+	IDProfileWork               = Tree.ID(featSetting, "profile-work")
+	IDOptTempFahrenheit         = Tree.ID(featSetting, "opt-temp-unit")
+	IDCloseBehaviorMinimize     = Tree.ID(featSetting, "close-behavior-minimize")
+	IDCloseBehaviorExit         = Tree.ID(featSetting, "close-behavior-exit")
+	IDOptAutoStart              = Tree.ID(featSetting, "opt-autostart")
+	IDOptAutoStartEnable        = Tree.ID(featSetting, "opt-autostart-enable")
+	IDOptAutoStartDisable       = Tree.ID(featSetting, "opt-autostart-disable")
+	IDOptEdgeDock               = Tree.ID(featSetting, "opt-edge-dock")
+	IDOptEdgeDockEnable         = Tree.ID(featSetting, "opt-edge-dock-enable")
+	IDOptEdgeDockDisable        = Tree.ID(featSetting, "opt-edge-dock-disable")
+	IDBtnSettingsEdgeBarPreview = Tree.ID(featSetting, "btn-settings-edgebar-preview")
 
 	// Settings Sub-Tabs
 	IDSettingsTabFont      = Tree.ID(featSetting, "subtab-font")
@@ -245,55 +257,68 @@ var (
 	IDFontScale120 = Tree.ID(featSetting, "fscale-120")
 )
 
+// 根据动态业务主键生成稳定的控件 ID（遵循 Viva 规范：基于名称拼接而非运行时手写数字编号）
 // Dynamic IDs generation helpers with stable names inside feature scopes
 func CityToggleFavID(cityID string) ui.ID {
 	return Tree.ID(featWorld, "fav-"+cityID)
 }
 
+// CityRemoveID 返回世界时钟城市列表中指定城市的删除按钮 ID。
 func CityRemoveID(cityID string) ui.ID {
 	return Tree.ID(featWorld, "rm-"+cityID)
 }
 
+// CityMoveUpID 返回世界时钟城市列表中指定城市的上移排序按钮 ID。
 func CityMoveUpID(cityID string) ui.ID {
 	return Tree.ID(featWorld, "up-"+cityID)
 }
 
+// CityMoveDownID 返回世界时钟城市列表中指定城市的下移排序按钮 ID。
 func CityMoveDownID(cityID string) ui.ID {
 	return Tree.ID(featWorld, "down-"+cityID)
 }
 
+// CityAddCatalogID 返回全球 193 国目录中指定城市的添加按钮 ID。
 func CityAddCatalogID(cityID string) ui.ID {
 	return Tree.ID(featWorld, "add-cat-"+cityID)
 }
 
+// AlarmToggleID 返回指定闹钟的启用/停用开关按钮 ID。
 func AlarmToggleID(alarmID string) ui.ID {
 	return Tree.ID(featAlarms, "tog-"+alarmID)
 }
 
+// AlarmDeleteID 返回指定闹钟的删除按钮 ID。
 func AlarmDeleteID(alarmID string) ui.ID {
 	return Tree.ID(featAlarms, "del-"+alarmID)
 }
 
+// AlarmPreviewID 返回指定闹钟的铃声试听按钮 ID。
 func AlarmPreviewID(alarmID string) ui.ID {
 	return Tree.ID(featAlarms, "prev-"+alarmID)
 }
 
+// TimerStartID 返回指定倒计时任务的开始/继续按钮 ID。
 func TimerStartID(timerID string) ui.ID {
 	return Tree.ID(featTimers, "start-"+timerID)
 }
 
+// TimerPauseID 返回指定倒计时任务的暂停按钮 ID。
 func TimerPauseID(timerID string) ui.ID {
 	return Tree.ID(featTimers, "pause-"+timerID)
 }
 
+// TimerResetID 返回指定倒计时任务的重置按钮 ID。
 func TimerResetID(timerID string) ui.ID {
 	return Tree.ID(featTimers, "reset-"+timerID)
 }
 
+// TimerDeleteID 返回指定倒计时任务的删除按钮 ID。
 func TimerDeleteID(timerID string) ui.ID {
 	return Tree.ID(featTimers, "del-"+timerID)
 }
 
+// TimerEditID 返回指定倒计时任务的编辑修改按钮 ID。
 func TimerEditID(timerID string) ui.ID {
 	return Tree.ID(featTimers, "edit-"+timerID)
 }

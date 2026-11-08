@@ -22,6 +22,8 @@
    - [4.8 世界の祝日・二十四節気・ネット記念日エンジン (`pkg/clock/holiday.go`)](#48-世界の祝日二十四節気ネット記念日エンジン)
    - [4.9 ポップアウト時計と3段階垂直レイアウト切替 (`pkg/ui/view_popout.go`)](#49-ポップアウト時計と3段階垂直レイアウト切替)
    - [4.10 タイマーの自由追加・編集・削除と永続化 (`pkg/timer` & `pkg/ui/view_timer.go`)](#410-タイマーの自由追加編集削除と永続化)
+   - [4.11 OS起動時の自動実行連携 (`pkg/ui/autostart.go` & `cmd/worldclock/main.go`)](#411-os起動時の自動実行連携)
+   - [4.12 画面端でのミニバー自動縮小と復元 (`pkg/ui/edgebar.go` & `pkg/ui/view_edgebar.go`)](#412-画面端でのミニバー自動縮小と復元)
 5. [Viva フレームワーク UI 開発規約](#5-viva-フレームワーク-ui-開発規約)
 6. [ヘッドレステストと検証ワークフロー (`app.Driver`)](#6-ヘッドレステストと検証ワークフロー-appdriver)
 7. [Windows ビルド、PE リソース埋め込みと Authenticode 署名](#7-windows-ビルドpe-リソース埋め込みと-authenticode-署名)
@@ -248,6 +250,19 @@ flowchart TB
 1. **カスタムタイマーの自由作成**：任意の名称と時・分・秒を指定して新規追加可能。お茶、ラーメン、昼寝、ポモドーロ、読書、ワークアウトの6大テンプレートを同梱。
 2. **その場での編集＆削除**：各カードに `[✎ 編集]` と `[✕]` 削除ボタンを配置。変更は即座に `settings.json` へ保存。
 3. **削除タイマーの復活防止**：`NewManagerWithTimers(initial []Timer)` では初期状態（`nil`）とユーザー設定（空スライスを含む非 `nil`）を厳格に区別し、削除したタイマーがアプリ再起動時に復活する不具合を根本的に防止。
+
+### 4.11 OS起動時の自動実行連携
+
+[`pkg/ui/autostart.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/autostart.go)、[`pkg/ui/state.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/state.go)、[`cmd/worldclock/main.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/cmd/worldclock/main.go) にて：
+1. **OS自動起動エントリの登録・解除**：Viva の `app.SetAutostart` をラップし、Windows の `Run` レジストリキーや macOS/Linux の自動起動設定を同期します。
+2. **明示的な有効化 / 無効化ボタン**：**設定 → ⏰ 時計** の上部に **`✅ 自動起動を有効化`** と **`🚫 無効にする`** ボタンを配置し、ワンクリックで切り替え可能。
+
+### 4.12 画面端でのミニバー自動縮小と復元
+
+[`pkg/ui/edgebar.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/edgebar.go)、[`pkg/ui/view_edgebar.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/view_edgebar.go)、[`pkg/ui/window_windows.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/window_windows.go) にて：
+1. **画面端接近検出 (`DetectScreenEdge`)**：`cfg.OnFrameChange` から現在のモニター作業領域を取得し、ウィンドウが画面端に近づいた際にミニバーモードへ移行します。
+2. **スリムバー表示とワンクリック復元 (`DrawEdgeBar`)**：現在時刻と太陽暦・旧暦の日付のみをコンパクトに表示し、**`⤢ 通常表示に戻す`** ボタンで元のウィンドウサイズへ復元します。
+3. **設定での有効 / 無効切り替え**：**設定 → ⏰ 時計** 最上部のカードで **`✅ ミニバー縮小を有効化`** と **`🚫 無効にする`** ボタンを提供しています。
 
 ---
 

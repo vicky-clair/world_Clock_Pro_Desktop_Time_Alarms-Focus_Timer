@@ -22,6 +22,8 @@
    - [4.8 全球节假日、二十四节气与网络特色节日引擎 (`pkg/clock/holiday.go`)](#48-全球节假日二十四节气与网络特色节日引擎)
    - [4.9 悬浮时钟模式与三段垂直位置动态排版 (`pkg/ui/view_popout.go`)](#49-悬浮时钟模式与三段垂直位置动态排版)
    - [4.10 倒计时任务自定义增删改查与落盘机制 (`pkg/timer` & `pkg/ui/view_timer.go`)](#410-倒计时任务自定义增删改查与落盘机制)
+   - [4.11 开机自动启动与系统登录项同步 (`pkg/ui/autostart.go` & `cmd/worldclock/main.go`)](#411-开机自动启动与系统登录项同步)
+   - [4.12 靠近屏幕边缘自动缩小为状态条与防抖恢复 (`pkg/ui/edgebar.go` & `pkg/ui/view_edgebar.go`)](#412-靠近屏幕边缘自动缩小为状态条与防抖恢复)
 5. [Viva 框架 UI 开发规范](#5-viva-框架-ui-开发规范)
 6. [测试体系与无头验证 (`app.Driver`)](#6-测试体系与无头验证-appdriver)
 7. [Windows 构建、PE 资源嵌入与数字签名打包](#7-windows-构建pe-资源嵌入与数字签名打包)
@@ -275,6 +277,21 @@ sequenceDiagram
 1. **自定义任务管理**：用户可点击“➕ 自定义任务”打开面板，自定义任务名称及精确的时、分、秒时长，并提供了泡茶、煮面、午休、番茄、阅读、健身 6 款快捷模板。
 2. **就地编辑与删除**：列表每一项均提供 `[✎ 编辑]` 与 `[✕]` 删除按钮，编辑支持调整名称与初始时长并重置，删除操作同步持久化。
 3. **防死灰复燃恢复逻辑**：`NewManagerWithTimers(initial []Timer)` 严格区分初始配置为 `nil`（首次安装初始化默认模板）与非 `nil`（用户主动保存的自定义切片，即使用户清空全部任务也保持为空切片），避免应用重启时被删除的任务重新出现的缺陷。
+
+### 4.11 开机自动启动与系统登录项同步
+
+在 [`pkg/ui/autostart.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/autostart.go)、[`pkg/ui/state.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/state.go) 与 [`cmd/worldclock/main.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/cmd/worldclock/main.go) 中：
+1. **跨平台系统自启注册**：封装 Viva 原生 `app.SetAutostart(app.Autostart{ID: "com.worldclockpro.desktop", Name: "World Clock Pro"}, enabled)`，在 Windows 下自动维护 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` 注册表项，在 macOS/Linux 下自动维护 LaunchAgent / XDG Autostart。
+2. **显式双按钮设置交互**：在 **设置 → ⏰ 时钟** 卡片中同时提供 **`✅ 启用开机自启`**（`IDOptAutoStartEnable`）与 **`🚫 不启用`**（`IDOptAutoStartDisable`）双按钮，点击即刻持久化至 `Settings.AutoStart` 并同步系统启动项。
+3. **启动路径自刷新与测试隔离**：程序每次启动时若 `AutoStart == true` 会自动刷新当前可执行文件路径；在 `go test` 单元测试环境下通过 `isTestBinary()` 自动跳过真实系统注册表修改，确保测试绝对干净。
+
+### 4.12 靠近屏幕边缘自动缩小为状态条与防抖恢复
+
+在 [`pkg/ui/edgebar.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/edgebar.go)、[`pkg/ui/view_edgebar.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/view_edgebar.go) 与 [`pkg/ui/window_windows.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/window_windows.go) 中：
+1. **边缘接近检测 (`DetectScreenEdge`)**：通过 `cfg.OnFrameChange` 实时监听窗口内容矩形变化，结合 `MonitorFromPoint` / `GetMonitorInfoW` 获取当前显示器的可用工作区（自动排除系统任务栏）。当窗口靠近屏幕顶部（`<= 42px`）或左/右/下边缘（`<= 20px`）时自动触发边缘收缩。
+2. **DPI 感知原生窗口缩放 (`platformShrinkWindowToEdgeBar`)**：在进入状态条前自动保存原窗口外框 `RECT`，并根据当前显示器 DPI（`GetDpiForWindow`）调用 `SetWindowPos` 将窗口缩小为 `560×118` 贴边紧凑横条。
+3. **精简状态条视图与一键恢复 (`DrawEdgeBar` & `ExitEdgeBar`)**：状态条仅简洁呈现当前时间与公历/农历日期，右侧提供 **`⤢ 恢复正常`**（`IDBtnRestoreEdgeBar`）按钮。点击后恢复原窗口尺寸并向屏幕内部偏移 `64px` 安全距离，同时置位 `SuppressEdgeBarUntilMoveAway` 防抖锁，直到窗口完全离开边缘回差区（`IsClearlyInsideScreen`）后才重新允许下次边缘吸附。
+4. **设置页启用/不启用开关**：在 **设置 → ⏰ 时钟** 最顶部提供 **`✅ 启用状态条收缩`**（`IDOptEdgeDockEnable`）与 **`🚫 不启用`**（`IDOptEdgeDockDisable`）双按钮及 **`➖ 立即缩为状态条`** 体验按钮。选择“不启用”时，不仅屏蔽拖动边缘自动收缩，还会自动隐藏主时钟底部控制栏上的快捷按钮。
 
 ---
 

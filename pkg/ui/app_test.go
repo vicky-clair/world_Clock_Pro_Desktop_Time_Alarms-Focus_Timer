@@ -1502,10 +1502,10 @@ func TestHolidayDisplayAndSettingsToggle(t *testing.T) {
 	clickID(t, driver, IDLangZH)
 	clickID(t, driver, TabClockID)
 
-	// Since current date is 2026-11-07, it matches solar term 立冬
+	// Verify holiday badge ("今日节日：...") is displayed when ShowHolidays is true
 	snap := driver.Snapshot()
-	if !hasLabel(snap, "立冬") {
-		t.Fatal("expected solar term '立冬' to be displayed on Nov 7")
+	if !hasLabel(snap, "今日节日：") {
+		t.Fatal("expected holiday badge '今日节日：' to be displayed when ShowHolidays is true")
 	}
 
 	// Navigate to Settings -> Clock and toggle ShowHolidays OFF
@@ -1518,11 +1518,11 @@ func TestHolidayDisplayAndSettingsToggle(t *testing.T) {
 		t.Fatal("expected ShowHolidays to be false")
 	}
 
-	// Verify '立冬' is now hidden
+	// Verify holiday badge is now hidden
 	clickID(t, driver, TabClockID)
 	snapHidden := driver.Snapshot()
-	if hasLabel(snapHidden, "立冬") {
-		t.Fatal("expected '立冬' holiday badge to be hidden when ShowHolidays is false")
+	if hasLabel(snapHidden, "今日节日：") {
+		t.Fatal("expected holiday badge to be hidden when ShowHolidays is false")
 	}
 }
 
@@ -1540,5 +1540,175 @@ func TestHolidayDisplayWhenNoHoliday(t *testing.T) {
 	badgeJA := clock.FormatHolidayBadge(nil, "ja")
 	if !strings.Contains(badgeJA, "なし") {
 		t.Fatalf("expected 'なし' when no holidays, got '%s'", badgeJA)
+	}
+}
+
+func TestAutoStartSettingToggle(t *testing.T) {
+	state, driver := setupTestApp(t)
+	defer driver.Close()
+
+	var hookCalls []bool
+	state.AutostartHook = func(enabled bool) error {
+		hookCalls = append(hookCalls, enabled)
+		return nil
+	}
+
+	// Default AutoStart should be false
+	if state.Store.Get().AutoStart {
+		t.Fatal("expected AutoStart to be false by default")
+	}
+
+	// Navigate to Settings -> Clock sub-tab
+	clickID(t, driver, TabSettingsID)
+	if !clickID(t, driver, IDSettingsTabClock) {
+		t.Fatal("failed to click Clock settings sub-tab")
+	}
+
+	// Click AutoStart toggle -> ON
+	if !clickID(t, driver, IDOptAutoStart) {
+		t.Fatal("failed to click IDOptAutoStart button")
+	}
+	if !state.Store.Get().AutoStart {
+		t.Fatal("expected AutoStart to be true after clicking toggle")
+	}
+	if len(hookCalls) != 1 || !hookCalls[0] {
+		t.Fatalf("expected AutostartHook called with true, got %v", hookCalls)
+	}
+
+	// Click explicit Disable button -> OFF
+	if !clickID(t, driver, IDOptAutoStartDisable) {
+		t.Fatal("failed to click IDOptAutoStartDisable button")
+	}
+	if state.Store.Get().AutoStart {
+		t.Fatal("expected AutoStart to be false after clicking Disable button")
+	}
+	if len(hookCalls) != 2 || hookCalls[1] {
+		t.Fatalf("expected AutostartHook called with false, got %v", hookCalls)
+	}
+
+	// Click explicit Enable button -> ON
+	if !clickID(t, driver, IDOptAutoStartEnable) {
+		t.Fatal("failed to click IDOptAutoStartEnable button")
+	}
+	if !state.Store.Get().AutoStart {
+		t.Fatal("expected AutoStart to be true after clicking Enable button")
+	}
+	if len(hookCalls) != 3 || !hookCalls[2] {
+		t.Fatalf("expected AutostartHook called with true, got %v", hookCalls)
+	}
+}
+
+func TestEdgeBarAutoShrinkAndRestoreButton(t *testing.T) {
+	state, driver := setupTestApp(t)
+	defer driver.Close()
+
+	// Switch to Chinese UI
+	clickID(t, driver, TabSettingsID)
+	clickID(t, driver, IDSettingsTabLanguage)
+	clickID(t, driver, IDLangZH)
+	clickID(t, driver, TabClockID)
+
+	// 1. Window in normal interior screen position -> should NOT be in Edge Bar mode
+	state.HandleFrameChange(vui.Rect{X: 220, Y: 160, Width: 840, Height: 580})
+	if state.IsEdgeBar {
+		t.Fatal("expected IsEdgeBar to be false when window is away from screen edges")
+	}
+
+	// 2. Window approaches top edge of screen -> should automatically shrink into Edge Bar mode
+	state.HandleFrameChange(vui.Rect{X: 220, Y: 8, Width: 840, Height: 580})
+	if !state.IsEdgeBar {
+		t.Fatal("expected IsEdgeBar to be true when window approaches top screen edge")
+	}
+	if state.DockedEdge != "top" {
+		t.Fatalf("expected DockedEdge 'top', got '%s'", state.DockedEdge)
+	}
+
+	// Advance frame to repaint Edge Bar UI
+	driver.Advance(50 * time.Millisecond)
+	snapBar := driver.Snapshot()
+	if !hasLabel(snapBar, "恢复正常") {
+		t.Fatal("expected Edge Bar to display '恢复正常' restore button")
+	}
+	if !hasLabel(snapBar, "公历") || !hasLabel(snapBar, "农历") {
+		t.Fatal("expected Edge Bar to concisely display solar and lunar date")
+	}
+	if hasLabel(snapBar, "世界时钟") {
+		t.Fatal("expected main navigation bar to be hidden while in compact Edge Bar mode")
+	}
+
+	// 3. Click '恢复正常' button -> restores normal full UI
+	if !clickID(t, driver, IDBtnRestoreEdgeBar) {
+		t.Fatal("failed to click IDBtnRestoreEdgeBar ('恢复正常')")
+	}
+	if state.IsEdgeBar {
+		t.Fatal("expected IsEdgeBar to be false after clicking restore button")
+	}
+	snapRestored := driver.Snapshot()
+	if !hasLabel(snapRestored, "世界时钟") {
+		t.Fatal("expected normal navigation bar to be restored after clicking restore button")
+	}
+
+	// 4. Verify debounce: while still near edge right after restore, it doesn't immediately re-collapse
+	state.HandleFrameChange(vui.Rect{X: 220, Y: 10, Width: 840, Height: 580})
+	if state.IsEdgeBar {
+		t.Fatal("expected debounce to prevent immediate re-shrinking before moving away from edge")
+	}
+
+	// 5. Move window back inside screen, then move near left edge -> shrinks again
+	state.HandleFrameChange(vui.Rect{X: 240, Y: 180, Width: 840, Height: 580})
+	state.HandleFrameChange(vui.Rect{X: 4, Y: 180, Width: 840, Height: 580})
+	if !state.IsEdgeBar || state.DockedEdge != "left" {
+		t.Fatalf("expected window to shrink at left edge after moving away and approaching left edge, got IsEdgeBar=%v edge=%s", state.IsEdgeBar, state.DockedEdge)
+	}
+
+	// Restore again via button
+	driver.Advance(50 * time.Millisecond)
+	if !clickID(t, driver, IDBtnRestoreEdgeBar) {
+		t.Fatal("failed to click restore button from left edge bar")
+	}
+
+	// 6. Test quick Edge Bar button on main clock dock
+	if !clickID(t, driver, IDBtnQuickEdgeBar) {
+		t.Fatal("failed to click IDBtnQuickEdgeBar on main clock dock")
+	}
+	if !state.IsEdgeBar {
+		t.Fatal("expected IsEdgeBar to be true after clicking quick edge bar button")
+	}
+	if !clickID(t, driver, IDBtnRestoreEdgeBar) {
+		t.Fatal("failed to restore from quick edge bar")
+	}
+
+	// 7. Test explicit Disable ('🚫 不启用') and Enable ('✅ 启用状态条收缩') buttons in Settings -> Clock
+	clickID(t, driver, TabSettingsID)
+	clickID(t, driver, IDSettingsTabClock)
+	if !clickID(t, driver, IDOptEdgeDockDisable) {
+		t.Fatal("failed to click IDOptEdgeDockDisable ('🚫 不启用') in settings")
+	}
+	if state.Store.Get().EdgeDockEnabled {
+		t.Fatal("expected EdgeDockEnabled to be false after clicking '🚫 不启用'")
+	}
+	state.HandleFrameChange(vui.Rect{X: 240, Y: 180, Width: 840, Height: 580})
+	state.HandleFrameChange(vui.Rect{X: 240, Y: 4, Width: 840, Height: 580})
+	if state.IsEdgeBar {
+		t.Fatal("expected IsEdgeBar to remain false when EdgeDockEnabled is disabled in settings")
+	}
+
+	// Re-enable via explicit Enable ('✅ 启用状态条收缩') button
+	if !clickID(t, driver, IDOptEdgeDockEnable) {
+		t.Fatal("failed to click IDOptEdgeDockEnable ('✅ 启用状态条收缩') in settings")
+	}
+	if !state.Store.Get().EdgeDockEnabled {
+		t.Fatal("expected EdgeDockEnabled to be true after clicking '✅ 启用状态条收缩'")
+	}
+
+	// Test preview button ('➖ 立即缩为状态条') directly inside Settings
+	if !clickID(t, driver, IDBtnSettingsEdgeBarPreview) {
+		t.Fatal("failed to click IDBtnSettingsEdgeBarPreview in settings")
+	}
+	if !state.IsEdgeBar {
+		t.Fatal("expected IsEdgeBar to be true after clicking preview button in settings")
+	}
+	if !clickID(t, driver, IDBtnRestoreEdgeBar) {
+		t.Fatal("failed to restore from settings preview edge bar")
 	}
 }

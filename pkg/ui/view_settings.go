@@ -115,6 +115,7 @@ func DrawSettings(f *flex.Frame, state *AppState, theme ui.Theme) {
 	})
 }
 
+// drawSettingsWallpaper 渲染“🖼️ 壁纸”子标签页（实时毛玻璃预览、本地单图/文件夹多选、轮播间隔与播放模式、4 款内置艺术预设、5 种画面适配、透明度调节以及 4 款界面配色主题）。
 func drawSettingsWallpaper(f *flex.Frame, state *AppState, theme ui.Theme, cfg storage.Settings, wpCfg wallpaper.Config) {
 	// Fresh config
 	wpCfg = state.Wallpaper.Config()
@@ -557,6 +558,7 @@ func drawSettingsWallpaper(f *flex.Frame, state *AppState, theme ui.Theme, cfg s
 	})
 }
 
+// drawSettingsLanguage 渲染“🌐 语言”子标签页（简体中文 / English / 日本語 三语实时切换与摄氏度/华氏度温度单位切换）。
 func drawSettingsLanguage(f *flex.Frame, state *AppState, theme ui.Theme, cfg storage.Settings, currentLang i18n.Language) {
 	f.Column().FillWidth().Pad(16).Background(theme.Card).Radius(8).Border(1, theme.Border).Gap(12).Children(func() {
 		f.Text(state.T("settings.lang")).FontSize(16).Bold().Color(theme.Primary)
@@ -619,6 +621,8 @@ func drawSettingsLanguage(f *flex.Frame, state *AppState, theme ui.Theme, cfg st
 		})
 	})
 }
+
+// drawSettingsFont 渲染“🔤 字体”子标签页（实时字体预览、时钟字号预设与 2px 步进微调、时钟数字高亮色、界面全域文字颜色以及全局字号缩放）。
 func drawSettingsFont(f *flex.Frame, state *AppState, theme ui.Theme, cfg storage.Settings) {
 	// Card 1: 实时效果预览 (Live Preview)
 	f.Column().FillWidth().Pad(20).Background(theme.Card).Radius(12).Border(1, theme.Border).Items(flex.Center).Gap(10).Children(func() {
@@ -811,7 +815,106 @@ func drawSettingsFont(f *flex.Frame, state *AppState, theme ui.Theme, cfg storag
 	})
 }
 
+// drawSettingsClock 渲染“⏰ 时钟”子标签页（靠近屏幕边缘自动缩小为状态条开关、开机自动启动开关、时钟与节日显示选项、配置文件切换以及窗口关闭按钮行为）。
 func drawSettingsClock(f *flex.Frame, state *AppState, theme ui.Theme, cfg storage.Settings) {
+	// Card 1: 靠近屏幕边缘自动缩小为状态条（提供直观的“启用 / 不启用”双按钮及立即体验按钮）
+	f.Column().FillWidth().Pad(16).Background(theme.Card).Radius(8).Border(1, theme.Border).Gap(10).Children(func() {
+		f.Row().Items(flex.Center).Children(func() {
+			f.Text(state.T("settings.edge_dock")).FontSize(16).Bold().Color(theme.Primary)
+			f.Spacer()
+			btnEdge := f.Button(IDOptEdgeDock, state.T("settings.edge_dock_off")).Small()
+			if cfg.EdgeDockEnabled {
+				btnEdge.Label(state.T("settings.edge_dock_on")).Outline()
+			} else {
+				btnEdge.Secondary()
+			}
+			if btnEdge.Clicked() {
+				next := !cfg.EdgeDockEnabled
+				state.UpdateSettings(func(s *storage.Settings) {
+					s.EdgeDockEnabled = next
+				})
+				if !next && state.IsEdgeBar {
+					state.ExitEdgeBar()
+				}
+			}
+		})
+		f.Text(state.T("settings.edge_dock_desc")).FontSize(13).Muted()
+		f.Row().Items(flex.Center).Gap(10).Children(func() {
+			btnEnable := f.Button(IDOptEdgeDockEnable, state.T("settings.edge_dock_enable"))
+			if cfg.EdgeDockEnabled {
+				btnEnable.Outline()
+			} else {
+				btnEnable.Secondary()
+			}
+			if btnEnable.Clicked() {
+				state.UpdateSettings(func(s *storage.Settings) {
+					s.EdgeDockEnabled = true
+				})
+			}
+
+			btnDisable := f.Button(IDOptEdgeDockDisable, state.T("settings.edge_dock_disable"))
+			if !cfg.EdgeDockEnabled {
+				btnDisable.Outline()
+			} else {
+				btnDisable.Secondary()
+			}
+			if btnDisable.Clicked() {
+				state.UpdateSettings(func(s *storage.Settings) {
+					s.EdgeDockEnabled = false
+				})
+				if state.IsEdgeBar {
+					state.ExitEdgeBar()
+				}
+			}
+
+			if cfg.EdgeDockEnabled {
+				f.Spacer()
+				if f.Button(IDBtnSettingsEdgeBarPreview, state.T("settings.edge_dock_try")).Small().Ghost().Clicked() {
+					state.EnterEdgeBar("top")
+				}
+			}
+		})
+	})
+
+	// Card 2: 开机自动启动（提供直观的“启用 / 不启用”双按钮）
+	f.Column().FillWidth().Pad(16).Background(theme.Card).Radius(8).Border(1, theme.Border).Gap(10).Children(func() {
+		f.Row().Items(flex.Center).Children(func() {
+			f.Text(state.T("settings.autostart")).FontSize(16).Bold().Color(theme.Primary)
+			f.Spacer()
+			btnAuto := f.Button(IDOptAutoStart, state.T("settings.autostart_off")).Small()
+			if cfg.AutoStart {
+				btnAuto.Label(state.T("settings.autostart_on")).Outline()
+			} else {
+				btnAuto.Secondary()
+			}
+			if btnAuto.Clicked() {
+				state.SetAutoStart(!cfg.AutoStart)
+			}
+		})
+		f.Text(state.T("settings.autostart_desc")).FontSize(13).Muted()
+		f.Row().Items(flex.Center).Gap(10).Children(func() {
+			btnAutoEn := f.Button(IDOptAutoStartEnable, state.T("settings.autostart_enable"))
+			if cfg.AutoStart {
+				btnAutoEn.Outline()
+			} else {
+				btnAutoEn.Secondary()
+			}
+			if btnAutoEn.Clicked() {
+				state.SetAutoStart(true)
+			}
+
+			btnAutoDis := f.Button(IDOptAutoStartDisable, state.T("settings.autostart_disable"))
+			if !cfg.AutoStart {
+				btnAutoDis.Outline()
+			} else {
+				btnAutoDis.Secondary()
+			}
+			if btnAutoDis.Clicked() {
+				state.SetAutoStart(false)
+			}
+		})
+	})
+
 	// Display Options
 	f.Column().FillWidth().Pad(16).Background(theme.Card).Radius(8).Border(1, theme.Border).Gap(12).Children(func() {
 		f.Text(state.T("settings.display")).FontSize(16).Bold().Color(theme.Primary)
@@ -1035,6 +1138,7 @@ func drawSettingsClock(f *flex.Frame, state *AppState, theme ui.Theme, cfg stora
 	})
 }
 
+// drawSettingsAbout 渲染“ℹ️ 关于”子标签页（展示 Viva Direct3D 11 渲染架构、零轮询待机机制与版本信息）。
 func drawSettingsAbout(f *flex.Frame, state *AppState, theme ui.Theme) {
 	f.Column().FillWidth().Pad(16).Background(theme.Card).Radius(8).Border(1, theme.Border).Gap(10).Children(func() {
 		f.Text(state.T("settings.about")).FontSize(16).Bold().Color(theme.Foreground)
