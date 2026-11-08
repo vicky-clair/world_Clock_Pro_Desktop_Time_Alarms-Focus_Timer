@@ -7,6 +7,7 @@ import (
 	"github.com/vivaui/viva/flex"
 	"github.com/vivaui/viva/ui"
 	"worldclock/pkg/clock"
+	"worldclock/pkg/iploc"
 	"worldclock/pkg/storage"
 	"worldclock/pkg/weather"
 )
@@ -31,11 +32,27 @@ func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 		holidayBadge = meta.HolidayBadge
 	}
 
+	// 异步拉取公网 IP 所在国家、省份、城市与经纬度（严格每 6 小时自动更新一次）
+	var ipBadge, ipLocStr string
+	var ipInfo iploc.Info
+	if state.IPLoc != nil {
+		ipInfo = state.IPLoc.EnsureFresh(langStr, state.Invalidate)
+		ipBadge = ipInfo.FormatBadge(langStr)
+		ipLocStr = ipInfo.FormatLocation()
+	}
+
 	primaryCity := sysLoc.WeatherID
 	if primaryCity == "" {
 		primaryCity = "beijing"
 	}
-	wSnap := state.Weather.EnsureFresh(primaryCity, state.Invalidate)
+
+	// 实时天气获取：若已成功解析出公网 IP 的经纬度，优先获取 IP 所在位置的真实天气（每 6 小时自动更新）；离线时回退为系统时区代表城市
+	var wSnap weather.Snapshot
+	if ipInfo.IsSuccess && (ipInfo.Latitude != 0 || ipInfo.Longitude != 0) {
+		wSnap = state.Weather.EnsureFreshCoords("iploc-current", ipInfo.Latitude, ipInfo.Longitude, state.Invalidate)
+	} else {
+		wSnap = state.Weather.EnsureFresh(primaryCity, state.Invalidate)
+	}
 	tempStr := weather.FormatTemperature(wSnap.TempCelsius, cfg.TempFahrenheit)
 	condStr := string(wSnap.Condition)
 	switch wSnap.Condition {
@@ -72,8 +89,17 @@ func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 				})
 			}
 			f.Row().Items(flex.Center).Gap(10).Children(func() {
-				f.Text(locationBadge).FontSize(22).Bold().Color(theme.Foreground)
-				f.Text("•").FontSize(20).Muted()
+				if ipBadge != "" {
+					f.Text(ipBadge).FontSize(20).Bold().Color(theme.Accent)
+					f.Text("•").FontSize(18).Muted()
+				}
+				f.Text(locationBadge).FontSize(20).Bold().Color(theme.Foreground)
+			})
+			f.Row().Items(flex.Center).Gap(10).Children(func() {
+				if ipLocStr != "" {
+					f.Text(fmt.Sprintf("📍 %s", ipLocStr)).FontSize(20).Bold().Color(theme.Foreground)
+					f.Text("•").FontSize(18).Muted()
+				}
 				f.Text(fmt.Sprintf("%s %s (%s)", wSnap.Icon, tempStr, condStr)).FontSize(22).Bold().Color(theme.Primary)
 			})
 		} else {
@@ -81,9 +107,13 @@ func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 			// 主时钟字号整体放大近两倍，文字清晰醒目无重复内容
 			mainTimeFontSize := state.EffectiveClockFontSize() * 1.8
 			f.Column().Pad(36).Background(theme.Card).Radius(20).Border(1, theme.Border).Items(flex.Center).Gap(14).Children(func() {
-				// 顶部显示当前电脑所在国家/地区与本地时区徽章（唯一呈现位置，杜绝重复）
-				f.Row().PadX(18).PadY(8).Background(theme.Muted).Radius(14).Items(flex.Center).Gap(8).Children(func() {
-					f.Text(locationBadge).FontSize(22).Bold().Color(theme.Primary)
+				// 顶部显示当前电脑所在国家/地区与本地时区徽章（若已探测到公网 IP，在最上方一并展示 IP 所在国家）
+				f.Row().PadX(18).PadY(8).Background(theme.Muted).Radius(14).Items(flex.Center).Gap(10).Children(func() {
+					if ipBadge != "" {
+						f.Text(ipBadge).FontSize(20).Bold().Color(theme.Accent)
+						f.Text("•").FontSize(18).Muted()
+					}
+					f.Text(locationBadge).FontSize(20).Bold().Color(theme.Primary)
 				})
 
 				// 超大数字时钟主体
@@ -107,8 +137,12 @@ func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 					})
 				}
 
-				// 底部实时天气快照（独立呈现，无国家/城市重复文字）
-				f.Row().Items(flex.Center).PadX(16).PadY(6).Background(theme.Muted).Radius(12).Gap(8).Children(func() {
+				// 底部实时天气快照（天气温度前面加上 IP 所在国家省份和城市！）
+				f.Row().Items(flex.Center).PadX(18).PadY(6).Background(theme.Muted).Radius(12).Gap(10).Children(func() {
+					if ipLocStr != "" {
+						f.Text(fmt.Sprintf("📍 %s", ipLocStr)).FontSize(20).Bold().Color(theme.Foreground)
+						f.Text("•").FontSize(18).Muted()
+					}
 					f.Text(fmt.Sprintf("%s %s (%s)", wSnap.Icon, tempStr, condStr)).FontSize(22).Bold().Color(theme.Primary)
 				})
 			})

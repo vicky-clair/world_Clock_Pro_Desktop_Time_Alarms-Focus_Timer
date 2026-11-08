@@ -101,14 +101,14 @@ func (s *Service) GetWeather(cityID string) Snapshot {
 	return snap
 }
 
-// EnsureFresh 获取指定城市的天气快照；若缓存已超过 45 分钟或尚未获取过真实在线天气，
+// EnsureFresh 获取指定城市的天气快照；若缓存已超过 6 小时或尚未获取过真实在线天气，
 // 会在后台协程异步请求 Open-Meteo 真实气象 API，获取完成后调用 onUpdate 触发单次重绘。
 func (s *Service) EnsureFresh(cityID string, onUpdate func()) Snapshot {
 	s.mu.RLock()
 	snap, exists := s.cache[cityID]
 	s.mu.RUnlock()
 
-	needsFetch := !exists || !snap.IsLive || time.Since(snap.UpdatedAt) > 45*time.Minute
+	needsFetch := !exists || !snap.IsLive || time.Since(snap.UpdatedAt) > 6*time.Hour
 	if needsFetch {
 		s.TriggerFetchAsync(cityID, onUpdate)
 	}
@@ -117,6 +117,52 @@ func (s *Service) EnsureFresh(cityID string, onUpdate func()) Snapshot {
 		return snap
 	}
 	return s.GetWeather(cityID)
+}
+
+// EnsureFreshCoords 根据指定经纬度获取实时天气快照（支持按 IP 定位坐标获取当地天气），严格每 6 小时自动更新一次。
+func (s *Service) EnsureFreshCoords(id string, lat, lon float64, onUpdate func()) Snapshot {
+	s.mu.RLock()
+	snap, exists := s.cache[id]
+	s.mu.RUnlock()
+
+	needsFetch := !exists || !snap.IsLive || time.Since(snap.UpdatedAt) > 6*time.Hour
+	if needsFetch {
+		s.TriggerFetchCoordsAsync(id, lat, lon, onUpdate)
+	}
+
+	if exists {
+		return snap
+	}
+	return s.GetWeather(id)
+}
+
+// TriggerFetchCoordsAsync 异步向 Open-Meteo 开放气象 API 发起精确经纬度实时天气观测请求。
+func (s *Service) TriggerFetchCoordsAsync(id string, lat, lon float64, onComplete func()) {
+	s.mu.Lock()
+	if s.inFlight[id] {
+		s.mu.Unlock()
+		return
+	}
+	s.inFlight[id] = true
+	s.mu.Unlock()
+
+	go func() {
+		defer func() {
+			s.mu.Lock()
+			delete(s.inFlight, id)
+			s.mu.Unlock()
+		}()
+
+		snap, err := s.fetchOpenMeteo(id, lat, lon)
+		if err == nil {
+			s.mu.Lock()
+			s.cache[id] = snap
+			s.mu.Unlock()
+			if onComplete != nil {
+				onComplete()
+			}
+		}
+	}()
 }
 
 // TriggerFetchAsync 异步向 Open-Meteo 开放气象 API 发起实时天气观测请求。

@@ -8,6 +8,7 @@ import (
 
 	"worldclock/pkg/alarm"
 	"worldclock/pkg/clock"
+	"worldclock/pkg/iploc"
 	"worldclock/pkg/license"
 	"worldclock/pkg/storage"
 
@@ -1934,6 +1935,47 @@ func TestTrialExpiredLockoutEnforced(t *testing.T) {
 	}
 	if !clockTabFound {
 		t.Fatal("expected TabClockID to be restored and interactive after subscribing")
+	}
+}
+
+func TestIPLocationAndWeatherDisplay(t *testing.T) {
+	state, driver := setupTestApp(t)
+	defer driver.Close()
+
+	// Switch to Chinese UI
+	clickID(t, driver, TabSettingsID)
+	clickID(t, driver, IDSettingsTabLanguage)
+	clickID(t, driver, IDLangZH)
+	clickID(t, driver, TabClockID)
+
+	// Inject IP location
+	state.IPLoc.SetCached(iploc.Info{
+		IP:          "120.244.11.22",
+		Country:     "中国",
+		CountryCode: "CN",
+		RegionName:  "广东",
+		City:        "广州",
+		Latitude:    23.1291,
+		Longitude:   113.2644,
+		IsSuccess:   true,
+	}, "zh")
+
+	// Repaint
+	_ = driver.Resize(900, 1202)
+	snap := driver.Snapshot()
+
+	// 1. Verify IP country badge at the top
+	if !hasLabel(snap, "IP 所在国家：中国") {
+		var lbls []string
+		for _, l := range snap.Labels {
+			lbls = append(lbls, l.Value)
+		}
+		t.Fatalf("expected IP country badge at the top, got labels: %v", lbls)
+	}
+
+	// 2. Verify IP Country, Province, and City in front of the weather temperature
+	if !hasLabel(snap, "中国 广东 广州") {
+		t.Fatal("expected '中国 广东 广州' in front of weather temperature")
 	}
 }
 

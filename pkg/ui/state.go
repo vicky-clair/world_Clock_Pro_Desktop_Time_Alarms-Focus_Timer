@@ -11,6 +11,7 @@ import (
 	"worldclock/pkg/audio"
 	"worldclock/pkg/clock"
 	"worldclock/pkg/i18n"
+	"worldclock/pkg/iploc"
 	"worldclock/pkg/license"
 	"worldclock/pkg/rss"
 	"worldclock/pkg/sleep"
@@ -46,7 +47,8 @@ type AppState struct {
 	Scheduler *alarm.Scheduler   // 闹钟调度器
 	TimerMgr  *timer.Manager     // 多倒计时管理器
 	Stopwatch *timer.Stopwatch   // 高精度秒表
-	Weather   *weather.Service   // 城市天气服务
+	Weather   *weather.Service   // 城市天气服务（支持按系统时区或公网 IP 经纬度查询真实天气，每 6 小时自动更新）
+	IPLoc     *iploc.Service     // 公网 IP 地理定位服务（探测 IP 所在国家、省份、城市与经纬度，每 6 小时自动更新）
 	Tracker   *tracker.Tracker   // 番茄专注计时器
 	Sleep     *sleep.Session     // 睡眠助眠会话
 	News      *rss.FeedStore     // 历史上的今天与精选事件流存储
@@ -220,6 +222,7 @@ func NewAppState(store *storage.Store) *AppState {
 	wpMgr := wallpaper.NewManager(s.Wallpaper)
 	audioEng := audio.NewEngine()
 	licMgr := license.NewManager(s.License, time.Now())
+	ipSvc := iploc.NewService()
 	var weekdays [7]bool
 	weekdays[2] = true
 	weekdays[3] = true
@@ -238,6 +241,7 @@ func NewAppState(store *storage.Store) *AppState {
 		TimerMgr:          timerMgr,
 		Stopwatch:         sw,
 		Weather:           wSvc,
+		IPLoc:             ipSvc,
 		Tracker:           tr,
 		Sleep:             sl,
 		News:              news,

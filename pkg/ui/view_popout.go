@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"worldclock/pkg/clock"
+	"worldclock/pkg/iploc"
 	"worldclock/pkg/storage"
 	"worldclock/pkg/weather"
 
@@ -33,11 +34,27 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 		pos = storage.PopoutPosCenter
 	}
 
+	// 异步拉取公网 IP 所在国家、省份、城市与经纬度（严格每 6 小时自动更新一次）
+	var ipBadge, ipLocStr string
+	var ipInfo iploc.Info
+	if state.IPLoc != nil {
+		ipInfo = state.IPLoc.EnsureFresh(langStr, state.Invalidate)
+		ipBadge = ipInfo.FormatBadge(langStr)
+		ipLocStr = ipInfo.FormatLocation()
+	}
+
 	primaryCity := sysLoc.WeatherID
 	if primaryCity == "" {
 		primaryCity = "beijing"
 	}
-	wSnap := state.Weather.EnsureFresh(primaryCity, state.Invalidate)
+
+	// 实时天气获取：若已成功解析出公网 IP 的经纬度，优先获取 IP 所在位置的真实天气（每 6 小时自动更新）；离线时回退为系统时区代表城市
+	var wSnap weather.Snapshot
+	if ipInfo.IsSuccess && (ipInfo.Latitude != 0 || ipInfo.Longitude != 0) {
+		wSnap = state.Weather.EnsureFreshCoords("iploc-current", ipInfo.Latitude, ipInfo.Longitude, state.Invalidate)
+	} else {
+		wSnap = state.Weather.EnsureFresh(primaryCity, state.Invalidate)
+	}
 	tempStr := weather.FormatTemperature(wSnap.TempCelsius, cfg.TempFahrenheit)
 	condStr := string(wSnap.Condition)
 	switch wSnap.Condition {
@@ -133,15 +150,27 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 				f.Text(holidayBadge).FontSize(16).Bold().Color(theme.Primary)
 			}
 			f.Row().Items(flex.Center).Gap(8).Children(func() {
+				if ipBadge != "" {
+					f.Text(ipBadge).FontSize(16).Bold().Color(theme.Accent)
+					f.Text("•").FontSize(14).Muted()
+				}
 				f.Text(locationBadge).FontSize(18).Bold().Color(theme.Primary)
 				f.Text("•").FontSize(16).Muted()
+				if ipLocStr != "" {
+					f.Text(fmt.Sprintf("📍 %s", ipLocStr)).FontSize(16).Bold().Color(theme.Foreground)
+					f.Text("•").FontSize(14).Muted()
+				}
 				f.Text(weatherText).FontSize(18).Bold().Color(theme.Foreground)
 			})
 		} else {
 			// Digital Popout Clock: 超大字号数字时钟卡片 (88px 大时间 + 24px 双历 + 20px 徽章)
 			f.Column().Pad(32).Background(theme.Card).Radius(20).Border(1, theme.Border).Items(flex.Center).Gap(14).Children(func() {
-				// 所在国家/地区与本地时区徽章
+				// 所在国家/地区与本地时区徽章（若已探测到公网 IP，在最上方一并展示 IP 所在国家）
 				f.Row().PadX(16).PadY(6).Background(theme.Muted).Radius(12).Items(flex.Center).Gap(8).Children(func() {
+					if ipBadge != "" {
+						f.Text(ipBadge).FontSize(18).Bold().Color(theme.Accent)
+						f.Text("•").FontSize(16).Muted()
+					}
 					f.Text(locationBadge).FontSize(20).Bold().Color(theme.Primary)
 				})
 
@@ -164,8 +193,12 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 					})
 				}
 
-				// 天气快照
-				f.Row().PadX(14).PadY(5).Background(theme.Muted).Radius(10).Children(func() {
+				// 天气快照（天气温度前面加上 IP 所在国家省份和城市）
+				f.Row().PadX(14).PadY(5).Background(theme.Muted).Radius(10).Gap(6).Children(func() {
+					if ipLocStr != "" {
+						f.Text(fmt.Sprintf("📍 %s", ipLocStr)).FontSize(17).Bold().Color(theme.Foreground)
+						f.Text("•").FontSize(15).Muted()
+					}
 					f.Text(weatherText).FontSize(18).Bold().Color(theme.Primary)
 				})
 			})
