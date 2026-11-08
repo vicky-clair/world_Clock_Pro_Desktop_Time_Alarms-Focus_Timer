@@ -130,9 +130,8 @@ flowchart TD
      - 在 `Paint` 入口处调用一次 `cfgSnap := state.Store.Get()` 并向下传递引用或只读结构。
      - 在 `AppState` 中缓存 `lastSearchQuery`、`lastContinent` 与 `cachedCatalogResults []world.CityInfo`，仅在搜索词或大洲过滤变化时重新计算。
 
-3. **旧版配置目录名平滑迁移（`pkg/storage/settings.go`）**
-   - **现状**：[`NewStore`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/storage/settings.go#L88-L90) 默认仍使用 `%APPDATA%\OliveClock\settings.json`。
-   - **修改建议**：正式打包 MSIX 前，可改为优先读取 `%APPDATA%\WorldClockPro\settings.json`，若不存在但旧路径 `%APPDATA%\OliveClock\settings.json` 存在，则自动复制迁移一次，兼顾品牌统一与老用户数据无缝继承。
+3. **配置目录标准化（`pkg/storage/settings.go`）**
+   - **现状**：[`NewStore`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/storage/settings.go#L110-L120) 默认使用 `%APPDATA%\WorldClockPro\settings.json`，并在每次写入时自动维护 `settings.json.bak` 热备份以保障异常断电自愈。
 
 ---
 

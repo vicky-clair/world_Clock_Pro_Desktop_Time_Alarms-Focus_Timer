@@ -98,7 +98,7 @@
 3. **开机自启与程序移动位置**：
    - 启用“开机自动启动”后，系统启动项记录的是当前可执行文件的路径。如果您后续将编译出的 `.exe` 移动到了其他文件夹，只需在新位置重新打开一次软件，程序会自动刷新注册表中的启动路径。
 4. **配置文件与自动容灾备份位置**：
-   - 所有用户设置、世界城市、闹钟与自定义倒计时任务均保存在本地 `%APPDATA%\OliveClock\settings.json`，并在每次写入前自动备份至 `settings.json.bak`；若遇异常断电导致主配置损坏，启动时会自动从 `.bak` 恢复。
+   - 所有用户设置、世界城市、闹钟与自定义倒计时任务均保存在本地 `%APPDATA%\WorldClockPro\settings.json`，并在每次写入前自动备份至 `settings.json.bak`；若遇异常断电导致主配置损坏，启动时会自动从 `.bak` 恢复。
 5. **离线运行与网络请求说明**：
    - 主时钟、农历、二十四节气、全球 193 国世界时钟、闹钟合成音频、倒计时、番茄钟、睡眠白噪音与壁纸轮播均**100% 纯本地离线运行**，无任何遥测或隐私上传。
    - 仅 **`历史上的今天`** 标签页会在后台按需请求一次公开百科 API（若电脑无网络则自动无缝回退至内置精选历史档案库，不影响任何功能使用）。
@@ -291,5 +291,5 @@ go test ./... -count=1
 - 🇺🇸 **English Developer Guide**: [`docs/DEVELOPER_GUIDE_EN.md`](docs/DEVELOPER_GUIDE_EN.md)
 - 🇯🇵 **日本語開発ガイド**: [`docs/DEVELOPER_GUIDE_JA.md`](docs/DEVELOPER_GUIDE_JA.md)
 - 🔍 **项目深度审计报告**: [`docs/PROJECT_AUDIT_REPORT.md`](docs/PROJECT_AUDIT_REPORT.md)
-- 🔒 **Privacy Policy**: Zero telemetry, zero external tracking, local configuration storage (`%APPDATA%\OliveClock\settings.json`). See [`docs/PRIVACY_POLICY.md`](docs/PRIVACY_POLICY.md) for details.
+- 🔒 **Privacy Policy**: Zero telemetry, zero external tracking, local configuration storage (`%APPDATA%\WorldClockPro\settings.json`). See [`docs/PRIVACY_POLICY.md`](docs/PRIVACY_POLICY.md) for details.
 - 🏪 **Microsoft Store Guide**: See [`docs/MICROSOFT_STORE_LISTING.md`](docs/MICROSOFT_STORE_LISTING.md).

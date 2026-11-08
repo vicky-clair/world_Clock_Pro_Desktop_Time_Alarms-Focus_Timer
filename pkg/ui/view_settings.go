@@ -76,6 +76,19 @@ func DrawSettings(f *flex.Frame, state *AppState, theme ui.Theme) {
 				state.ResetScroll()
 			}
 
+			btnPro := f.Button(IDSettingsTabPro, state.T("settings.subtab_pro")).Small()
+			if state.SettingsTab == "pro" {
+				btnPro.Outline()
+			} else {
+				btnPro.Ghost()
+			}
+			if btnPro.Clicked() {
+				state.SettingsTab = "pro"
+				state.ShowProModal = false
+				state.License.ClearNotice()
+				state.ResetScroll()
+			}
+
 			btnAbt := f.Button(IDSettingsTabAbout, state.T("settings.subtab_about")).Small()
 			if state.SettingsTab == "about" {
 				btnAbt.Outline()
@@ -103,6 +116,8 @@ func DrawSettings(f *flex.Frame, state *AppState, theme ui.Theme) {
 					drawSettingsLanguage(f, state, theme, cfg, currentLang)
 				case "clock":
 					drawSettingsClock(f, state, theme, cfg)
+				case "pro":
+					DrawProCenter(f, state, theme)
 				case "about":
 					drawSettingsAbout(f, state, theme)
 				default:

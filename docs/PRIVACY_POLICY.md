@@ -4,7 +4,7 @@
 
 ---
 
-## 简体中文版：World Clock Pro 隐私政策
+## 简体中文版：World Clock Pro: Desktop Time, Alarms & Focus Timer 隐私政策
 
 **生效日期：2026年11月6日**  
 **最后更新：2026年11月6日**
@@ -18,7 +18,7 @@
 * 本应用无需注册账号即可完整使用全部功能。
 
 ### 2. 本地数据存储与配置
-为了保存您的个性化设置（例如：添加的世界时钟城市列表、闹钟设置、主题配色、语言偏好以及所选本地壁纸的文件路径），本应用仅在您的 Windows 设备本地用户配置目录（`%APPDATA%\OliveClock` 或应用沙盒本地目录）中读写配置文件（`settings.json`）。
+为了保存您的个性化设置（例如：添加的世界时钟城市列表、闹钟设置、主题配色、语言偏好以及所选本地壁纸的文件路径），本应用仅在您的 Windows 设备本地用户配置目录（`%APPDATA%\WorldClockPro` 或应用沙盒本地目录）中读写配置文件（`settings.json`）。
 * 上述数据完全保存在您的本地计算机上，绝不会离开您的设备。
 * 您可以随时通过卸载本应用或删除本地配置文件夹来彻底清除这些数据。
 
@@ -38,7 +38,7 @@
 
 ---
 
-## English Version: World Clock Pro Privacy Policy
+## English Version: World Clock Pro: Desktop Time, Alarms & Focus Timer Privacy Policy
 
 **Effective Date: November 6, 2026**  
 **Last Updated: November 6, 2026**
@@ -46,7 +46,7 @@
 Thank you for using **World Clock Pro: Desktop Time, Alarms & Focus Timer** ("the Application"). We respect and protect your privacy. This Privacy Policy explains how the Application handles your information.
 
 ### 1. Zero Personal Data Collection
-World Clock Pro is a **local-first desktop utility**:
+**World Clock Pro: Desktop Time, Alarms & Focus Timer** is a **local-first desktop utility**:
 * We **do not** collect, transmit, store, or share any personal data, device identifiers, IP addresses, usage telemetry, or location data on any external servers.
 * The Application contains **no** third-party advertising SDKs, analytics trackers, or profiling scripts.
 * No user account or sign-in is required to use any feature of the Application.
@@ -62,7 +62,7 @@ When you use the Custom Wallpaper or Wallpaper Carousel feature:
 * Your photos are decoded solely in local memory for on-screen background rendering and are **never** uploaded, copied, or transmitted anywhere.
 
 ### 4. Offline Operation
-All core features of ChronoDesk (Clocks, World Clocks, Alarms, Timers, Stopwatch, Pomodoro Tracker, Sleep Mode, and Wallpaper Carousel) operate completely offline.
+All core features of **World Clock Pro: Desktop Time, Alarms & Focus Timer** (Clocks, World Clocks, Alarms, Timers, Stopwatch, Pomodoro Tracker, Sleep Mode, and Wallpaper Carousel) operate completely offline.
 
 ### 5. Contact Us
 If you have any questions about this Privacy Policy, please contact us via the Publisher Support link on the Microsoft Store listing page.

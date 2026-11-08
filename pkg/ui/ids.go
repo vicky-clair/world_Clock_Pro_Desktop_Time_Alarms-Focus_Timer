@@ -21,6 +21,7 @@ var (
 	featSetting = Tree.Feature("settings") // 设置与偏好区域
 	featDialog  = Tree.Feature("dialog")   // 全局模态对话框区域
 	featEdgeBar = Tree.Feature("edgebar")  // 屏幕边缘收缩状态条区域
+	featPro     = Tree.Feature("pro")      // Pro 会员订阅与 7 天试用中心区域
 
 	// 顶部全局导航标签页 ID (Navigation Tabs)
 	TabClockID    = Tree.ID(featNav, "tab-clock")    // 主时钟标签页
@@ -31,6 +32,7 @@ var (
 	TabSleepID    = Tree.ID(featNav, "tab-sleep")    // 睡眠与白噪音标签页
 	TabNewsID     = Tree.ID(featNav, "tab-news")     // 历史上的今天标签页
 	TabSettingsID = Tree.ID(featNav, "tab-settings") // 设置与偏好标签页
+	TabProID      = Tree.ID(featNav, "tab-pro")      // 顶部醒目 Pro 会员与 7 天试用入口按钮
 	TabPopoutID   = Tree.ID(featNav, "tab-popout")   // 悬浮时钟切换按钮
 
 	// 顶部闹钟响铃提醒横幅按钮 (Header Alert Controls)
@@ -185,7 +187,17 @@ var (
 	IDSettingsTabWallpaper = Tree.ID(featSetting, "subtab-wallpaper")
 	IDSettingsTabLanguage  = Tree.ID(featSetting, "subtab-language")
 	IDSettingsTabClock     = Tree.ID(featSetting, "subtab-clock")
+	IDSettingsTabPro       = Tree.ID(featSetting, "subtab-pro")
 	IDSettingsTabAbout     = Tree.ID(featSetting, "subtab-about")
+
+	// Pro 会员订阅与 7 天试用中心按钮 (Pro Subscription & Trial Center Controls)
+	IDBtnCloseProModal  = Tree.ID(featPro, "btn-close-pro-modal")   // 关闭 Pro 订阅面板按钮
+	IDBtnProSubMonthly  = Tree.ID(featPro, "btn-pro-sub-monthly")   // 开通按月订阅 (¥3/月) 按钮
+	IDBtnProSubYearly   = Tree.ID(featPro, "btn-pro-sub-yearly")    // 开通按年订阅 (¥30/年) 按钮
+	IDBtnProRestore     = Tree.ID(featPro, "btn-pro-restore")       // 恢复购买 / 刷新授权按钮
+	IDBtnProManage      = Tree.ID(featPro, "btn-pro-manage")        // 管理或取消订阅 (Microsoft Store) 按钮
+	IDBtnProSimTrial    = Tree.ID(featPro, "btn-pro-sim-trial")     // 测试切换：重置为 7 天免费试用态
+	IDBtnProSimFullTest = Tree.ID(featPro, "btn-pro-sim-full-test") // 测试切换：切换为永久免付完整测试版
 	// Language Controls
 	IDLangZH = Tree.ID(featSetting, "lang-zh")
 	IDLangEN = Tree.ID(featSetting, "lang-en")

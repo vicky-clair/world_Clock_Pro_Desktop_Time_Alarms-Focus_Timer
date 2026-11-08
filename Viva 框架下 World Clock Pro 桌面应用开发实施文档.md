@@ -1,13 +1,13 @@
-# Viva 框架下 Olive Clock 同类桌面应用开发实施文档
+# Viva 框架下桌面时钟应用开发实施文档
 
 **版本：** 1.1（三平台桌面版）  
 **编制日期：** 2026-11-05  
 **目标框架：** `github.com/vivaui/viva`  
 **主要语言：** Go  
-**目标产品：** 面向 Windows、macOS、Linux 的原生桌面时间管理软件  
+**目标产品：** 面向 Windows、macOS、Linux 的原生桌面时间管理软件（`World Clock Pro: Desktop Time, Alarms & Focus Timer`）  
 **重点增强：** 基于屏幕尺寸、DPI 和用户偏好的自适应背景图片/主题系统
 
-> 本文是基于 Viva 当前公开仓库与公开文档制定的应用开发方案，不是 Viva 官方文档，也不是 Olive Clock 的内部实现说明。产品需求参考 Olive Clock 可见功能；工程架构、数据模型与图片适配系统为本项目建议设计。Viva 版本、接口与后端支持会持续变化，项目必须锁定实际采用的版本并以该版本 API 为准。
+> 本文是基于 Viva 当前公开仓库与公开文档制定的应用开发方案。产品需求参考某款主流桌面时钟软件的常见功能；工程架构、数据模型与图片适配系统为本项目原创设计。Viva 版本、接口与后端支持会持续变化，项目必须锁定实际采用的版本并以该版本 API 为准。
 
 ---
 
@@ -168,8 +168,8 @@ viva doctor
 ## 3.3 创建项目
 
 ```powershell
-viva init olive-time
-Set-Location olive-time
+viva init worldclock
+Set-Location worldclock
 
 go test ./...
 viva dev .
@@ -206,7 +206,7 @@ Viva 当前尚未到 1.0，API 可能在版本之间变化。不要假定旧版�
 建议以“产品层模块化单体”实现，不要一开始拆微服务或把每个功能拆成独立进程。
 
 ```text
-olive-time/
+worldclock/
 ├── AGENTS.md
 ├── CLAUDE.md                         # 可选，引用 AGENTS.md 与 Skill
 ├── .agents/
@@ -214,7 +214,7 @@ olive-time/
 ├── .claude/
 │   └── skills/building-with-viva/SKILL.md
 ├── cmd/
-│   └── olive-time/
+│   └── worldclock/
 │       └── main.go
 ├── internal/
 │   ├── app/
@@ -346,7 +346,7 @@ func (m *model) theme() ui.Theme {
 func newConfig(m *model) app.Config {
     config := app.Config{
         Tree:   &tree,
-        Title:  "Olive Time",
+        Title:  "World Clock Pro: Desktop Time, Alarms & Focus Timer",
         Width:  1100,
         Height: 760,
     }
@@ -360,7 +360,7 @@ func newConfig(m *model) app.Config {
                 if f.Button(toggleThemeID, "切换主题").Clicked() {
                     m.dark = !m.dark
                 }
-                f.Text("Olive Time")
+                f.Text("World Clock Pro: Desktop Time, Alarms & Focus Timer")
             })
         })
     }
@@ -397,7 +397,7 @@ func newConfig(m *model) app.Config {
 
 # 7. 背景图片与主题系统：核心增强设计
 
-这是本项目区别于 Olive Clock 的重点。不要只做“居中、拉伸、填充”三个下拉框，而应把它设计为独立的 Background Engine。
+这是本项目区别于传统桌面时钟软件的重点。不要只做“居中、拉伸、填充”三个下拉框，而应把它设计为独立的 Background Engine。
 
 ## 7.1 需要解决的问题
 
@@ -1049,7 +1049,7 @@ Linux 必须区分 X11 与 Wayland 的测试结果；macOS 必须记录 Intel/Ap
 任务 1：环境与工具
 - 安装 Viva CLI
 - `viva doctor`
-- `viva init olive-time`
+- `viva init worldclock`
 - 固定版本
 - 安装 Skill
 - Git 初始化
@@ -1119,7 +1119,6 @@ Sprint 1 不做天气、RSS、授权和云同步。
 7. 绘制与布局：<https://vivaui.dev/zh/docs/drawing-and-layout/>
 8. 测试指南：<https://vivaui.dev/zh/docs/testing/>
 9. Windows 材质说明：<https://github.com/vivaui/viva/blob/main/docs/windows-materials.md>
-10. Olive Clock：<https://oliveclock.com/>
 
 **关键事实：** Viva 主题指南中的 `ui.Theme` 是语义颜色和尺寸 token，不是桌面壁纸/背景图片管理器。它没有因为有 Theme 就自动具备完整图片适配系统。因此本项目应把背景图片作为独立媒体子系统实现，再由 Paint 在明确的绘制区域中消费处理结果。
 
@@ -1128,7 +1127,7 @@ Sprint 1 不做天气、RSS、授权和云同步。
 # 附录 A：建议根目录 AGENTS.md
 
 ```markdown
-# Olive Time — Project Instructions
+# World Clock Pro: Desktop Time, Alarms & Focus Timer — Project Instructions
 
 This is a Go desktop application built with Viva.
 

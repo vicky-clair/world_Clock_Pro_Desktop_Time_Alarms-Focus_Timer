@@ -3,6 +3,8 @@ package ui
 import (
 	"fmt"
 
+	"worldclock/pkg/license"
+
 	"github.com/vivaui/viva/flex"
 	"github.com/vivaui/viva/ui"
 )
@@ -31,95 +33,121 @@ func DrawHeader(f *flex.Frame, state *AppState, theme ui.Theme) {
 	f.Row().FillWidth().PadX(12).PadY(8).Background(theme.Card).Border(1, theme.Border).Items(flex.Center).Gap(4).Children(func() {
 		// Modern Segmented Navigation Tabs
 		btnClk := f.Button(TabClockID, state.T("nav.clock")).Small()
-		if state.ActiveTab == TabClock {
+		if state.ActiveTab == TabClock && !state.ShowProModal {
 			btnClk.Outline()
 		} else {
 			btnClk.Ghost()
 		}
 		if btnClk.Clicked() {
 			state.ActiveTab = TabClock
+			state.ShowProModal = false
 			state.ResetScroll()
 		}
 
 		btnWld := f.Button(TabWorldID, state.T("nav.world")).Small()
-		if state.ActiveTab == TabWorld {
+		if state.ActiveTab == TabWorld && !state.ShowProModal {
 			btnWld.Outline()
 		} else {
 			btnWld.Ghost()
 		}
 		if btnWld.Clicked() {
 			state.ActiveTab = TabWorld
+			state.ShowProModal = false
 			state.ResetScroll()
 		}
 
 		btnAlm := f.Button(TabAlarmsID, state.T("nav.alarms")).Small()
-		if state.ActiveTab == TabAlarms {
+		if state.ActiveTab == TabAlarms && !state.ShowProModal {
 			btnAlm.Outline()
 		} else {
 			btnAlm.Ghost()
 		}
 		if btnAlm.Clicked() {
 			state.ActiveTab = TabAlarms
+			state.ShowProModal = false
 			state.ResetScroll()
 		}
 
 		btnTmr := f.Button(TabTimersID, state.T("nav.timers")).Small()
-		if state.ActiveTab == TabTimers {
+		if state.ActiveTab == TabTimers && !state.ShowProModal {
 			btnTmr.Outline()
 		} else {
 			btnTmr.Ghost()
 		}
 		if btnTmr.Clicked() {
 			state.ActiveTab = TabTimers
+			state.ShowProModal = false
 			state.ResetScroll()
 		}
 
 		btnTrk := f.Button(TabTrackerID, state.T("nav.tracker")).Small()
-		if state.ActiveTab == TabTracker {
+		if state.ActiveTab == TabTracker && !state.ShowProModal {
 			btnTrk.Outline()
 		} else {
 			btnTrk.Ghost()
 		}
 		if btnTrk.Clicked() {
 			state.ActiveTab = TabTracker
+			state.ShowProModal = false
 			state.ResetScroll()
 		}
 
 		btnSlp := f.Button(TabSleepID, state.T("nav.sleep")).Small()
-		if state.ActiveTab == TabSleep {
+		if state.ActiveTab == TabSleep && !state.ShowProModal {
 			btnSlp.Outline()
 		} else {
 			btnSlp.Ghost()
 		}
 		if btnSlp.Clicked() {
 			state.ActiveTab = TabSleep
+			state.ShowProModal = false
 			state.ResetScroll()
 		}
 
 		btnNws := f.Button(TabNewsID, state.T("nav.news")).Small()
-		if state.ActiveTab == TabNews {
+		if state.ActiveTab == TabNews && !state.ShowProModal {
 			btnNws.Outline()
 		} else {
 			btnNws.Ghost()
 		}
 		if btnNws.Clicked() {
 			state.ActiveTab = TabNews
+			state.ShowProModal = false
 			state.ResetScroll()
 		}
 
 		btnSet := f.Button(TabSettingsID, state.T("nav.settings")).Small()
-		if state.ActiveTab == TabSettings {
+		if state.ActiveTab == TabSettings && !state.ShowProModal {
 			btnSet.Outline()
 		} else {
 			btnSet.Ghost()
 		}
 		if btnSet.Clicked() {
 			state.ActiveTab = TabSettings
+			state.ShowProModal = false
+			state.ResetScroll()
+		}
+
+		// Pro 会员订阅与 7 天免费试用醒目入口按钮（符合微软应用商店显著位置展示规范）
+		proLabel := state.T("nav.pro_active")
+		if state.License.Plan() == license.PlanTrial {
+			proLabel = fmt.Sprintf(state.T("nav.pro_trial"), state.License.TrialDaysRemaining(state.Now))
+		}
+		btnPro := f.Button(TabProID, proLabel).Small()
+		if state.ShowProModal {
+			btnPro.Outline()
+		} else {
+			btnPro.Secondary()
+		}
+		if btnPro.Clicked() {
+			state.ShowProModal = !state.ShowProModal
+			state.License.ClearNotice()
 			state.ResetScroll()
 		}
 
 		// Popout button
 		if f.Button(TabPopoutID, state.T("nav.popout")).Outline().Small().Clicked() {
+			state.ShowProModal = false
 			state.IsPopout = true
 			state.ActiveTab = TabPopout
 			state.Persist()

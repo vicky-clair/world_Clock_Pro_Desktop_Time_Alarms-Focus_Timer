@@ -10,6 +10,7 @@ import (
 	"worldclock/pkg/alarm"
 	"worldclock/pkg/audio"
 	"worldclock/pkg/i18n"
+	"worldclock/pkg/license"
 	"worldclock/pkg/rss"
 	"worldclock/pkg/sleep"
 	"worldclock/pkg/storage"
@@ -50,6 +51,7 @@ type AppState struct {
 	News      *rss.FeedStore     // 历史上的今天与精选事件流存储
 	Wallpaper *wallpaper.Manager // 壁纸与轮播引擎
 	Audio     *audio.Engine      // 原生程序化合成音频播放引擎（闹钟铃声与睡眠白噪音）
+	License   *license.Manager   // 7天免费试用与 Pro 会员订阅管理器（支持 ¥3/月、¥30/年 及免付测试版）
 
 	Invalidator *app.Invalidator // 跨线程触发窗口重绘与 OnWake 的通知器
 	Window      *app.Window      // 当前主窗口引用
@@ -78,7 +80,8 @@ type AppState struct {
 	NewsCategory       string             // 资讯页当前选中的分类过滤
 	SleepDuration      time.Duration      // 睡眠页选中的倒计时时长
 	SleepSound         sleep.AmbientSound // 睡眠页选中的环境音
-	SettingsTab        string             // 设置页当前选中的子分类 ("font", "wallpaper", "lang", "clock", "about")
+	SettingsTab        string             // 设置页当前选中的子分类 ("font", "wallpaper", "lang", "clock", "pro", "about")
+	ShowProModal       bool               // 是否在主窗口展示 Pro 会员订阅与 7 天试用弹窗面板
 	ShowAddCityModal   bool               // 是否展开“添加世界时钟城市”面板
 	DuplicateCityAlert string             // 重复添加城市提醒弹窗的城市名称（非空时展示模态对话框）
 	SelectedContinent  string             // 选城面板当前选中的大洲过滤条件
@@ -127,6 +130,7 @@ func NewAppState(store *storage.Store) *AppState {
 	news := rss.NewFeedStore()
 	wpMgr := wallpaper.NewManager(s.Wallpaper)
 	audioEng := audio.NewEngine()
+	licMgr := license.NewManager(s.License, time.Now())
 	var weekdays [7]bool
 	weekdays[2] = true
 	weekdays[3] = true
@@ -150,6 +154,7 @@ func NewAppState(store *storage.Store) *AppState {
 		News:              news,
 		Wallpaper:         wpMgr,
 		Audio:             audioEng,
+		License:           licMgr,
 		ActiveTab:         activeTab,
 		IsPopout:          s.PopoutMode,
 		NewsCategory:      "All",
@@ -184,7 +189,7 @@ func (a *AppState) T(key string) string {
 	return i18n.T(a.Lang(), key)
 }
 
-// Persist 将内存中的世界城市、闹钟、倒计时任务、悬浮窗状态与壁纸配置同步持久化至磁盘。
+// Persist 将内存中的世界城市、闹钟、倒计时任务、悬浮窗状态、壁纸配置与 Pro 订阅状态同步持久化至磁盘。
 // Persist syncs active in-memory lists back into storage.
 func (a *AppState) Persist() {
 	_ = a.Store.Update(func(cfg *storage.Settings) {
@@ -193,6 +198,9 @@ func (a *AppState) Persist() {
 		cfg.Timers = a.TimerMgr.ExportTimers()
 		cfg.PopoutMode = a.IsPopout
 		cfg.Wallpaper = a.Wallpaper.Config()
+		if a.License != nil {
+			cfg.License = a.License.Config()
+		}
 	})
 }
 
@@ -206,6 +214,9 @@ func (a *AppState) UpdateSettings(fn func(*storage.Settings)) {
 		cfg.Timers = a.TimerMgr.ExportTimers()
 		cfg.PopoutMode = a.IsPopout
 		cfg.Wallpaper = a.Wallpaper.Config()
+		if a.License != nil {
+			cfg.License = a.License.Config()
+		}
 		if fn != nil {
 			fn(cfg)
 		}

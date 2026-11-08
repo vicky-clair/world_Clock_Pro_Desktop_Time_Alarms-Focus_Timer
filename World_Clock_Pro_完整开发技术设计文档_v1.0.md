@@ -1,16 +1,16 @@
-# Olive Clock 同类产品完整开发技术设计文档
+# 桌面时钟与效率工具完整开发技术设计文档
 
 **版本：1.0 | 日期：2026-11-05 | 平台：Windows 10/11 x64**
 
 
 # 文档说明与边界
 
-本文件是一份面向独立开发者/小型团队的 Olive Clock 同类产品完整开发技术设计文档。它以 Olive Clock 官网、公开功能页及官方使用文档中可观察到的功能为需求参考，给出一套可实际实施的重新设计方案。
+本文件是一份面向独立开发者/小型团队的桌面时钟软件完整开发技术设计文档。它参考某款主流桌面时钟软件的常见公开功能与交互体验，给出一套可实际实施的原创设计方案。
 
 重要边界：
-- 本文不是 Olive Clock 官方内部设计文档，也不代表其真实源代码、数据库结构、算法或内部服务实现。
-- 公开资料可以确认产品功能与部分用户操作行为；无法确认的实现细节均标注为“建议方案”或“工程推断”。
-- 文档的目标是实现功能相近、架构独立的 Windows 桌面时间管理产品，不复制其商标、图标、界面资产、专有代码或受版权保护的内容。
+- 本文是独立原创设计文档，不涉及任何第三方商业软件的内部源代码、数据库结构、算法或内部服务实现。
+- 功能需求提炼自桌面时钟品类的通用功能与用户操作习惯；工程实现方案均为本项目的独立架构设计。
+- 文档的目标是实现架构独立、体验现代的 Windows 桌面时间管理产品（`World Clock Pro: Desktop Time, Alarms & Focus Timer`）。
 - 第一阶段目标平台为 Windows 10/11 x64。若未来跨平台，应重新评估 WPF、系统电源管理、音频和桌面窗口实现。
 
 
@@ -97,7 +97,7 @@
 
 ## 2.3 解决方案结构
 ```text
-OliveLikeClock.sln
+WorldClockPro.sln
 src/
   Clock.App/                 # WPF Views、ViewModels、Resources、Controls
   Clock.Domain/              # Entities、ValueObjects、Enums、Domain rules
@@ -816,43 +816,16 @@ public interface IProfileService
 
 # 19. 参考资料与事实来源
 
-以下资料用于确认 Olive Clock 的公开功能与用户可见行为，不代表其内部实现：
+以下技术规范与公开资料用于指导本桌面时钟软件的工程实现：
 
-1. Olive Clock 官网  
-   https://oliveclock.com/
+1. 主流桌面时钟软件通用功能参考  
+   涵盖闹钟、触发动作、悬浮时钟、倒计时器、秒表、天气、世界时钟、历史上的今天、壁纸轮播、Profile 配置、睡眠模式、专注时间追踪等核心能力。
 
-2. 官方 Features 页面  
-   https://oliveclock.com/features  
-   确认闹钟、动作、悬浮时钟、计时器、天气、世界时钟、RSS、音乐、电台、主题、Profile、睡眠模式、时间追踪等公开功能。
-
-3. 官方 Getting Started  
-   https://oliveclock.com/docs  
-   确认安装、Windows 登录启动、更新、数据目录与卸载说明。
-
-4. 官方 Settings  
-   https://oliveclock.com/docs/clock-settings  
-   确认主时钟、悬浮时钟、启动、天气和新闻相关设置。
-
-5. 官方 Alarms  
-   https://oliveclock.com/docs/alarms  
-   确认闹钟规则、铃声来源、贪睡、渐增音量、唤醒和动作配置。
-
-6. 官方 Popout Clock Widget  
-   https://oliveclock.com/docs/popout-clock-widget
-
-7. 官方 Time Tracker  
-   https://oliveclock.com/docs/time-tracker
-
-8. 官方 v1.x 到 v2.x 授权迁移说明  
-   https://oliveclock.com/announcements/migrate-to-license-keys  
-   确认 v2.0 起使用 License Key，不再要求应用登录。
-
-实施时还应查阅：
-- Microsoft .NET / WPF / TimeZoneInfo 官方文档
-- Windows SetWaitableTimer / Power Management 官方文档
-- EF Core SQLite 官方文档
-- IANA Time Zone Database
-- TimeZoneConverter 项目文档
+2. 实施时参考的技术标准与官方文档：
+- Viva GPU 原生桌面 UI 框架文档（`https://vivaui.dev/en/docs/`）
+- Windows Power Management / Win32 API 官方文档
+- IANA Time Zone Database 时区标准库
+- Wikipedia / 百度百科“历史上的今天”公开接口规范
 - 所选音频库、RSS 库及天气 API 官方文档
 
 

@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"worldclock/pkg/alarm"
+	"worldclock/pkg/license"
 	"worldclock/pkg/timer"
 	"worldclock/pkg/wallpaper"
 	"worldclock/pkg/world"
@@ -61,6 +62,7 @@ type Settings struct {
 	CloseBehavior   string           `json:"closeBehavior"`   // 关闭按钮行为："minimize"（最小化到托盘）或 "exit"（直接退出）
 	AutoStart       bool             `json:"autoStart"`       // 是否在操作系统登录时开机自动启动
 	EdgeDockEnabled bool             `json:"edgeDockEnabled"` // 窗口靠近屏幕边缘后是否自动缩小成一个状态条
+	License         license.Config   `json:"license"`         // 7天免费试用与 Pro 会员订阅配置（支持月付3元/年付30元及免付测试版）
 }
 
 // DefaultSettings 返回包含默认世界时钟城市与推荐偏好的初始配置。
@@ -89,6 +91,9 @@ func DefaultSettings() Settings {
 		CloseBehavior:   CloseBehaviorMinimize,
 		AutoStart:       false,
 		EdgeDockEnabled: true,
+		License: license.Config{
+			Plan: license.PlanTrial,
+		},
 	}
 }
 
@@ -100,7 +105,7 @@ type Store struct {
 	settings Settings
 }
 
-// NewStore 创建配置存储实例；若 filePath 为空，则默认使用用户配置目录下的 settings.json。
+// NewStore 创建配置存储实例；若 filePath 为空，则默认使用用户配置目录下的 WorldClockPro/settings.json。
 // NewStore creates a new storage store. If path is empty, uses the user config directory.
 func NewStore(filePath string) *Store {
 	if filePath == "" {
@@ -108,7 +113,7 @@ func NewStore(filePath string) *Store {
 		if err != nil || cfgDir == "" {
 			cfgDir = "."
 		}
-		filePath = filepath.Join(cfgDir, "OliveClock", "settings.json")
+		filePath = filepath.Join(cfgDir, "WorldClockPro", "settings.json")
 	}
 
 	s := &Store{
@@ -185,6 +190,9 @@ func unmarshalSettingsWithDefaults(data []byte) (Settings, error) {
 	}
 	if loaded.FontScale <= 0 {
 		loaded.FontScale = 1.0
+	}
+	if loaded.License.Plan == "" {
+		loaded.License.Plan = license.PlanTrial
 	}
 	return loaded, nil
 }

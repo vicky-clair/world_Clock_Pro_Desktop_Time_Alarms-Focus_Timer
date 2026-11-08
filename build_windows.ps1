@@ -1,4 +1,4 @@
-# Olive Clock - Windows Clean Build & Authenticode Signing Script
+# World Clock Pro: Desktop Time, Alarms & Focus Timer - Windows Clean Build & Authenticode Signing Script
 # Avoids AV heuristic false-positives (e.g., VHO:Trojan-PSW.Win32.Stealer.gen) by:
 # 1. Linking native COFF .syso PE resources (RT_MANIFEST asInvoker, RT_VERSION, RT_GROUP_ICON) via Go linker
 # 2. Preserving Go symbol table & BuildID (avoiding -s -w -buildid= obfuscation heuristics)
@@ -12,16 +12,14 @@ if (-not (Test-Path $OutDir)) {
 }
 
 $ExePath = Join-Path $OutDir "WorldClockPro.exe"
-$LegacyExePath = Join-Path $OutDir "OliveClock.exe"
 $RootExePath = Join-Path $PSScriptRoot "WorldClockPro.exe"
 $ZipPath = Join-Path $OutDir "WorldClockPro-Windows-x64.zip"
 
 Write-Host "[1/4] Building WorldClockPro.exe with native PE resources (.syso)..." -ForegroundColor Cyan
 go build -ldflags="-H=windowsgui" -o $ExePath .\cmd\worldclock
-Copy-Item -Force $ExePath $LegacyExePath
 
 Write-Host "[2/4] Applying Authenticode signature..." -ForegroundColor Cyan
-$cert = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert | Where-Object { $_.Subject -like "*World Clock*" -or $_.Subject -like "*Olive Clock*" } | Select-Object -First 1
+$cert = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert | Where-Object { $_.Subject -like "*World Clock Pro*" } | Select-Object -First 1
 if (-not $cert) {
     $cert = New-SelfSignedCertificate -Type CodeSigningCert `
         -Subject "CN=World Clock Pro Studio, O=World Clock Pro Studio, C=CN" `
@@ -29,7 +27,6 @@ if (-not $cert) {
         -NotAfter (Get-Date).AddYears(5)
 }
 Set-AuthenticodeSignature -FilePath $ExePath -Certificate $cert -HashAlgorithm SHA256 | Out-Null
-Set-AuthenticodeSignature -FilePath $LegacyExePath -Certificate $cert -HashAlgorithm SHA256 | Out-Null
 Copy-Item -Force $ExePath $RootExePath
 
 Write-Host "[3/4] Creating release package zip..." -ForegroundColor Cyan

@@ -1,4 +1,4 @@
-// Package main 是 World Clock Pro 桌面应用程序的入口包。
+// Package main 是 World Clock Pro: Desktop Time, Alarms & Focus Timer 桌面应用程序的入口包。
 // 负责初始化持久化配置、建立跨进程单实例互斥锁、创建 Viva GPU 原生窗口以及挂载系统托盘菜单。
 package main
 
@@ -87,6 +87,6 @@ func main() {
 		})
 		return nil
 	}); err != nil {
-		log.Fatalf("failed to run world clock application: %v", err)
+		log.Fatalf("failed to run World Clock Pro: Desktop Time, Alarms & Focus Timer: %v", err)
 	}
 }

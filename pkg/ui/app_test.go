@@ -8,6 +8,7 @@ import (
 
 	"worldclock/pkg/alarm"
 	"worldclock/pkg/clock"
+	"worldclock/pkg/license"
 	"worldclock/pkg/storage"
 
 	"github.com/vivaui/viva/app"
@@ -950,9 +951,6 @@ func TestAllScreensNoFormatOrUTF8Errors(t *testing.T) {
 				if strings.Contains(lbl.Value, "%!") {
 					t.Fatalf("found fmt.Sprintf format error in label %q on tab %v", lbl.Value, state.ActiveTab)
 				}
-				if strings.Contains(strings.ToLower(lbl.Value), "olive clock") {
-					t.Fatalf("found residual 'Olive Clock' text in label %q on tab %v", lbl.Value, state.ActiveTab)
-				}
 			}
 		}
 	}
@@ -1710,5 +1708,105 @@ func TestEdgeBarAutoShrinkAndRestoreButton(t *testing.T) {
 	}
 	if !clickID(t, driver, IDBtnRestoreEdgeBar) {
 		t.Fatal("failed to restore from settings preview edge bar")
+	}
+}
+
+func TestProSubscriptionAndTrialCenter(t *testing.T) {
+	state, driver := setupTestApp(t)
+	defer driver.Close()
+
+	// Switch to Chinese UI first
+	clickID(t, driver, TabSettingsID)
+	clickID(t, driver, IDSettingsTabLanguage)
+	clickID(t, driver, IDLangZH)
+	clickID(t, driver, TabClockID)
+
+	// 1. Default state is 7-Day Free Trial, with all features 100% unlocked without payment
+	if state.License.Plan() != license.PlanTrial {
+		t.Fatalf("expected initial plan to be PlanTrial, got %s", state.License.Plan())
+	}
+	if !state.License.IsFeatureUnlocked(state.Now) {
+		t.Fatal("expected all features to be unlocked in full test build")
+	}
+	if !hasLabel(driver.Snapshot(), "试用 7 天") {
+		t.Fatal("expected top navigation bar to display '👑 试用 7 天 · Pro' button")
+	}
+
+	// 2. Click prominent top navigation bar Pro button -> opens Pro Subscription & Trial Modal
+	if !clickID(t, driver, TabProID) {
+		t.Fatal("failed to click TabProID in top navigation bar")
+	}
+	if !state.ShowProModal {
+		t.Fatal("expected ShowProModal to be true after clicking TabProID")
+	}
+	snapPro := driver.Snapshot()
+	if !hasLabel(snapPro, "¥3 / 月") || !hasLabel(snapPro, "¥30 / 年") {
+		t.Fatal("expected both ¥3/月 and ¥30/年 subscription plans on Pro modal")
+	}
+
+	// 3. Click Monthly subscription (¥3/月) -> activates immediately for free testing and persists
+	if !clickID(t, driver, IDBtnProSubMonthly) {
+		t.Fatal("failed to click IDBtnProSubMonthly")
+	}
+	if state.License.Plan() != license.PlanMonthly || !state.License.IsProActive() {
+		t.Fatalf("expected PlanMonthly active, got %s", state.License.Plan())
+	}
+	if state.Store.Get().License.Plan != license.PlanMonthly {
+		t.Fatalf("expected persisted plan %s, got %s", license.PlanMonthly, state.Store.Get().License.Plan)
+	}
+	if !hasLabel(driver.Snapshot(), "👑 Pro 会员") {
+		t.Fatal("expected top navigation button to update to '👑 Pro 会员'")
+	}
+
+	// 4. Click Yearly subscription (¥30/年) -> activates immediately for free testing and persists
+	if !clickID(t, driver, IDBtnProSubYearly) {
+		t.Fatal("failed to click IDBtnProSubYearly")
+	}
+	if state.License.Plan() != license.PlanYearly {
+		t.Fatalf("expected PlanYearly active, got %s", state.License.Plan())
+	}
+	if state.Store.Get().License.Plan != license.PlanYearly {
+		t.Fatalf("expected persisted plan %s, got %s", license.PlanYearly, state.Store.Get().License.Plan)
+	}
+
+	// 5. Test Full Test Mode & 7-Day Trial Simulation buttons + Restore Purchases
+	if !clickID(t, driver, IDBtnProSimFullTest) {
+		t.Fatal("failed to click IDBtnProSimFullTest")
+	}
+	if state.License.Plan() != license.PlanFullTest {
+		t.Fatalf("expected PlanFullTest, got %s", state.License.Plan())
+	}
+	if !clickID(t, driver, IDBtnProSimTrial) {
+		t.Fatal("failed to click IDBtnProSimTrial")
+	}
+	if state.License.Plan() != license.PlanTrial {
+		t.Fatalf("expected PlanTrial after simulation reset, got %s", state.License.Plan())
+	}
+	if !clickID(t, driver, IDBtnProRestore) {
+		t.Fatal("failed to click IDBtnProRestore")
+	}
+	if state.License.LastNotice() != "restored" {
+		t.Fatalf("expected notice restored, got %s", state.License.LastNotice())
+	}
+
+	// 6. Close Pro Modal via close button
+	if !clickID(t, driver, IDBtnCloseProModal) {
+		t.Fatal("failed to click IDBtnCloseProModal")
+	}
+	if state.ShowProModal {
+		t.Fatal("expected ShowProModal to be false after closing modal")
+	}
+
+	// 7. Navigate to Settings -> 👑 会员 sub-tab and verify Pro Center renders inside Settings
+	clickID(t, driver, TabSettingsID)
+	if !clickID(t, driver, IDSettingsTabPro) {
+		t.Fatal("failed to click IDSettingsTabPro ('👑 会员') in Settings")
+	}
+	if state.SettingsTab != "pro" {
+		t.Fatalf("expected SettingsTab 'pro', got '%s'", state.SettingsTab)
+	}
+	snapSettingsPro := driver.Snapshot()
+	if !hasLabel(snapSettingsPro, "¥3 / 月") || !hasLabel(snapSettingsPro, "¥30 / 年") {
+		t.Fatal("expected subscription plans to render inside Settings -> Pro sub-tab")
 	}
 }

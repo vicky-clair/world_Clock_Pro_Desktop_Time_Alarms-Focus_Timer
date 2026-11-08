@@ -16,8 +16,8 @@ import (
 	"github.com/vivaui/viva/ui"
 )
 
-// NewAppConfig 构建 World Clock Pro 应用的 Viva 窗口配置、绘制回调与生命周期钩子。
-// NewAppConfig creates the Viva app configuration for the World Clock application.
+// NewAppConfig 构建 World Clock Pro: Desktop Time, Alarms & Focus Timer 应用的 Viva 窗口配置、绘制回调与生命周期钩子。
+// NewAppConfig creates the Viva app configuration for World Clock Pro: Desktop Time, Alarms & Focus Timer.
 func NewAppConfig(state *AppState) app.Config {
 	var inv app.Invalidator
 	state.Invalidator = &inv
@@ -128,6 +128,14 @@ func NewAppConfig(state *AppState) app.Config {
 			f.Column().Fill().Children(func() {
 				// 顶部全局导航栏与响铃提醒横幅
 				DrawHeader(f, state, theme)
+
+				// 若用户点击了顶部“👑 Pro 会员 / 试用 X 天”按钮，优先展示 Pro 订阅与试用中心模态页
+				if state.ShowProModal {
+					f.Column().Fill().Children(func() {
+						DrawProModal(f, state, theme)
+					})
+					return
+				}
 
 				// 当前激活的功能标签页视图
 				f.Column().Fill().Children(func() {
