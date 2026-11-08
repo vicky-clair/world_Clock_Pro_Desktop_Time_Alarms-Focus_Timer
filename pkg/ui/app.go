@@ -37,6 +37,9 @@ func NewAppConfig(state *AppState) app.Config {
 		now := time.Now()
 		state.Now = now
 		state.UTC = now.UTC()
+		if !state.topmostSynced {
+			state.SyncTopmost()
+		}
 
 		// 2. 检查壁纸轮播是否到达切换时间点（未到期时为 O(1) 零内存分配检查；仅在内存推进索引，退出时统一落盘，杜绝后台周期写盘）
 		state.Wallpaper.AdvanceIfDue(now)

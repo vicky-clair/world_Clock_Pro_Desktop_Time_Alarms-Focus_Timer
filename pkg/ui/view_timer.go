@@ -97,7 +97,7 @@ func DrawTimers(f *flex.Frame, state *AppState, theme ui.Theme) {
 
 						// Remaining Display & Progress
 						f.Column().Width(220).Gap(8).Children(func() {
-							f.Text(timer.FormatDuration(t.Remaining)).FontSize(28).Bold().Mono().Color(theme.Foreground)
+							state.ApplyDigitsFont(f.Text(timer.FormatDuration(t.Remaining)).FontSize(28).Bold()).Color(theme.Foreground)
 							f.Progress(t.ProgressFraction()).Height(6)
 						})
 
@@ -157,7 +157,7 @@ func DrawTimers(f *flex.Frame, state *AppState, theme ui.Theme) {
 
 				// Huge Elapsed Time Readout
 				elapsed := sw.Elapsed(now)
-				f.Text(timer.FormatPrecision(elapsed)).FontSize(56).Bold().Mono().Color(theme.Primary)
+				state.ApplyDigitsFont(f.Text(timer.FormatPrecision(elapsed)).FontSize(56).Bold()).Color(theme.Primary)
 
 				// Action buttons
 				f.Row().Items(flex.Center).Gap(12).Children(func() {
@@ -199,9 +199,9 @@ func DrawTimers(f *flex.Frame, state *AppState, theme ui.Theme) {
 									lap := laps[i]
 									f.Row().FillWidth().Pad(8).Background(theme.Muted).Radius(6).Items(flex.Center).Children(func() {
 										f.Text(fmt.Sprintf(state.T("stopwatch.lap_num"), lap.Index)).Bold().Width(100)
-										f.Text(fmt.Sprintf("+%s", lap.LapDisplay)).Mono().Color(theme.Accent).Width(160)
+										state.ApplyDigitsFont(f.Text(fmt.Sprintf("+%s", lap.LapDisplay))).Color(theme.Accent).Width(160)
 										f.Spacer()
-										f.Text(fmt.Sprintf("%s: %s", state.T("stopwatch.total"), lap.TotalDisplay)).Mono().Bold()
+										state.ApplyDigitsFont(f.Text(fmt.Sprintf("%s: %s", state.T("stopwatch.total"), lap.TotalDisplay))).Bold()
 									})
 								}
 							})
@@ -274,7 +274,7 @@ func DrawTimerModal(f *flex.Frame, state *AppState, theme ui.Theme) {
 		f.Text(state.T("timer.duration_label")).FontSize(13).Muted()
 		durDisplay := fmt.Sprintf("%02d:%02d:%02d", state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds)
 		f.Row().Items(flex.Center).Gap(6).Children(func() {
-			f.Text(durDisplay).FontSize(24).Bold().Mono().Color(theme.Foreground)
+			state.ApplyDigitsFont(f.Text(durDisplay).FontSize(24).Bold()).Color(theme.Foreground)
 
 			if f.Button(IDBtnTimerHrDown, state.T("timer.step_h_down")).Small().Secondary().Clicked() {
 				state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds = StepTimerHMS(state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds, -3600)

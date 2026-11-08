@@ -145,7 +145,23 @@ func DrawHeader(f *flex.Frame, state *AppState, theme ui.Theme) {
 			state.ResetScroll()
 		}
 
-		// Popout button
+		// 窗口置顶锁定快捷按钮（支持在主窗口一键开启或取消总在最前）
+		topmost := state.Store.GetPrefs().Topmost
+		pinLbl := state.T("nav.pin_off")
+		if topmost {
+			pinLbl = state.T("nav.pin_on")
+		}
+		btnPin := f.Button(IDBtnHeaderTopmost, pinLbl).Small()
+		if topmost {
+			btnPin.Outline()
+		} else {
+			btnPin.Ghost()
+		}
+		if btnPin.Clicked() {
+			state.SetTopmost(!topmost)
+		}
+
+		// 桌面悬浮小窗切换按钮
 		if f.Button(TabPopoutID, state.T("nav.popout")).Outline().Small().Clicked() {
 			state.ShowProModal = false
 			state.IsPopout = true

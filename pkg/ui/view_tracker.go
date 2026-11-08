@@ -68,7 +68,7 @@ func DrawTracker(f *flex.Frame, state *AppState, theme ui.Theme) {
 				f.Text(fmt.Sprintf("● %s", statusStr)).FontSize(16).Bold().Color(statusColor)
 
 				// 64px 剩余时间大字读数
-				f.Text(tr.FormatRemaining()).FontSize(64).Bold().Mono().Color(theme.Foreground)
+				state.ApplyDigitsFont(f.Text(tr.FormatRemaining()).FontSize(64).Bold()).Color(theme.Foreground)
 
 				// 当前阶段进度条
 				f.Progress(tr.ProgressFraction()).Height(8).FillWidth()

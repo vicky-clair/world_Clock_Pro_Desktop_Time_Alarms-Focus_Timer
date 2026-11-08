@@ -91,7 +91,7 @@ func DrawAlarms(f *flex.Frame, state *AppState, theme ui.Theme) {
 						f.Row().FillWidth().Pad(16).Background(theme.Card).Radius(12).Border(1, theme.Border).Items(flex.Center).Gap(16).Children(func() {
 							// 左侧：闹钟触发时间与重复周期
 							f.Column().Width(180).Gap(4).Children(func() {
-								f.Text(a.FormatTime(cfg.TimeFormat24H)).FontSize(26).Bold().Mono().Color(theme.Foreground)
+								state.ApplyDigitsFont(f.Text(a.FormatTime(cfg.TimeFormat24H)).FontSize(26).Bold()).Color(theme.Foreground)
 								f.Text(localizeRepeatSummary(state, a)).FontSize(12).Bold().Color(theme.Primary)
 							})
 
@@ -174,7 +174,7 @@ func DrawNewAlarmModal(f *flex.Frame, state *AppState, theme ui.Theme) {
 
 		// Custom Hour & Minute Steppers (with exact 24h carry/borrow arithmetic)
 		f.Row().Items(flex.Center).Gap(8).Children(func() {
-			f.Text(fmt.Sprintf("%02d:%02d", state.NewAlarmHour, state.NewAlarmMinute)).FontSize(22).Bold().Mono().Color(theme.Foreground)
+			state.ApplyDigitsFont(f.Text(fmt.Sprintf("%02d:%02d", state.NewAlarmHour, state.NewAlarmMinute)).FontSize(22).Bold()).Color(theme.Foreground)
 			if f.Button(IDBtnAlarmHourDown, state.T("alarm.step_h_down")).Small().Secondary().Clicked() {
 				state.NewAlarmHour, state.NewAlarmMinute = StepAlarmTime(state.NewAlarmHour, state.NewAlarmMinute, -1, 0)
 			}

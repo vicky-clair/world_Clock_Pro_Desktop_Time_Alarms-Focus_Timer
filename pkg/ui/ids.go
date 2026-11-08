@@ -25,16 +25,17 @@ var (
 	featPro     = Tree.Feature("pro")      // Pro 会员订阅与 7 天试用中心区域
 
 	// 顶部全局导航标签页 ID (Navigation Tabs)
-	TabClockID    = Tree.ID(featNav, "tab-clock")    // 主时钟标签页
-	TabWorldID    = Tree.ID(featNav, "tab-world")    // 世界时钟标签页
-	TabAlarmsID   = Tree.ID(featNav, "tab-alarms")   // 闹钟管理标签页
-	TabTimersID   = Tree.ID(featNav, "tab-timers")   // 倒计时与秒表标签页
-	TabTrackerID  = Tree.ID(featNav, "tab-tracker")  // 专注计时器标签页
-	TabSleepID    = Tree.ID(featNav, "tab-sleep")    // 睡眠与白噪音标签页
-	TabNewsID     = Tree.ID(featNav, "tab-news")     // 历史上的今天标签页
-	TabSettingsID = Tree.ID(featNav, "tab-settings") // 设置与偏好标签页
-	TabProID      = Tree.ID(featNav, "tab-pro")      // 顶部醒目 Pro 会员与 7 天试用入口按钮
-	TabPopoutID   = Tree.ID(featNav, "tab-popout")   // 悬浮时钟切换按钮
+	TabClockID         = Tree.ID(featNav, "tab-clock")          // 主时钟标签页
+	TabWorldID         = Tree.ID(featNav, "tab-world")          // 世界时钟标签页
+	TabAlarmsID        = Tree.ID(featNav, "tab-alarms")         // 闹钟管理标签页
+	TabTimersID        = Tree.ID(featNav, "tab-timers")         // 倒计时与秒表标签页
+	TabTrackerID       = Tree.ID(featNav, "tab-tracker")        // 专注计时器标签页
+	TabSleepID         = Tree.ID(featNav, "tab-sleep")          // 睡眠与白噪音标签页
+	TabNewsID          = Tree.ID(featNav, "tab-news")           // 历史上的今天标签页
+	TabSettingsID      = Tree.ID(featNav, "tab-settings")       // 设置与偏好标签页
+	TabProID           = Tree.ID(featNav, "tab-pro")            // 顶部醒目 Pro 会员与 7 天试用入口按钮
+	IDBtnHeaderTopmost = Tree.ID(featNav, "btn-header-topmost") // 顶部导航栏窗口置顶锁定开关按钮
+	TabPopoutID        = Tree.ID(featNav, "tab-popout")         // 悬浮时钟切换按钮
 
 	// 顶部闹钟响铃提醒横幅按钮 (Header Alert Controls)
 	IDBtnSnooze  = Tree.ID(featHeader, "btn-snooze")  // 贪睡 (+5分钟) 按钮
@@ -48,6 +49,7 @@ var (
 	IDBtnQuickEdgeBar  = Tree.ID(featClock, "btn-quick-edgebar")  // 一键缩为边缘状态条按钮
 
 	// 屏幕边缘收缩状态条按钮 (Edge Bar Controls)
+	IDBtnEdgeBarTopmost = Tree.ID(featEdgeBar, "btn-edgebar-topmost") // 边缘状态条置顶锁定切换按钮
 	IDBtnRestoreEdgeBar = Tree.ID(featEdgeBar, "btn-restore-edgebar") // 从状态条恢复正常窗口按钮
 
 	// 世界时钟与 193 国目录选择弹窗控件 (World Clock Controls)
@@ -176,7 +178,8 @@ var (
 	IDThemeLight = Tree.ID(featSetting, "theme-light") // 明亮清爽主题
 	IDThemeNord  = Tree.ID(featSetting, "theme-nord")  // 极地冰蓝 (Nord) 主题
 
-	// 设置与偏好：时钟、温度单位、开机自启与窗口行为控件 (Clock & Window Behavior Controls)
+	// 设置与偏好：时钟、温度单位、窗口置顶、开机自启与窗口行为控件 (Clock & Window Behavior Controls)
+	IDOptTopmost                = Tree.ID(featSetting, "opt-topmost")                  // 窗口总在最前（置顶锁定）开关
 	IDOptShowSeconds            = Tree.ID(featSetting, "opt-show-seconds")             // 是否显示秒数开关
 	IDOptFormat24H              = Tree.ID(featSetting, "opt-format-24h")               // 12/24 小时制切换
 	IDOptFullDate               = Tree.ID(featSetting, "opt-full-date")                // 完整/简短日期格式切换
@@ -255,14 +258,18 @@ var (
 	IDScrollNews     = Tree.ID(featNews, "scroll-news")        // 历史上的今天页面滚动容器
 	IDScrollTracker  = Tree.ID(featTracker, "scroll-tracker")  // 专注计时页面滚动容器
 
-	// 字体大小、时钟数字颜色、界面文字颜色与全局缩放按钮 (Font & Color Customization Controls)
-	IDFontSize48         = Tree.ID(featSetting, "fs-48")          // 时钟字号预设：紧凑 48px
-	IDFontSize64         = Tree.ID(featSetting, "fs-64")          // 时钟字号预设：标准 64px
-	IDFontSize76         = Tree.ID(featSetting, "fs-76")          // 时钟字号预设：大号 76px
-	IDFontSize88         = Tree.ID(featSetting, "fs-88")          // 时钟字号预设：特大 88px
-	IDFontSize96         = Tree.ID(featSetting, "fs-96")          // 时钟字号预设：超大 96px
-	IDFontSizeCustomDown = Tree.ID(featSetting, "fs-custom-down") // 时钟字号步进微调：-2px
-	IDFontSizeCustomUp   = Tree.ID(featSetting, "fs-custom-up")   // 时钟字号步进微调：+2px
+	// 字体大小、系统字体选择、时钟数字颜色、界面文字颜色与全局缩放按钮 (Font & Color Customization Controls)
+	IDBtnFontDefault          = Tree.ID(featSetting, "font-default")         // 恢复系统默认字体按钮
+	IDBtnToggleSystemFontList = Tree.ID(featSetting, "btn-toggle-sys-fonts") // 展开/收起系统完整字体库列表按钮
+	IDBtnSysFontPagePrev      = Tree.ID(featSetting, "btn-sys-font-prev")    // 系统字体库列表上一页按钮
+	IDBtnSysFontPageNext      = Tree.ID(featSetting, "btn-sys-font-next")    // 系统字体库列表下一页按钮
+	IDFontSize48              = Tree.ID(featSetting, "fs-48")                // 时钟字号预设：紧凑 48px
+	IDFontSize64              = Tree.ID(featSetting, "fs-64")                // 时钟字号预设：标准 64px
+	IDFontSize76              = Tree.ID(featSetting, "fs-76")                // 时钟字号预设：大号 76px
+	IDFontSize88              = Tree.ID(featSetting, "fs-88")                // 时钟字号预设：特大 88px
+	IDFontSize96              = Tree.ID(featSetting, "fs-96")                // 时钟字号预设：超大 96px
+	IDFontSizeCustomDown      = Tree.ID(featSetting, "fs-custom-down")       // 时钟字号步进微调：-2px
+	IDFontSizeCustomUp        = Tree.ID(featSetting, "fs-custom-up")         // 时钟字号步进微调：+2px
 
 	IDFontColorWhite  = Tree.ID(featSetting, "fc-white")  // 时钟数字颜色：纯白
 	IDFontColorGold   = Tree.ID(featSetting, "fc-gold")   // 时钟数字颜色：琥珀金
@@ -348,4 +355,17 @@ func TimerDeleteID(timerID string) ui.ID {
 // TimerEditID 返回指定倒计时任务的编辑修改按钮 ID。
 func TimerEditID(timerID string) ui.ID {
 	return Tree.ID(featTimers, "edit-"+timerID)
+}
+
+// CuratedFontID 返回“语言与字体”设置页中精选系统字体快捷按钮的稳定 ID。
+func CuratedFontID(family string) ui.ID {
+	if family == "" {
+		return IDBtnFontDefault
+	}
+	return Tree.ID(featSetting, "curated-font-"+family)
+}
+
+// SystemFontItemID 返回“语言与字体”设置页中系统完整字体库列表项按钮的稳定 ID。
+func SystemFontItemID(family string) ui.ID {
+	return Tree.ID(featSetting, "sys-font-"+family)
 }

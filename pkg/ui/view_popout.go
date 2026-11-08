@@ -64,9 +64,7 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 				pinLabel = state.T("popout.pin_on")
 			}
 			if f.Button(IDBtnPinPopout, pinLabel).Outline().Clicked() {
-				state.UpdateSettings(func(s *storage.Settings) {
-					s.Topmost = !s.Topmost
-				})
+				state.SetTopmost(!cfg.Topmost)
 			}
 
 			f.Spacer()
@@ -124,7 +122,7 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 		if cfg.ClockStyle == string(clock.StyleAnalog) {
 			drawAnalogFace(f, now, theme, 260)
 			f.Row().Items(flex.Baseline).Gap(10).Children(func() {
-				f.Text(timeStr).FontSize(48).Bold().Mono()
+				state.ApplyDigitsFont(f.Text(timeStr).FontSize(48).Bold())
 				if period != "" {
 					f.Text(period).FontSize(26).Bold().Color(theme.Primary)
 				}
@@ -149,7 +147,7 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 
 				// 超大数字时钟
 				f.Row().Items(flex.Baseline).Gap(12).Children(func() {
-					f.Text(timeStr).FontSize(88).Bold().Mono().Color(state.ClockColor(theme))
+					state.ApplyDigitsFont(f.Text(timeStr).FontSize(88).Bold()).Color(state.ClockColor(theme))
 					if period != "" {
 						f.Text(period).FontSize(28).Bold().Color(theme.Primary)
 					}

@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"worldclock/pkg/clock"
 	"worldclock/pkg/i18n"
@@ -609,13 +610,127 @@ func drawSettingsLanguage(f *flex.Frame, state *AppState, theme ui.Theme, cfg st
 	drawSettingsFont(f, state, theme, cfg)
 }
 
-// drawSettingsFont 渲染字体与排版定制卡片组（实时字体预览、时钟字号预设与 2px 步进微调、时钟数字高亮色、界面全域文字颜色以及全局字号缩放）。
+// drawSettingsFont 渲染字体与排版定制卡片组（实时字体预览、系统内字体库全局调取、时钟字号预设与 2px 步进微调、时钟数字高亮色、界面全域文字颜色以及全局字号缩放）。
 func drawSettingsFont(f *flex.Frame, state *AppState, theme ui.Theme, cfg storage.Settings) {
+	lang := state.Lang()
+	sysFonts := state.SystemFonts()
+	curated := AvailableCuratedFonts(sysFonts)
+
 	// Card 1: 实时效果预览 (Live Preview)
 	f.Column().FillWidth().Pad(20).Background(theme.Card).Radius(12).Border(1, theme.Border).Items(flex.Center).Gap(10).Children(func() {
 		f.Text(state.T("settings.font_preview_title")).FontSize(14).Bold().Color(theme.Primary)
-		f.Text("12:34:56").FontSize(state.EffectiveClockFontSize()).Bold().Mono().Color(state.ClockColor(theme))
-		f.Text(i18n.FormatDateLocalized(state.Lang(), 11, 5, 2026, 4, true)).FontSize(14).Muted()
+		state.ApplyDigitsFont(f.Text("12:34:56").FontSize(state.EffectiveClockFontSize()).Bold()).Color(state.ClockColor(theme))
+		f.Text(i18n.FormatDateLocalized(lang, 11, 5, 2026, 4, true)).FontSize(14).Muted()
+	})
+
+	// Card 1.5: 应用全局字体（调取电脑系统内字体库）
+	f.Column().FillWidth().Pad(12).Background(theme.Card).Radius(12).Border(1, theme.Border).Gap(8).Children(func() {
+		f.Row().FillWidth().Items(flex.Center).Gap(8).Children(func() {
+			f.Text(state.T("settings.font_family_title")).FontSize(15).Bold().Color(theme.Primary)
+			f.Spacer()
+			currentFontDisplay := FormatFontDisplayName(cfg.FontFamily, lang)
+			f.Text(fmt.Sprintf(state.T("settings.font_current_fmt"), currentFontDisplay)).FontSize(13).Bold().Color(theme.Accent)
+		})
+		f.Paragraph(state.T("settings.font_fallback_hint"), 2).FontSize(12).Muted()
+
+		// 精选通用系统字体快捷切换栏（自动按每行 4 个按钮折行排布）
+		const curatedPerRow = 4
+		for start := 0; start < len(curated); start += curatedPerRow {
+			end := start + curatedPerRow
+			if end > len(curated) {
+				end = len(curated)
+			}
+			rowItems := curated[start:end]
+			f.Row().Items(flex.Center).Gap(8).Children(func() {
+				for _, opt := range rowItems {
+					item := opt
+					btn := f.Button(CuratedFontID(item.Family), CuratedFontLabel(item, lang)).Small()
+					if strings.EqualFold(cfg.FontFamily, item.Family) {
+						btn.Outline()
+					} else {
+						btn.Secondary()
+					}
+					if btn.Clicked() {
+						state.SetFontFamily(item.Family)
+					}
+				}
+			})
+		}
+
+		// 展开/收起电脑系统全部已安装字体库
+		expandLbl := fmt.Sprintf(state.T("settings.font_expand_all"), len(sysFonts))
+		if state.ShowAllSystemFonts {
+			expandLbl = state.T("settings.font_collapse_all")
+		}
+		btnExpand := f.Button(IDBtnToggleSystemFontList, expandLbl).Small()
+		if state.ShowAllSystemFonts {
+			btnExpand.Outline()
+		} else {
+			btnExpand.Secondary()
+		}
+		if btnExpand.Clicked() {
+			state.ShowAllSystemFonts = !state.ShowAllSystemFonts
+			state.SystemFontPage = 0
+		}
+
+		if state.ShowAllSystemFonts && len(sysFonts) > 0 {
+			const pageSize = 16
+			totalPages := (len(sysFonts) + pageSize - 1) / pageSize
+			if state.SystemFontPage < 0 {
+				state.SystemFontPage = 0
+			}
+			if state.SystemFontPage >= totalPages {
+				state.SystemFontPage = totalPages - 1
+			}
+			pageStart := state.SystemFontPage * pageSize
+			pageEnd := pageStart + pageSize
+			if pageEnd > len(sysFonts) {
+				pageEnd = len(sysFonts)
+			}
+			pageFonts := sysFonts[pageStart:pageEnd]
+
+			// 分页导航控制栏
+			if totalPages > 1 {
+				f.Row().FillWidth().Items(flex.Center).Gap(8).Children(func() {
+					if f.Button(IDBtnSysFontPagePrev, state.T("settings.font_page_prev")).Small().Ghost().Disabled(state.SystemFontPage <= 0).Clicked() {
+						if state.SystemFontPage > 0 {
+							state.SystemFontPage--
+						}
+					}
+					f.Text(fmt.Sprintf(state.T("settings.font_page_info"), state.SystemFontPage+1, totalPages, len(sysFonts))).FontSize(12).Muted()
+					f.Spacer()
+					if f.Button(IDBtnSysFontPageNext, state.T("settings.font_page_next")).Small().Ghost().Disabled(state.SystemFontPage >= totalPages-1).Clicked() {
+						if state.SystemFontPage < totalPages-1 {
+							state.SystemFontPage++
+						}
+					}
+				})
+			}
+
+			// 每页按每行 4 款系统字体整齐排列
+			const sysPerRow = 4
+			for rStart := 0; rStart < len(pageFonts); rStart += sysPerRow {
+				rEnd := rStart + sysPerRow
+				if rEnd > len(pageFonts) {
+					rEnd = len(pageFonts)
+				}
+				rowSlice := pageFonts[rStart:rEnd]
+				f.Row().Items(flex.Center).Gap(8).Children(func() {
+					for _, fam := range rowSlice {
+						familyName := fam
+						btn := f.Button(SystemFontItemID(familyName), familyName).Small()
+						if strings.EqualFold(cfg.FontFamily, familyName) {
+							btn.Outline()
+						} else {
+							btn.Secondary()
+						}
+						if btn.Clicked() {
+							state.SetFontFamily(familyName)
+						}
+					}
+				})
+			}
+		}
 	})
 
 	// Card 2: 时钟数字大小 (Clock Font Size)
@@ -905,6 +1020,27 @@ func drawSettingsClock(f *flex.Frame, state *AppState, theme ui.Theme, cfg stora
 	// Display Options
 	f.Column().FillWidth().Pad(16).Background(theme.Card).Radius(8).Border(1, theme.Border).Gap(12).Children(func() {
 		f.Text(state.T("settings.display")).FontSize(16).Bold().Color(theme.Primary)
+
+		// 窗口总在最前（全局置顶锁定开关）
+		f.Row().Items(flex.Center).Children(func() {
+			f.Column().Gap(2).Children(func() {
+				f.Text(state.T("settings.topmost"))
+				f.Text(state.T("settings.topmost_desc")).FontSize(12).Muted()
+			})
+			f.Spacer()
+			btnTopmost := f.Button(IDOptTopmost, state.T("settings.topmost_off"))
+			if cfg.Topmost {
+				btnTopmost.Label(state.T("settings.topmost_on")).Outline()
+			} else {
+				btnTopmost.Secondary()
+			}
+			if btnTopmost.Clicked() {
+				state.SetTopmost(!cfg.Topmost)
+			}
+		})
+
+		f.Divider()
+
 		f.Row().Items(flex.Center).Children(func() {
 			f.Text(state.T("settings.format24h"))
 			f.Spacer()

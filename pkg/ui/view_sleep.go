@@ -47,7 +47,7 @@ func DrawSleepMode(f *flex.Frame, state *AppState, theme ui.Theme) {
 			f.Row().Items(flex.Baseline).Gap(10).Children(func() {
 				// 采用柔和低对比度森系暗绿文字，避免夜间刺眼
 				ambientColor := ui.RGB24(0x8F9779)
-				f.Text(timeStr).FontSize(72).Bold().Mono().Color(ambientColor)
+				state.ApplyDigitsFont(f.Text(timeStr).FontSize(72).Bold()).Color(ambientColor)
 				if period != "" {
 					f.Text(period).FontSize(24).Bold().Color(ambientColor)
 				}
@@ -70,7 +70,7 @@ func DrawSleepMode(f *flex.Frame, state *AppState, theme ui.Theme) {
 				curSleepMins := int(state.SleepDuration.Round(time.Minute).Minutes())
 				f.Row().Items(flex.Center).Gap(8).Children(func() {
 					f.Text(state.T("sleep.duration")).FontSize(13).Muted()
-					f.Text(fmt.Sprintf(state.T("sleep.dur_fmt"), curSleepMins)).FontSize(16).Bold().Mono().Color(theme.Primary)
+					state.ApplyDigitsFont(f.Text(fmt.Sprintf(state.T("sleep.dur_fmt"), curSleepMins)).FontSize(16).Bold()).Color(theme.Primary)
 
 					btn15 := f.Button(IDBtnSleep15m, state.T("sleep.dur_15m")).Small()
 					if state.SleepDuration == 15*time.Minute {

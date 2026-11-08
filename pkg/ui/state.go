@@ -74,8 +74,17 @@ type AppState struct {
 	SavedNormalFrame             ui.Rect // 进入边缘状态条前保存的正常窗口矩形
 	SuppressEdgeBarUntilMoveAway bool    // 点击“恢复正常”按钮后，在窗口移出边缘前暂时屏蔽自动收缩
 
-	// 开机自动启动同步钩子（测试可注入自定义回调，默认调用 SyncSystemAutostart）
-	AutostartHook func(enabled bool) error
+	// 开机自动启动、窗口置顶与全局系统字体同步钩子（测试可注入自定义回调）
+	AutostartHook  func(enabled bool) error
+	TopmostHook    func(enabled bool)
+	FontFamilyHook func(family string)
+	topmostSynced  bool // 是否已在窗口首帧完成初始置顶状态同步
+
+	// 系统字体库惰性缓存与分页浏览状态（仅在首次访问时读取一次系统字体，渲染帧内零开销）
+	systemFontsLoaded  bool     // 是否已读取并过滤当前电脑已安装的字体列表
+	systemFonts        []string // 当前电脑已安装的可读系统字体族列表（已过滤符号字体）
+	ShowAllSystemFonts bool     // 在“🌐 语言”设置中是否展开完整系统字体库列表
+	SystemFontPage     int      // 完整系统字体库列表的当前分页页码（从 0 开始）
 
 	// 界面辅助交互状态
 	NewsCategory       string             // 资讯页当前选中的分类过滤
@@ -213,7 +222,7 @@ func NewAppState(store *storage.Store) *AppState {
 		activeTab = TabPopout
 	}
 
-	return &AppState{
+	st := &AppState{
 		Store:             store,
 		World:             worldMgr,
 		Scheduler:         alarmSched,
@@ -242,6 +251,8 @@ func NewAppState(store *storage.Store) *AppState {
 		TimerModalMinutes: 10,
 		TimerModalSeconds: 0,
 	}
+	st.SyncFontFamily()
+	return st
 }
 
 // Lang 返回当前选中的界面显示语言（默认回退为简体中文；使用 GetPrefs 零切片分配读取）。
@@ -436,6 +447,89 @@ func (a *AppState) SetAutoStart(enabled bool) {
 	} else {
 		_ = SyncSystemAutostart(enabled)
 	}
+}
+
+// SetTopmost 更新“窗口置顶锁定”设置并立即调用操作系统底层 API 将主窗口设为总在最前 (HWND_TOPMOST) 或取消置顶。
+func (a *AppState) SetTopmost(enabled bool) {
+	a.UpdateSettings(func(s *storage.Settings) {
+		s.Topmost = enabled
+	})
+	a.topmostSynced = true
+	if a.TopmostHook != nil {
+		a.TopmostHook(enabled)
+	} else {
+		platformSetWindowTopmost(enabled)
+	}
+	a.Invalidate()
+}
+
+// SyncTopmost 将持久化配置中的窗口置顶状态同步到操作系统窗口句柄。
+func (a *AppState) SyncTopmost() {
+	enabled := a.Store.GetPrefs().Topmost
+	a.topmostSynced = true
+	if a.TopmostHook != nil {
+		a.TopmostHook(enabled)
+	} else {
+		platformSetWindowTopmost(enabled)
+	}
+}
+
+// SystemFonts 惰性加载并缓存当前电脑操作系统已安装的可读字体族列表（自动过滤符号字体，整个生命周期仅枚举一次）。
+func (a *AppState) SystemFonts() []string {
+	if !a.systemFontsLoaded {
+		a.systemFonts = LoadInstalledSystemFonts()
+		a.systemFontsLoaded = true
+	}
+	return a.systemFonts
+}
+
+// SetFontFamily 校验并应用用户选择的系统字体作为应用全局字体（若目标字体不存在或不可读则自动回退为系统默认字体）。
+func (a *AppState) SetFontFamily(family string) {
+	safe := ResolveSafeFontFamily(family, a.SystemFonts())
+	a.UpdateSettings(func(s *storage.Settings) {
+		s.FontFamily = safe
+	})
+	if a.FontFamilyHook != nil {
+		a.FontFamilyHook(safe)
+	} else {
+		ApplyProcessFontFamily(safe)
+	}
+	a.Invalidate()
+}
+
+// SyncFontFamily 在启动时校验持久化配置中的 FontFamily 是否在当前电脑可用；
+// 若配置文件跨电脑迁移后原字体不存在，则自动平滑回退为系统默认字体并应用至 Viva DirectWrite 引擎。
+func (a *AppState) SyncFontFamily() {
+	requested := a.Store.GetPrefs().FontFamily
+	if requested == "" {
+		if a.FontFamilyHook != nil {
+			a.FontFamilyHook("")
+		} else {
+			ApplyProcessFontFamily("")
+		}
+		return
+	}
+	safe := ResolveSafeFontFamily(requested, a.SystemFonts())
+	if safe != requested {
+		a.UpdateSettings(func(s *storage.Settings) {
+			s.FontFamily = safe
+		})
+	}
+	if a.FontFamilyHook != nil {
+		a.FontFamilyHook(safe)
+	} else {
+		ApplyProcessFontFamily(safe)
+	}
+}
+
+// ApplyDigitsFont 为时钟与计时器数字应用字体样式：
+// 当使用“系统默认”字体 (FontFamily == "") 时启用等宽数字 (.Mono())；
+// 当用户在“🌐 语言”中指定了系统字体时，使用 SetInterfaceFontFamily 设置的全局系统字体，使时钟数字与界面文字统一呈现所选字体。
+func (a *AppState) ApplyDigitsFont(b flex.Box) flex.Box {
+	if a.Store.GetPrefs().FontFamily == "" {
+		return b.Mono()
+	}
+	return b
 }
 
 // EnterEdgeBar 进入屏幕边缘精简状态条模式，并在桌面环境下将窗口自动缩小为顶部/边缘横条。

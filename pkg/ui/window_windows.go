@@ -13,6 +13,8 @@ import (
 var (
 	user32               = syscall.NewLazyDLL("user32.dll")
 	procGetActiveWindow  = user32.NewProc("GetActiveWindow")
+	procFindWindowW      = user32.NewProc("FindWindowW")
+	procIsWindow         = user32.NewProc("IsWindow")
 	procGetWindowRect    = user32.NewProc("GetWindowRect")
 	procSetWindowPos     = user32.NewProc("SetWindowPos")
 	procMonitorFromPoint = user32.NewProc("MonitorFromPoint")
@@ -20,6 +22,7 @@ var (
 	procGetSystemMetrics = user32.NewProc("GetSystemMetrics")
 	procGetDpiForWindow  = user32.NewProc("GetDpiForWindow")
 	winRectMu            sync.Mutex
+	cachedAppHWND        uintptr
 	savedOuterWinRect    win32Rect
 	hasSavedOuterWinRect bool
 )
@@ -41,13 +44,76 @@ type win32MonitorInfo struct {
 }
 
 const (
-	monitorDefaultToNearest = 0x00000002 // 若点不在任何显示器内，返回距离最近的显示器句柄
-	swpNoZOrder             = 0x0004     // 保持当前窗口 Z 序不变
-	swpNoActivate           = 0x0010     // 调整尺寸/位置时不额外抢占焦点
-	swpShowWindow           = 0x0040     // 确保窗口保持可见
-	smCxScreen              = 0          // 主显示器屏幕宽度索引
-	smCyScreen              = 1          // 主显示器屏幕高度索引
+	monitorDefaultToNearest = 0x00000002  // 若点不在任何显示器内，返回距离最近的显示器句柄
+	swpNoSize               = 0x0001      // 保持当前窗口宽高尺寸不变
+	swpNoMove               = 0x0002      // 保持当前窗口屏幕坐标不变
+	swpNoZOrder             = 0x0004      // 保持当前窗口 Z 序不变
+	swpNoActivate           = 0x0010      // 调整尺寸/位置/置顶时不额外抢占焦点
+	swpShowWindow           = 0x0040      // 确保窗口保持可见
+	hwndTopmost             = ^uintptr(0) // HWND_TOPMOST (-1)：将窗口置于所有非置顶窗口之上并保持置顶
+	hwndNoTopmost           = ^uintptr(1) // HWND_NOTOPMOST (-2)：取消窗口置顶状态
+	smCxScreen              = 0           // 主显示器屏幕宽度索引
+	smCyScreen              = 1           // 主显示器屏幕高度索引
 )
+
+// resolveAppHWND 获取并缓存当前应用程序主窗口的 Win32 句柄 (HWND)。
+// 优先复用已验证有效的缓存句柄；若尚未缓存，则依次通过 GetActiveWindow 与窗口标题 FindWindowW 解析。
+func resolveAppHWND() uintptr {
+	winRectMu.Lock()
+	cached := cachedAppHWND
+	winRectMu.Unlock()
+
+	if cached != 0 && procIsWindow.Find() == nil {
+		if ok, _, _ := procIsWindow.Call(cached); ok != 0 {
+			return cached
+		}
+	}
+
+	if procGetActiveWindow.Find() == nil {
+		if hwnd, _, _ := procGetActiveWindow.Call(); hwnd != 0 {
+			winRectMu.Lock()
+			cachedAppHWND = hwnd
+			winRectMu.Unlock()
+			return hwnd
+		}
+	}
+
+	if procFindWindowW.Find() == nil {
+		if titlePtr, err := syscall.UTF16PtrFromString("小瑞综合时钟桌面 | Xiaoru Integrated Clock Desktop"); err == nil {
+			if hwnd, _, _ := procFindWindowW.Call(0, uintptr(unsafe.Pointer(titlePtr))); hwnd != 0 {
+				winRectMu.Lock()
+				cachedAppHWND = hwnd
+				winRectMu.Unlock()
+				return hwnd
+			}
+		}
+	}
+	return 0
+}
+
+// platformSetWindowTopmost 调用 Win32 SetWindowPos 将主窗口设置为系统级“总在最前 (HWND_TOPMOST)”或取消置顶“(HWND_NOTOPMOST)”。
+func platformSetWindowTopmost(topmost bool) {
+	if isTestBinary() || procSetWindowPos.Find() != nil {
+		return
+	}
+	hwnd := resolveAppHWND()
+	if hwnd == 0 {
+		return
+	}
+	insertAfter := hwndNoTopmost
+	if topmost {
+		insertAfter = hwndTopmost
+	}
+	_, _, _ = procSetWindowPos.Call(
+		hwnd,
+		insertAfter,
+		0,
+		0,
+		0,
+		0,
+		swpNoMove|swpNoSize|swpNoActivate,
+	)
+}
 
 // platformGetMonitorWorkArea 获取当前窗口所在显示器的可用工作区矩形（排除系统任务栏后的屏幕坐标）。
 func platformGetMonitorWorkArea(frame ui.Rect) ui.Rect {
@@ -99,10 +165,10 @@ func getWindowScaleFactor(hwnd uintptr) float32 {
 
 // platformShrinkWindowToEdgeBar 将当前主线程窗口缩小为贴合屏幕边缘的紧凑横条尺寸。
 func platformShrinkWindowToEdgeBar(edge string, normalFrame ui.Rect) {
-	if isTestBinary() || procGetActiveWindow.Find() != nil {
+	if isTestBinary() {
 		return
 	}
-	hwnd, _, _ := procGetActiveWindow.Call()
+	hwnd := resolveAppHWND()
 	if hwnd == 0 {
 		return
 	}
@@ -171,10 +237,10 @@ func platformShrinkWindowToEdgeBar(edge string, normalFrame ui.Rect) {
 
 // platformRestoreWindowFromEdgeBar 将状态条窗口恢复为进入状态条前的正常尺寸，并向屏幕内部偏移以防再次触发边缘吸附。
 func platformRestoreWindowFromEdgeBar(savedFrame ui.Rect) {
-	if isTestBinary() || procGetActiveWindow.Find() != nil {
+	if isTestBinary() {
 		return
 	}
-	hwnd, _, _ := procGetActiveWindow.Call()
+	hwnd := resolveAppHWND()
 	if hwnd == 0 {
 		return
 	}

@@ -1924,3 +1924,134 @@ func TestPreciseTimeSteppersInAlarmTimerSleepAndTracker(t *testing.T) {
 		t.Fatalf("expected 25:00 work duration after -1m, got %v (%s)", state.Tracker.Config().WorkDuration, state.Tracker.FormatRemaining())
 	}
 }
+
+func TestTopmostPinAcrossAllModes(t *testing.T) {
+	state, driver := setupTestApp(t)
+	defer driver.Close()
+
+	var topmostCalls []bool
+	state.TopmostHook = func(enabled bool) {
+		topmostCalls = append(topmostCalls, enabled)
+	}
+
+	// 1. Toggle Topmost from Top Header Bar (`IDBtnHeaderTopmost`)
+	if state.Store.Get().Topmost {
+		t.Fatal("expected initial Topmost to be false")
+	}
+	if !clickID(t, driver, IDBtnHeaderTopmost) {
+		t.Fatal("failed to click IDBtnHeaderTopmost in top navigation bar")
+	}
+	if !state.Store.Get().Topmost || len(topmostCalls) != 1 || !topmostCalls[0] {
+		t.Fatalf("expected Topmost true and TopmostHook(true), got Topmost=%v calls=%v", state.Store.Get().Topmost, topmostCalls)
+	}
+
+	// 2. Toggle Topmost inside Popout Mode (`IDBtnPinPopout`)
+	if !clickID(t, driver, TabPopoutID) {
+		t.Fatal("failed to enter Popout mode")
+	}
+	if !clickID(t, driver, IDBtnPinPopout) {
+		t.Fatal("failed to click IDBtnPinPopout in Popout mode")
+	}
+	if state.Store.Get().Topmost || len(topmostCalls) != 2 || topmostCalls[1] {
+		t.Fatalf("expected Topmost false and TopmostHook(false), got Topmost=%v calls=%v", state.Store.Get().Topmost, topmostCalls)
+	}
+	clickID(t, driver, IDBtnExitPopout)
+
+	// 3. Toggle Topmost inside Settings -> Clock (`IDOptTopmost`)
+	clickID(t, driver, TabSettingsID)
+	clickID(t, driver, IDSettingsTabClock)
+	if !clickID(t, driver, IDOptTopmost) {
+		t.Fatal("failed to click IDOptTopmost in Clock settings")
+	}
+	if !state.Store.Get().Topmost || len(topmostCalls) != 3 || !topmostCalls[2] {
+		t.Fatalf("expected Topmost true and TopmostHook(true) from settings, got Topmost=%v calls=%v", state.Store.Get().Topmost, topmostCalls)
+	}
+
+	// 4. Toggle Topmost inside Edge Bar mode (`IDBtnEdgeBarTopmost`)
+	clickID(t, driver, TabClockID)
+	clickID(t, driver, IDBtnQuickEdgeBar)
+	if !clickID(t, driver, IDBtnEdgeBarTopmost) {
+		t.Fatal("failed to click IDBtnEdgeBarTopmost in Edge Bar mode")
+	}
+	if state.Store.Get().Topmost || len(topmostCalls) != 4 || topmostCalls[3] {
+		t.Fatalf("expected Topmost false and TopmostHook(false) from edge bar, got Topmost=%v calls=%v", state.Store.Get().Topmost, topmostCalls)
+	}
+	clickID(t, driver, IDBtnRestoreEdgeBar)
+}
+
+func TestSystemFontSelectionAndCrossPCSafeFallback(t *testing.T) {
+	state, driver := setupTestApp(t)
+	defer driver.Close()
+
+	var appliedFonts []string
+	state.FontFamilyHook = func(family string) {
+		appliedFonts = append(appliedFonts, family)
+	}
+
+	// 1. Verify symbol / dingbat font blacklist and readable font filter
+	rawFonts := []string{"Wingdings", "Webdings", "Marlett", "Symbol", "Segoe MDL2 Assets", "@SimSun", "Microsoft YaHei", "Consolas", "Arial"}
+	filtered := FilterReadableSystemFonts(rawFonts)
+	if len(filtered) != 3 {
+		t.Fatalf("expected 3 readable fonts after filtering symbol/vertical fonts, got %v", filtered)
+	}
+	for _, f := range filtered {
+		if f == "Wingdings" || f == "Webdings" || f == "Marlett" || f == "Symbol" || f == "@SimSun" {
+			t.Fatalf("symbol or vertical font should have been filtered out: %s", f)
+		}
+	}
+
+	// 2. Verify cross-PC safe font resolution (installed font vs missing font from another PC)
+	if got := ResolveSafeFontFamily("microsoft yahei", filtered); got != "Microsoft YaHei" {
+		t.Fatalf("expected canonical 'Microsoft YaHei', got %q", got)
+	}
+	if got := ResolveSafeFontFamily("UninstalledCustomFontOnAnotherPC", filtered); got != "" {
+		t.Fatalf("expected missing font to safely fall back to empty string (system default), got %q", got)
+	}
+	if got := ResolveSafeFontFamily("Wingdings", filtered); got != "" {
+		t.Fatalf("expected symbol font to safely fall back to empty string, got %q", got)
+	}
+
+	// 3. Navigate to Settings -> 🌐 语言 and select a curated system font ("Microsoft YaHei")
+	clickID(t, driver, TabSettingsID)
+	clickID(t, driver, IDSettingsTabLanguage)
+	if !clickID(t, driver, CuratedFontID("Microsoft YaHei")) {
+		t.Fatal("failed to click CuratedFontID('Microsoft YaHei') in Language settings")
+	}
+	if state.Store.Get().FontFamily != "Microsoft YaHei" {
+		t.Fatalf("expected persisted FontFamily 'Microsoft YaHei', got %q", state.Store.Get().FontFamily)
+	}
+	if len(appliedFonts) == 0 || appliedFonts[len(appliedFonts)-1] != "Microsoft YaHei" {
+		t.Fatalf("expected FontFamilyHook called with 'Microsoft YaHei', got %v", appliedFonts)
+	}
+
+	// 4. Expand full system font library (`IDBtnToggleSystemFontList`) and select "Consolas"
+	if !clickID(t, driver, IDBtnToggleSystemFontList) {
+		t.Fatal("failed to click IDBtnToggleSystemFontList to expand full system font list")
+	}
+	if !state.ShowAllSystemFonts {
+		t.Fatal("expected ShowAllSystemFonts to be true after clicking expand button")
+	}
+	if !clickID(t, driver, SystemFontItemID("Consolas")) {
+		t.Fatal("failed to click SystemFontItemID('Consolas') in expanded system font list")
+	}
+	if state.Store.Get().FontFamily != "Consolas" {
+		t.Fatalf("expected persisted FontFamily 'Consolas', got %q", state.Store.Get().FontFamily)
+	}
+
+	// 5. Reset to System Default font (`IDBtnFontDefault`)
+	if !clickID(t, driver, IDBtnFontDefault) {
+		t.Fatal("failed to click IDBtnFontDefault ('系统默认')")
+	}
+	if state.Store.Get().FontFamily != "" {
+		t.Fatalf("expected FontFamily to reset to '', got %q", state.Store.Get().FontFamily)
+	}
+
+	// 6. Simulate migrating settings.json from another PC with an uninstalled font -> SyncFontFamily auto-recovers
+	_ = state.Store.Update(func(s *storage.Settings) {
+		s.FontFamily = "NonExistentPCFont_2099"
+	})
+	state.SyncFontFamily()
+	if state.Store.Get().FontFamily != "" {
+		t.Fatalf("expected SyncFontFamily to automatically fall back to '' when font is missing on current PC, got %q", state.Store.Get().FontFamily)
+	}
+}

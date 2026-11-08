@@ -48,6 +48,7 @@ func main() {
 			return err
 		}
 		state.Window = win
+		state.SyncTopmost()
 
 		// 响应系统级重新打开事件（如任务栏或 Dock 激活）
 		application.OnReopen(func() {

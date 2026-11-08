@@ -49,7 +49,7 @@ func DrawWorldClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 
 							// Middle: Time & Period
 							f.Row().Width(160).Items(flex.Baseline).Gap(6).Children(func() {
-								f.Text(snap.TimeDisplay).FontSize(24).Bold().Mono().Color(theme.Foreground)
+								state.ApplyDigitsFont(f.Text(snap.TimeDisplay).FontSize(24).Bold()).Color(theme.Foreground)
 								if snap.Period != "" {
 									f.Text(snap.Period).FontSize(14).Bold().Color(theme.Primary)
 								}

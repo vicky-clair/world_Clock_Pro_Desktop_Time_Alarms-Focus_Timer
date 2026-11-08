@@ -21,7 +21,7 @@ func DrawEdgeBar(f *flex.Frame, state *AppState, theme ui.Theme) {
 	f.Row().Fill().PadX(16).PadY(8).Background(theme.Card).Items(flex.Center).Gap(14).Children(func() {
 		// 左侧：边缘状态条标识与当前时间
 		f.Row().Items(flex.Baseline).Gap(6).Children(func() {
-			f.Text(timeStr).FontSize(30).Bold().Mono().Color(state.ClockColor(theme))
+			state.ApplyDigitsFont(f.Text(timeStr).FontSize(30).Bold()).Color(state.ClockColor(theme))
 			if period != "" {
 				f.Text(period).FontSize(14).Bold().Color(theme.Primary)
 			}
@@ -35,7 +35,21 @@ func DrawEdgeBar(f *flex.Frame, state *AppState, theme ui.Theme) {
 
 		f.Spacer()
 
-		// 右侧：一键恢复正常窗口按钮
+		// 右侧：窗口置顶锁定与一键恢复正常窗口按钮
+		pinLbl := state.T("nav.pin_off")
+		if cfg.Topmost {
+			pinLbl = state.T("nav.pin_on")
+		}
+		btnPin := f.Button(IDBtnEdgeBarTopmost, pinLbl).Small()
+		if cfg.Topmost {
+			btnPin.Outline()
+		} else {
+			btnPin.Ghost()
+		}
+		if btnPin.Clicked() {
+			state.SetTopmost(!cfg.Topmost)
+		}
+
 		if f.Button(IDBtnRestoreEdgeBar, state.T("edgebar.restore")).Small().Clicked() {
 			state.ExitEdgeBar()
 		}

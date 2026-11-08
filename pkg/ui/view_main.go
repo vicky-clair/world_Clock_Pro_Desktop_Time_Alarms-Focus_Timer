@@ -59,7 +59,7 @@ func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 			drawAnalogFace(f, now, theme, 280)
 			// Text readout & country/region below analog face (放大至近两倍)
 			f.Row().Items(flex.Baseline).Gap(10).Children(func() {
-				f.Text(timeStr).FontSize(56).Bold().Mono()
+				state.ApplyDigitsFont(f.Text(timeStr).FontSize(56).Bold())
 				if period != "" {
 					f.Text(period).FontSize(32).Bold().Color(theme.Primary)
 				}
@@ -88,7 +88,7 @@ func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 
 				// 超大数字时钟主体
 				f.Row().Items(flex.Center).Gap(18).Children(func() {
-					f.Text(timeStr).FontSize(mainTimeFontSize).Bold().Mono().Color(state.ClockColor(theme))
+					state.ApplyDigitsFont(f.Text(timeStr).FontSize(mainTimeFontSize).Bold()).Color(state.ClockColor(theme))
 					if period != "" {
 						f.Row().Items(flex.Center).PadX(14).PadY(6).Background(theme.Muted).Radius(10).Children(func() {
 							f.Text(period).FontSize(32).Bold().Color(theme.Primary)

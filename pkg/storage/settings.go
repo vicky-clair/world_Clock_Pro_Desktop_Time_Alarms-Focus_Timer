@@ -54,6 +54,7 @@ type Settings struct {
 	PopoutPosition  string           `json:"popoutPosition"`  // 悬浮时钟显示位置："top"（顶部）、"center"（居中）、"bottom"（底部）
 	TempFahrenheit  bool             `json:"tempFahrenheit"`  // 是否使用华氏度 (°F) 显示气温
 	Language        string           `json:"language"`        // 界面语言："zh"（中文）、"en"（英文）、"ja"（日文）
+	FontFamily      string           `json:"fontFamily"`      // 应用全局系统字体族名称（空字符串 "" 表示使用系统默认字体并自动回退）
 	Wallpaper       wallpaper.Config `json:"wallpaper"`       // 壁纸与轮播配置
 	ClockFontSize   int              `json:"clockFontSize"`   // 主时钟字号像素（如 48, 64, 76, 88）
 	ClockFontColor  string           `json:"clockFontColor"`  // 主时钟文字配色（如 "white", "gold", "olive", "cyan", "purple", "coral"）
