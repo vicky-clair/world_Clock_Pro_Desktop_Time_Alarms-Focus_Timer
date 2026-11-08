@@ -77,6 +77,12 @@ the-world-clock-on-the-desktop/
 │   ├── i18n/
 │   │   ├── i18n.go               # 日 (ja) / 中 (zh) / 英 (en) 翻訳辞書と日付ローカライザ
 │   │   └── i18n_test.go
+│   ├── iploc/
+│   │   ├── iploc.go              # パブリックIP自動位置特定サービス（国・都道府県・市区町村・座標・完全IP検出、6時間更新）
+│   │   └── iploc_test.go
+│   ├── license/
+│   │   ├── license.go            # 7日間無料トライアル＆Pro購読管理（期限終了時の強制全画面ロックアウト屏障）
+│   │   └── license_test.go
 │   ├── rss/
 │   │   ├── rss.go                # 「今日は何の日（歴史）」Baidu Baike / Wikipedia API 非同期取得＆アーカイブ
 │   │   └── rss_test.go

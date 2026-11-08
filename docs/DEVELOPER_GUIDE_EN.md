@@ -77,6 +77,12 @@ the-world-clock-on-the-desktop/
 │   ├── i18n/
 │   │   ├── i18n.go               # Full EN / ZH / JA translation dictionaries & localized date formatter
 │   │   └── i18n_test.go
+│   ├── iploc/
+│   │   ├── iploc.go              # Public IP geolocation service (country, region, city, coordinates & full IP, 6h refresh)
+│   │   └── iploc_test.go
+│   ├── license/
+│   │   ├── license.go            # 7-day free trial & Pro subscription management (hard lockout barrier upon expiration)
+│   │   └── license_test.go
 │   ├── rss/
 │   │   ├── rss.go                # "On This Day in History" Baidu Baike / Wikipedia API fetcher & offline archive
 │   │   └── rss_test.go

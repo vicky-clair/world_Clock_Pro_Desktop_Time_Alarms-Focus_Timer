@@ -77,8 +77,11 @@ the-world-clock-on-the-desktop/
 │   ├── i18n/
 │   │   ├── i18n.go               # 中 (zh) / 英 (en) / 日 (ja) 全量翻译键值表与本地化日期格式
 │   │   └── i18n_test.go
+│   ├── iploc/
+│   │   ├── iploc.go              # 公网 IP 地理定位服务（探测国家、省份、城市、经纬度与完整 IP，严格 6 小时自动更新）
+│   │   └── iploc_test.go
 │   ├── license/
-│   │   ├── license.go            # 7 天全功能免费试用与 Pro 订阅管理（¥3/月、¥28/年 及免付测试版）
+│   │   ├── license.go            # 7 天全功能免费试用与 Pro 订阅管理（¥3/月、¥28/年，带到期全屏锁定与防时钟倒拨作弊）
 │   │   └── license_test.go
 │   ├── rss/
 │   │   ├── rss.go                # “历史上的今天”百度百科 / Wikipedia API 异步拉取、HTML 清洗与离线档案库
@@ -100,7 +103,7 @@ the-world-clock-on-the-desktop/
 │   │   ├── wallpaper.go          # 本地壁纸与轮播引擎、1080p 降采样、顺序/洗牌算法、预设程序化壁纸
 │   │   └── wallpaper_test.go
 │   ├── weather/
-│   │   ├── weather.go            # 城市天气快照缓存、摄氏/华氏度转换与离线确定性气象生成
+│   │   ├── weather.go            # 真实在线气象服务（集成 Open-Meteo API、优先使用 IP 定位坐标、6 小时自动更新与离线兜底）
 │   │   └── weather_test.go
 │   ├── world/
 │   │   ├── world.go              # 世界时钟管理器、IANA 时区缓存、多语言检索、判重与排序

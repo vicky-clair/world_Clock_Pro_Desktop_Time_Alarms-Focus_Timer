@@ -36,18 +36,19 @@
 
 | 模块 | 功能亮点 |
 | :--- | :--- |
-| 🕒 **主时钟与双历超大字呈现** | 自动根据电脑操作系统区域与系统时区显示**所在国家/地区**（如 `📍 所在国家/地区：中国 · 北京 (UTC+08:00)`）及本地时间；**字号整体放大近两倍**（115-120px 时间大字、28px 阳历、24px 农历、20px 节日徽章），彻底杜绝地点文字重复；**阳历（公历）与中国传统农历（阴历）高精度双历并排**（含天干地支、生肖、月日，如 `🌙 农历 丙午年(马年) 九月廿九`）；支持 **世界各国当日节日、二十四节气（立冬等）与网络特色节日**（1024程序员节、黑色星期五打折季、双11、双12、618、520等；无节日显示“🎉 今日节日：无”）；支持 **数字时钟 / 经典指针表盘** 一键切换、12/24 小时制、秒数开关与实时本地天气（`°C` / `°F`）。 |
+| 🕒 **主时钟与双历排版视觉优化** | **时间第一核心**：76~90px 超大字号数字时钟（或高精度矢量表盘+读数）置顶呈现，基线对齐 AM/PM，视觉干净醒目；**归属地紧随其下**：时间正下方以精致圆角胶囊收纳 **IP 所在国家与所在国家/地区**（如 `🌐 IP 所在国家：中国 (120.244.11.22) • 📍 所在国家/地区：中国 · 北京 (UTC+08:00)`），完整显示公网 IP；**双历与节气优雅融合**：公历（22px 醒目日期）与农历阴历（16px 干支生肖月日）以及当日节日/节气小标签紧凑协调；**底部环境快照**：以精致胶囊呈现 `📍 中国 广东 广州 • ⛅ 24°C (多云)`，温度前附带真实 IP 所在国家省份和城市；支持 12/24 小时制、秒数开关与 `°C` / `°F` 切换。 |
+| 🌐 **智能公网 IP 定位与 6 小时气象更新** | 后台非阻塞异步探测电脑公网 IP、真实国家、省份、城市与经纬度坐标，完整展示公网 IP；优先根据真实 IP 经纬度直连 Open-Meteo 全球高精度气象 API 获取实时天气与气温；**严格每 6 小时自动更新一次**内存缓存；离线或无网时自动平滑回退至系统时区代表城市快照，兼具高精实时性与离线韧性。 |
 | 🌍 **全球世界时钟与各国当日节日** | 覆盖全球 **193 个联合国成员国首都 + 全球核心金融科技城市**。支持**中/英/日/时区实时搜索**、七大洲筛选、**重复添加弹窗提醒防重**、置顶收藏、上下排序与崩溃安全的双阶段持久化保护。每座城市卡片均根据当地时间与所属国家**实时显示该国正在庆祝的节日与二十四节气**。 |
-| ⏰ **智能闹钟与真实合成铃声** | 内置纯 Go 程序化合成音频引擎（`经典钟声` / `柔和风铃` / `数字脉冲`），支持一键 **`🔊 试听`**、早晨/午间/晚间快捷预设、**`-1小时 / +1小时 / -5分钟 / -1分钟 / +1分钟 / +5分钟` 精确时间微调**（自动处理跨小时及 `23:59 ↔ 00:00` 跨午夜进位借位）、一次性/每天/工作日重复周期、响铃横幅提醒与 **贪睡 (+5分钟)**。 |
+| ⏰ **智能闹钟与后台精准定时唤醒** | 内置纯 Go 程序化合成音频引擎（`经典钟声` / `柔和风铃` / `数字脉冲`），支持一键 **`🔊 试听`**、早晨/午间/晚间快捷预设、**`-1小时 / +1小时 / -5分钟 / -1分钟 / +1分钟 / +5分钟` 精确时间微调**（跨小时及 `23:59 ↔ 00:00` 跨午夜进位借位）；**后台精准定时唤醒双重保障**：即使窗口最小化到系统托盘（Hide），到点时也能精准唤醒恢复窗口显示，弹出醒目响铃提醒横幅并播放提示音，支持 **贪睡 (+5分钟)**。 |
 | ⏱️ **倒计时任务自定义与秒表** | **支持自定义创建、修改与删除倒计时任务**（支持任意自定义任务名与 **`-1小时/+1小时`、`-10分/-1分/+1分/+10分`、`-15秒/-1秒/+1秒/+15秒` 精确进位借位微调**，内置泡茶/煮面/午休/番茄/阅读/健身 6 种快捷模板，**修改与删除永久持久化落盘，重启绝不恢复已删除任务**，到期自动播放提示铃声）+ **毫秒级高精度秒表**（支持无限分段计圈 `Lap` 与累计耗时对比）。 |
 | 🎯 **番茄专注追踪** | 内置 Pomodoro 工作流（专注工作 → 短休息 → 长休息自动循环），待机状态支持 **`-5分钟 / -1分钟 / +1分钟 / +5分钟` 精准调节专注时长**，提供 **🔕 勿扰模式 (`是`/`否`)**、跳过/推迟休息以及累计完成周期与专注时长统计。 |
 | 🌙 **睡眠与白噪音合成器** | 极暗护眼夜间时钟界面，支持 `15 / 30 / 60 分钟` 快捷预设及 **`-5分钟 / -1分钟 / +1分钟 / +5分钟` 精确微调**，内置 **🌧️ 雨声 / 🌲 溪流 / 🌊 海浪 / 📻 白噪音** 真实无缝循环音频合成与试听，并在结束前 5 分钟自动线性渐弱音量（Fade-out）。 |
 | 📜 **历史上的今天 (API 同步)** | 自动调用 **百度百科 / Wikipedia 历史上的今天公开 API** 获取当日真实历史大事记、科技探索与人文纪事，支持分类筛选、年份徽章展示、手动刷新及离线精选库兜底。 |
 | 🖼️ **高性能壁纸轮播** | 支持单张/多张本地照片、**整个照片文件夹导入**或直接拖拽文件/目录到窗口；支持 **`1 / 5 / 10 / 15 分钟`** 轮播间隔、**随机洗牌 (Fisher-Yates) / 顺序播放**、5 种适应模式及毛玻璃卡片透光度调节；**后台自动轮播期间零硬盘写入**，充分保护 SSD 寿命。 |
-| 📌 **桌面悬浮时钟与位置切换** | 优化紧凑型悬浮时钟窗口（`↗ 悬浮时钟`），**88px 超大字号**，界面内置 **[⬆ 顶部]**、**[⏺ 居中]**、**[⬇ 底部]** 垂直显示位置切换按钮并持久化记忆；支持 **`📌 置顶: 是 / 否`**、双历全信息、防多开单实例唤醒以及关闭按钮**最小化到系统托盘或直接退出**设置。 |
+| 📌 **桌面悬浮时钟与位置切换** | 优化紧凑型悬浮时钟窗口（`↗ 悬浮时钟`），**76px 大字号**，界面内置 **[⬆ 顶部]**、**[⏺ 居中]**、**[⬇ 底部]** 垂直显示位置切换按钮并持久化记忆；支持 **`📌 置顶: 是 / 否`**、时间下方 IP 与归属地胶囊、双历全信息、防多开单实例唤醒以及关闭按钮**最小化到系统托盘或直接退出**设置。 |
 | ➖ **屏幕边缘自动缩小为状态条** | 当软件窗口靠近屏幕**顶部、左侧、右侧或底部边缘**时，自动收缩为 `560×118` 精简横条，简洁展示当前时间与公历/农历日期，点击右侧 **`⤢ 恢复正常`** 按钮即可一键恢复原窗口尺寸并防抖移离边缘；在 **设置 → ⏰ 时钟** 最顶部提供醒目的 **`✅ 启用状态条收缩`** 与 **`🚫 不启用`** 双按钮及 **`➖ 立即缩为状态条`** 快捷按钮。 |
 | 🚀 **开机自动启动设置** | 在 **设置 → ⏰ 时钟** 中内置 **`✅ 启用开机自启`** 与 **`🚫 不启用`** 双按钮，一键注册或移除系统当前用户的登录开机自启项（Windows 注册表 `Run` 键 / macOS LaunchAgent / Linux XDG Autostart）。 |
-| 👑 **Pro 会员与 7 天免费试用** | 顶部导航栏与 **设置 → 👑 会员** 提供醒目入口：新用户享 **7 天全功能免费试用**，支持 **按月订阅（`¥3 / 月`）** 与 **按年订阅（`¥28 / 年`，立省 22%）**，并内置完整测试版免付费一键切换台。 |
+| 👑 **Pro 会员与 7 天免费试用（强制锁定保障）** | 顶部导航栏与 **设置 → 👑 会员** 提供醒目入口：新用户享 **7 天全功能免费试用**；**试用期到期强制全屏锁定**，全面静音后台提示并阻止功能使用；支持 **按月订阅（`¥3 / 月`）** 与 **按年订阅（`¥28 / 年`，立省 22%）**，内置防篡改时钟回拨检测及免付费完整测试版切换台。 |
 
 ---
 
@@ -100,20 +101,28 @@
 
 ## ⚠️ 注意事项与常见问题 (Notes & Precautions)
 
-1. **边缘收缩防抖机制说明**：
+1. **智能公网 IP 定位与真实天气（6 小时自动更新）**：
+   - 软件在启动与运行期间，会在后台非阻塞异步探测电脑当前的公网 IP 与真实地理经纬度（国家、省份、城市），并完整显示公网 IP；
+   - 优先依据真实的 IP 经纬度直连 Open-Meteo 开放气象接口获取高精气温与天气，并在天气温度前冠以 IP 所在国家省份城市（如 `📍 中国 广东 广州 • ⛅ 24°C (多云)`）；
+   - 气象与 IP 数据严格**每 6 小时自动更新一次**内存缓存，杜绝高频刷新与网络拥塞；若电脑处于离线或无网环境，自动平滑回退至系统时区代表城市参考快照，完全不影响时钟显示。
+2. **7 天免费试用期与到期全屏锁定机制**：
+   - 新用户首次打开软件自动开启 7 天全功能免费试用；
+   - 7 天试用期结束后，主界面将展示全屏 Pro 会员订阅锁定屏障，静音所有后台提醒与白噪音，阻止功能使用；
+   - 软件内置防回拨系统时钟作弊检测（若系统时间倒退超过 1 小时即刻锁定）；支持按月订阅（`¥3 / 月`）、按年订阅（`¥28 / 年`）或在测试版中一键切换免付费测试模式。
+3. **后台精准唤醒与防跳过闹钟保障**：
+   - 为保证闹钟不被遗漏，程序为下一个即将到达的闹钟自动预约单次后台精确唤醒（`SchedulePreciseWake`）；
+   - 即使窗口被点击 `✕` 最小化隐藏到系统托盘，到点时也会精准唤醒恢复窗口前台显示，并弹出醒目的红色响铃提醒横幅播放合成铃声，支持贪睡（+5分钟）与关闭。
+4. **边缘收缩防抖机制说明**：
    - 当您在状态条模式下点击 **`⤢ 恢复正常`** 后，程序会自动将窗口向屏幕内侧偏移一定安全距离并开启防抖保护，避免刚恢复就立即再次缩回状态条；当您把窗口移回屏幕内部后，再次靠近屏幕边缘即可重新触发收缩。
    - 如果您在日常拖动窗口时不希望触发边缘自动收缩，请前往 **设置 → ⏰ 时钟**，在“靠近屏幕边缘自动缩小为状态条”卡片中点击 **`🚫 不启用`**。
-2. **关闭按钮（✕）默认最小化到托盘**：
+5. **关闭按钮（✕）默认最小化到托盘**：
    - 为保证后台闹钟响铃、倒计时与专注计时不被意外中断，点击窗口右上角 `✕` 默认会**隐藏窗口并最小化到系统托盘**（右下角任务栏时钟图标）。
    - 如需点击 `✕` 直接退出程序，可在 **设置 → ⏰ 时钟 → 关闭按钮 (✕) 行为设置** 中切换为 **`✕ 直接关闭退出程序`**，或右键右下角系统托盘图标选择 **`直接退出程序`**。
-3. **开机自启与程序移动位置**：
+6. **开机自启与程序移动位置**：
    - 启用“开机自动启动”后，系统启动项记录的是当前可执行文件的路径。如果您后续将编译出的 `.exe` 移动到了其他文件夹，只需在新位置重新打开一次软件，程序会自动刷新注册表中的启动路径。
-4. **配置文件与自动容灾备份位置**：
+7. **配置文件与自动容灾备份位置**：
    - 所有用户设置、世界城市、闹钟与自定义倒计时任务均保存在本地 `%APPDATA%\XiaoruIntegratedClockDesktop\settings.json`，并在每次有变更写入前自动通过内存快照备份至 `settings.json.bak`（当配置无实质变化时自动跳过写盘，实现零冗余硬盘写入）；若遇异常断电导致主配置损坏，启动时会自动从 `.bak` 恢复。
-5. **离线运行与网络请求说明**：
-   - 主时钟、农历、二十四节气、全球 193 国世界时钟、闹钟合成音频、倒计时、番茄钟、睡眠白噪音与壁纸轮播均**100% 纯本地离线运行**，无任何遥测或隐私上传。
-   - 仅 **`历史上的今天`** 标签页会在后台按需请求一次公开百科 API（若电脑无网络则自动无缝回退至内置精选历史档案库，不影响任何功能使用）。
-6. **关于仓库源码与构建产物**：
+8. **关于仓库源码与构建产物**：
    - 本 GitHub 仓库仅托管纯净源代码与资源文件，不上传打包后的二进制可执行文件与 `dist/` 目录。请按照下方步骤使用 `go run ./cmd/worldclock` 直接运行，或执行 `.\build_windows.ps1` 在本地一键编译生成 `dist\小瑞综合时钟桌面.exe`（及 `dist\XiaoruIntegratedClockDesktop.exe`）。
 
 ---
@@ -185,7 +194,8 @@ the-world-clock-on-the-desktop/
 │   ├── audio/               # 纯 Go 程序化 16-bit PCM WAV 音频合成与异步播放引擎
 │   ├── clock/               # 时间格式化、双历(公历/农历)、二十四节气、全球节日与边界唤醒算法
 │   ├── i18n/                # 中 / 英 / 日 三语完整词典与本地化日期格式
-│   ├── license/             # 7 天全功能免费试用与 Pro 会员订阅管理 (¥3/月、¥28/年)
+│   ├── iploc/               # 公网 IP 地理定位服务（国家、省份、城市、经纬度与完整 IP 探测，严格每 6 小时自动更新）
+│   ├── license/             # 7 天全功能免费试用与 Pro 会员订阅管理 (¥3/月、¥28/年，带到期锁定与时钟防篡改)
 │   ├── rss/                 # “历史上的今天”百度百科 / Wikipedia API 同步与离线精选库
 │   ├── sleep/               # 睡眠模式、环境白噪音与末段音量线性渐弱引擎
 │   ├── storage/             # 零冗余写盘 (lastSaved 比对)、零拷贝读取 (GetPrefs) 与 .bak 容灾恢复
@@ -217,18 +227,20 @@ the-world-clock-on-the-desktop/
 
 ## 🚀 Key Features
 
-- **🕒 Main Clock & Dual Solar/Lunar Calendar**: 2x scaled typography (~120px clock digits, 28px solar date, 24px lunar date, 20px holiday badge) with zero duplicated country text. Pairs standard Gregorian calendar with high-precision offline Chinese Lunar Calendar (GanZhi, Chinese Zodiac, Lunar month/day). Automatically identifies host country/region and timezone (e.g., `📍 Country/Region: United States · New York (UTC-05:00)`). Supports digital & vector analog dials, 12H/24H format, seconds toggle, and live weather (`°C` / `°F`).
+- **🕒 Main Clock & Aesthetic Hierarchy**: Large clock digits (~76-90px) as the primary hero focal point. Directly beneath the time readout, an elegant capsule displays the detected **Public IP Country with full unmasked IP and OS Country/Region** (e.g., `🌐 IP Country: United States (120.244.11.22) • 📍 Country/Region: United States · New York (UTC-05:00)`). Followed by a unified Gregorian and Lunar calendar section with holiday chips, and a bottom weather pill prefixed with IP location (`📍 China Guangdong Guangzhou • ⛅ 24°C (Cloudy)`). Supports digital & vector analog dials, 12H/24H, seconds toggle, and `°C` / `°F`.
+- **🌐 Public IP Geolocation & 6-Hour Weather Updates**: Asynchronous non-blocking public IP lookup detecting host country, region, city, coordinates, and full IP. Automatically queries the Open-Meteo API using real IP coordinates for live weather, cached and refreshed **strictly every 6 hours** with seamless offline fallback.
 - **🎉 World Holidays, 24 Solar Terms & Shopping/Tech Festivals**: Comprehensive holiday engine for CN, US, JP, GB, and FR, astronomical 24 Solar Terms (Lidong, etc.), and tech/shopping festivals (1024 Programmers' Day, Black Friday, Cyber Monday, Double 11, Double 12, 618, 520). Displays "🎉 Today's Holiday: None" when no holiday falls on the current day.
 - **🌍 Global World Clock (200+ Cities & 193 Countries)**: Real-time search across English, Chinese, Japanese, country codes, and IANA timezones (`America/New_York`, `Asia/Tokyo`, `Europe/London`, etc.). Supports continent filters, favorites (`★`), custom ordering (`↑`/`↓`), duplicate detection alert dialogs, and per-city local holiday displays.
-- **⏰ Smart Alarms & Procedural Audio Chimes**: Procedural Go audio synthesizer (Classic Bell, Gentle Chime, Electronic Beep) with instant **`🔊 Preview`**, Morning/Noon/Evening presets, custom hour/minute steppers, One-time/Daily/Weekday recurrence, alert banner, and **Snooze (+5m)**.
+- **⏰ Smart Alarms & Background Precise Wakeup**: Procedural Go audio synthesizer (Classic Bell, Gentle Chime, Electronic Beep) with instant **`🔊 Preview`**, Morning/Noon/Evening presets, custom hour/minute steppers, One-time/Daily/Weekday recurrence, alert banner, and **Snooze (+5m)**. Features **precise background wakeups** (`SchedulePreciseWake`) to ensure alarms trigger and restore the window even when minimized to the system tray.
 - **⏱️ Custom Multi-Timers & Split-Lap Stopwatch**: Create, edit, and delete custom timers with arbitrary names and `HH:MM:SS` duration; includes 6 fast presets (Tea, Noodles, Nap, Pomodoro, Reading, Workout). All edits and deletions are atomically persisted to disk (deleted timers never resurrect on app restart). Monotonic centisecond stopwatch with unlimited lap history.
 - **🎯 Pomodoro Focus Tracker**: Automated Work → Short Break → Big Break cycles, **Do Not Disturb (`DND: ON/OFF`)**, break skip/postpone, and daily focus statistics.
 - **🌙 Night Sleep & Ambient Mode**: Low-light OLED-friendly night clock with `15m / 30m / 60m` sleep timer, procedural ambient soundscapes (**Gentle Rain**, **Forest Stream**, **Ocean Waves**, **White Noise**), sound preview, and 5-minute linear volume fade-out.
 - **📜 On This Day in History (API Sync)**: Automatically fetches authentic historical milestones, science discoveries, and cultural events via Baidu Baike and Wikipedia public APIs, backed by an offline curated archive.
 - **🖼️ High-Performance Wallpaper Carousel**: Load single/multiple local photos, **entire photo folders**, or drag-and-drop onto the window. Features **`1m / 5m / 10m / 15m`** rotation intervals, **Shuffle (Fisher-Yates)** or **Sequential** playback, automatic `1920px` downsampling, 5 fit modes, and frosted-glass card opacity controls.
-- **📌 Desktop Popout Mini-Clock with Alignment Controls**: Enlarged 88px floating clock widget (`↗ Popout`) with dedicated on-screen buttons to position the clock at the **[⬆ Top]**, **[⏺ Center]**, or **[⬇ Bottom]** of the window with persistent memory. Includes **Always-on-Top (`📌 Pin: ON/OFF`)**, dual calendar, and clean tray minimization.
+- **📌 Desktop Popout Mini-Clock with Alignment Controls**: Enlarged 76px floating clock widget (`↗ Popout`) with dedicated on-screen buttons to position the clock at the **[⬆ Top]**, **[⏺ Center]**, or **[⬇ Bottom]** of the window with persistent memory. Includes **Always-on-Top (`📌 Pin: ON/OFF`)**, sub-time IP & country badge, dual calendar, and clean tray minimization.
 - **➖ Auto-Shrink to Edge Status Bar (`Edge Bar`)**: Automatically shrinks into a compact `560×118` status bar showing time and solar/lunar dates when dragged near any screen edge, with a **`⤢ Restore Normal`** button to restore full size. Includes prominent **`✅ Enable Edge Bar`** and **`🚫 Do Not Enable`** buttons in **Settings → ⏰ Clock**.
 - **🚀 Launch at System Startup**: Built-in **`✅ Enable Autostart`** and **`🚫 Disable`** buttons in **Settings → ⏰ Clock** to automatically register or remove login startup entries.
+- **👑 7-Day Free Trial & Pro Subscription with Hard Lockout Barrier**: 7-day full-feature trial for new users. Hard full-screen lockout barrier upon trial expiration with audio muting, anti-clock-tampering protection, monthly (`¥3 / mo`), yearly (`¥28 / yr`), and testing mode switch.
 
 ---
 
@@ -270,18 +282,20 @@ go test ./... -count=1
 
 ## 🚀 主な機能
 
-- **🕒 メイン時計＆太陽暦・旧暦デュアル表示**：文字サイズ約2倍の特大視認性（115-120px 時間数字、28px 太陽暦日付、24px 旧暦日付、20px 祝日バッジ）と国名・都市名表記の重複を完全解消。高精度オフライン太陰太陽暦（干支・十二支・旧暦月日）を併記。OSの国・地域とタイムゾーンを自動検出し現在地バッジ（例：`📍 現在の国・地域：日本 · 東京 (UTC+09:00)`）を表示。デジタル・アナログ文字盤切替、12H/24H、秒表示スイッチ、リアルタイム天気・気温（`°C` / `°F`）を完備。
+- **🕒 メイン時計＆視覚階層の最適化**：画面最上部に76-90pxの特大デジタル数字（または高精度アナログ文字盤）を配置し視覚の中心を確立。時間数字の直下に、検出された**パブリックIPの国・完全IPアドレス（マスクなし）およびOSの国・地域バッジ**（例：`🌐 IP の国：日本 (120.244.11.22) • 📍 現在の国・地域：日本 · 東京 (UTC+09:00)`）を丸角カプセルで配置。太陽暦（22px）と太陰太陽暦（16px）および祝日・節気チップを統合し、最下部にIP地域付きリアルタイム天気（`📍 日本 東京都 • ⛅ 24°C (曇り)`）をすっきり表示。
+- **🌐 パブリックIP自動位置特定＆6時間ごとの気象更新**：非ブロッキング非同期でパブリックIP、国、都道府県、市区町村、座標を検出し完全IPを表示。実IP座標をもとにOpen-Meteo高精度気象APIと連携し、**厳格に6時間ごとに自動更新**。オフライン時は自動フォールバック。
 - **🎉 世界の祝日・二十四節気・ネット＆セール記念日**：日本（JP）、中国（CN）、アメリカ（US）、イギリス（GB）、フランス（FR）の祝日、高精度天文学アルゴリズムによる二十四節気（立冬など）、およびネット記念日・ショッピング祭（1024プログラマーの日、ブラックフライデー、サイバーマンデー、独身の日等）。祝日がない日は「🎉 今日の祝日・記念日：なし」と明示表示。
 - **🌍 世界時計（193カ国＋主要都市）**：東京、大阪、ニューヨーク、ロンドン、上海、パリなど世界中の都市を**日本語・英語・中国語・タイムゾーンでリアルタイム検索**。大陸別フィルター、お気に入り固定（`★`）、並び替え（`↑`/`↓`）、重複追加警告ダイアログ、各都市現地の祝日・節気表示に対応。
-- **⏰ スマートアラーム＆純Goプロシージャル音声合成**：純Go製PCMオーディオ合成（ベル音、ウィンドチャイム、電子音）とワンクリック **`🔊 試聴`**、朝・昼・夕方のプリセット、1時間/5分単位の微調整、1回のみ/毎日/平日の繰り返し設定、**スヌーズ（+5分）**、アラーム通知バナーを搭載。
+- **⏰ スマートアラーム＆バックグラウンド高精度覚醒**：純Go製PCMオーディオ合成（ベル音、ウィンドチャイム、電子音）とワンクリック **`🔊 試聴`**、朝・昼・夕方のプリセット、1時間/5分単位の微調整、1回のみ/毎日/平日の繰り返し設定、**スヌーズ（+5分）**。トレイ最小化時（Hide）も時間通りに正確にウィンドウを復元しアラームを鳴らすバックグラウンド高精度覚醒タイマー（`SchedulePreciseWake`）を完備。
 - **⏱️ カウントダウンタイマーの自由追加・編集・削除＆ストップウォッチ**：任意の名前と時間（時・分・秒）でタイマーを自由に追加・編集・削除可能（お茶、ラーメン、昼寝、ポモドーロ、読書、ワークアウトの6大テンプレート付属）。削除したタイマーは永続化され、アプリ再起動後も復活しません。1/100秒精度の高精度ストップウォッチ（無制限ラップ計測）も搭載。
 - **🎯 ポモドーロ集中トラッカー**：作業セッション・小休憩・長休憩の自動サイクル管理、**🔕 集中モード（`はい`/`いいえ`）**、休憩のスキップ・延長、累計集中時間の統計表示。
 - **🌙 スリープ & 環境音モード**：目に優しい暗色ナイトクロック、`15分 / 30分 / 60分` のスリープタイマー、**穏やかな雨音 / 森林の小川 / 波の音 / ホワイトノイズ**、環境音の試聴、終了前5分間の自動音量フェードアウト機能。
 - **📜 今日は何の日（歴史・API連携）**：Baidu Baike および Wikipedia の公開 API と連携し、今日の歴史的出来事や記念日を自動取得。オフライン精選アーカイブも内蔵。
 - **🖼️ 高性能壁紙スライドショー**：複数画像や**写真フォルダ全体の一括読み込み**、ウィンドウへのドラッグ＆ドロップに対応。**`1分 / 5分 / 10分 / 15分`** 間隔、**シャッフル / 順番再生**、自動ダウンサンプリングによる省メモリ描画、すりガラス透明度調整を備えています。
-- **📌 表示位置切替対応ポップアウト・ミニ時計**：88px 特大文字盤のコンパクト表示（`↗ ミニ時計`）。画面上部のボタンで **[⬆ 上部]**、**[⏺ 中央]**、**[⬇ 下部]** の垂直位置をワンクリック切替可能（設定は自動保存）。最前面固定（`📌 最前面固定: はい / いいえ`）とトレイ格納にも対応。
+- **📌 表示位置切替対応ポップアウト・ミニ時計**：76px 特大文字盤のコンパクト表示（`↗ ミニ時計`）。画面上部のボタンで **[⬆ 上部]**、**[⏺ 中央]**、**[⬇ 下部]** の垂直位置をワンクリック切替可能（設定は自動保存）。時間直下のIPバッジ、最前面固定（`📌 最前面固定: はい / いいえ`）とトレイ格納にも対応。
 - **➖ 画面端でのミニバー自動縮小（エッジバー）**：ウィンドウを画面端に近づけると日時のみのスリムなステータスバー（`560×118`）に自動縮小し、**`⤢ 通常表示に戻す`** ボタンで元のサイズに復元します。**設定 → ⏰ 時計** にて **`✅ ミニバー縮小を有効化`** / **`🚫 無効にする`** をワンクリックで切り替え可能。
 - **🚀 OS起動時の自動実行**：**設定 → ⏰ 時計** にて **`✅ 自動起動を有効化`** / **`🚫 無効にする`** ボタンでPCサインイン時の自動起動を設定可能。
+- **👑 7日間無料トライアル＆強制ロックアウト保護**：初回起動時から7日間全機能無料体験。体験期間終了時は画面全体がPro購読ロック画面に切り替わりバックグラウンド音声も消音。時計巻き戻し改ざん検知、月額（`¥3 / 月`）および年額（`¥28 / 年`）購読に対応。
 
 ---
 
