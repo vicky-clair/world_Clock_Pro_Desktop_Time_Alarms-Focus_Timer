@@ -74,76 +74,83 @@ func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 		// Clock Display Area
 		if cfg.ClockStyle == string(clock.StyleAnalog) {
 			drawAnalogFace(f, now, theme, 280)
-			// Text readout & country/region below analog face (放大至近两倍)
+
+			// 1. 表盘下方的数字时钟读数（居中大字号）
 			f.Row().Items(flex.Baseline).Gap(10).Children(func() {
-				state.ApplyDigitsFont(f.Text(timeStr).FontSize(56).Bold())
+				state.ApplyDigitsFont(f.Text(timeStr).FontSize(52).Bold()).Color(state.ClockColor(theme))
 				if period != "" {
-					f.Text(period).FontSize(32).Bold().Color(theme.Primary)
+					f.Text(period).FontSize(24).Bold().Color(theme.Primary)
 				}
 			})
-			f.Text(solarStr).FontSize(26).Bold().Color(theme.Foreground)
-			f.Text(lunarStr).FontSize(22).Bold().Color(theme.MutedForeground)
-			if holidayBadge != "" {
-				f.Row().PadX(14).PadY(4).Background(theme.Muted).Radius(10).Items(flex.Center).Children(func() {
-					f.Text(holidayBadge).FontSize(18).Bold().Color(theme.Primary)
-				})
-			}
-			f.Row().Items(flex.Center).Gap(10).Children(func() {
+
+			// 2. 紧随时间下方：IP 所在国家 与 所在国家/地区 徽章
+			f.Row().PadX(16).PadY(5).Background(theme.Muted).Radius(12).Items(flex.Center).Gap(8).Children(func() {
 				if ipBadge != "" {
-					f.Text(ipBadge).FontSize(20).Bold().Color(theme.Accent)
-					f.Text("•").FontSize(18).Muted()
+					f.Text(ipBadge).FontSize(15).Bold().Color(theme.Accent)
+					f.Text("•").FontSize(13).Muted()
 				}
-				f.Text(locationBadge).FontSize(20).Bold().Color(theme.Foreground)
+				f.Text(locationBadge).FontSize(15).Bold().Color(theme.Primary)
 			})
-			f.Row().Items(flex.Center).Gap(10).Children(func() {
-				if ipLocStr != "" {
-					f.Text(fmt.Sprintf("📍 %s", ipLocStr)).FontSize(20).Bold().Color(theme.Foreground)
-					f.Text("•").FontSize(18).Muted()
+
+			// 3. 阳历、农历与节假日信息（层级优雅、间距协调）
+			f.Column().Items(flex.Center).Gap(6).Children(func() {
+				f.Text(solarStr).FontSize(22).Bold().Color(theme.Foreground)
+				f.Text(lunarStr).FontSize(16).Color(theme.MutedForeground)
+				if holidayBadge != "" {
+					f.Row().PadX(12).PadY(3).Background(theme.Muted).Radius(8).Items(flex.Center).Children(func() {
+						f.Text(holidayBadge).FontSize(14).Bold().Color(theme.Primary)
+					})
 				}
-				f.Text(fmt.Sprintf("%s %s (%s)", wSnap.Icon, tempStr, condStr)).FontSize(22).Bold().Color(theme.Primary)
+			})
+
+			// 4. 底部实时天气快照（天气温度前面附带 IP 所在国家省份和城市）
+			f.Row().Items(flex.Center).PadX(18).PadY(6).Background(theme.Muted).Radius(14).Gap(10).Children(func() {
+				if ipLocStr != "" {
+					f.Text(fmt.Sprintf("📍 %s", ipLocStr)).FontSize(16).Bold().Color(theme.Foreground)
+					f.Text("•").FontSize(14).Muted()
+				}
+				f.Text(fmt.Sprintf("%s %s (%s)", wSnap.Icon, tempStr, condStr)).FontSize(17).Bold().Color(theme.Primary)
 			})
 		} else {
 			// Digital Clock Display with Frosted Glass Card
-			// 主时钟字号整体放大近两倍，文字清晰醒目无重复内容
+			// 主时钟视觉层级优化：超大时间居最顶端，归属地紧随其下，双历与天气和谐呼应
 			mainTimeFontSize := state.EffectiveClockFontSize() * 1.8
-			f.Column().Pad(36).Background(theme.Card).Radius(20).Border(1, theme.Border).Items(flex.Center).Gap(14).Children(func() {
-				// 顶部显示当前电脑所在国家/地区与本地时区徽章（若已探测到公网 IP，在最上方一并展示 IP 所在国家）
-				f.Row().PadX(18).PadY(8).Background(theme.Muted).Radius(14).Items(flex.Center).Gap(10).Children(func() {
-					if ipBadge != "" {
-						f.Text(ipBadge).FontSize(20).Bold().Color(theme.Accent)
-						f.Text("•").FontSize(18).Muted()
-					}
-					f.Text(locationBadge).FontSize(20).Bold().Color(theme.Primary)
-				})
-
-				// 超大数字时钟主体
-				f.Row().Items(flex.Center).Gap(18).Children(func() {
+			f.Column().Pad(32).Background(theme.Card).Radius(24).Border(1, theme.Border).Items(flex.Center).Gap(18).Children(func() {
+				// 1. 超大数字时钟主体（居于最上方核心视觉焦点）
+				f.Row().Items(flex.Baseline).Gap(12).Children(func() {
 					state.ApplyDigitsFont(f.Text(timeStr).FontSize(mainTimeFontSize).Bold()).Color(state.ClockColor(theme))
 					if period != "" {
-						f.Row().Items(flex.Center).PadX(14).PadY(6).Background(theme.Muted).Radius(10).Children(func() {
-							f.Text(period).FontSize(32).Bold().Color(theme.Primary)
+						f.Text(period).FontSize(mainTimeFontSize * 0.36).Bold().Color(theme.Primary)
+					}
+				})
+
+				// 2. 紧随时间下方：IP 所在国家 与 所在国家/地区 徽章
+				f.Row().PadX(16).PadY(5).Background(theme.Muted).Radius(12).Items(flex.Center).Gap(8).Children(func() {
+					if ipBadge != "" {
+						f.Text(ipBadge).FontSize(15).Bold().Color(theme.Accent)
+						f.Text("•").FontSize(13).Muted()
+					}
+					f.Text(locationBadge).FontSize(15).Bold().Color(theme.Primary)
+				})
+
+				// 3. 阳历、农历与节假日信息（排版舒展、字体比例协调）
+				f.Column().Items(flex.Center).Gap(6).Children(func() {
+					f.Text(solarStr).FontSize(22).Bold().Color(theme.Foreground)
+					f.Text(lunarStr).FontSize(16).Color(theme.MutedForeground)
+					if holidayBadge != "" {
+						f.Row().PadX(12).PadY(3).Background(theme.Muted).Radius(8).Items(flex.Center).Children(func() {
+							f.Text(holidayBadge).FontSize(14).Bold().Color(theme.Primary)
 						})
 					}
 				})
 
-				// 阳历与农历双历展示（清晰放大）
-				f.Text(solarStr).FontSize(28).Bold().Color(theme.Foreground)
-				f.Text(lunarStr).FontSize(24).Bold().Color(theme.MutedForeground)
-
-				// 当日传统节日、二十四节气或网络特色节日（如1024程序员节、黑五打折、双11等）
-				if holidayBadge != "" {
-					f.Row().PadX(16).PadY(6).Background(theme.Muted).Radius(12).Items(flex.Center).Children(func() {
-						f.Text(holidayBadge).FontSize(20).Bold().Color(theme.Primary)
-					})
-				}
-
-				// 底部实时天气快照（天气温度前面加上 IP 所在国家省份和城市！）
-				f.Row().Items(flex.Center).PadX(18).PadY(6).Background(theme.Muted).Radius(12).Gap(10).Children(func() {
+				// 4. 底部实时天气快照（天气温度前面加上 IP 所在国家省份和城市！）
+				f.Row().Items(flex.Center).PadX(18).PadY(6).Background(theme.Muted).Radius(14).Gap(10).Children(func() {
 					if ipLocStr != "" {
-						f.Text(fmt.Sprintf("📍 %s", ipLocStr)).FontSize(20).Bold().Color(theme.Foreground)
-						f.Text("•").FontSize(18).Muted()
+						f.Text(fmt.Sprintf("📍 %s", ipLocStr)).FontSize(16).Bold().Color(theme.Foreground)
+						f.Text("•").FontSize(14).Muted()
 					}
-					f.Text(fmt.Sprintf("%s %s (%s)", wSnap.Icon, tempStr, condStr)).FontSize(22).Bold().Color(theme.Primary)
+					f.Text(fmt.Sprintf("%s %s (%s)", wSnap.Icon, tempStr, condStr)).FontSize(17).Bold().Color(theme.Primary)
 				})
 			})
 		}

@@ -135,71 +135,84 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 			f.Spacer()
 		}
 
-		// Clock representation: 整体超大字号呈现
+		// Clock representation: 整体视觉层级优化
 		if cfg.ClockStyle == string(clock.StyleAnalog) {
-			drawAnalogFace(f, now, theme, 260)
-			f.Row().Items(flex.Baseline).Gap(10).Children(func() {
-				state.ApplyDigitsFont(f.Text(timeStr).FontSize(48).Bold())
+			drawAnalogFace(f, now, theme, 240)
+
+			// 1. 数字时间读数
+			f.Row().Items(flex.Baseline).Gap(8).Children(func() {
+				state.ApplyDigitsFont(f.Text(timeStr).FontSize(42).Bold()).Color(state.ClockColor(theme))
 				if period != "" {
-					f.Text(period).FontSize(26).Bold().Color(theme.Primary)
+					f.Text(period).FontSize(20).Bold().Color(theme.Primary)
 				}
 			})
-			f.Text(solarStr).FontSize(22).Bold().Color(theme.Foreground)
-			f.Text(lunarStr).FontSize(18).Color(theme.MutedForeground)
-			if holidayBadge != "" {
-				f.Text(holidayBadge).FontSize(16).Bold().Color(theme.Primary)
-			}
-			f.Row().Items(flex.Center).Gap(8).Children(func() {
+
+			// 2. 紧随时间下方：IP 所在国家 与 所在国家/地区 徽章
+			f.Row().PadX(14).PadY(4).Background(theme.Muted).Radius(10).Items(flex.Center).Gap(6).Children(func() {
 				if ipBadge != "" {
-					f.Text(ipBadge).FontSize(16).Bold().Color(theme.Accent)
-					f.Text("•").FontSize(14).Muted()
+					f.Text(ipBadge).FontSize(13).Bold().Color(theme.Accent)
+					f.Text("•").FontSize(11).Muted()
 				}
-				f.Text(locationBadge).FontSize(18).Bold().Color(theme.Primary)
-				f.Text("•").FontSize(16).Muted()
-				if ipLocStr != "" {
-					f.Text(fmt.Sprintf("📍 %s", ipLocStr)).FontSize(16).Bold().Color(theme.Foreground)
-					f.Text("•").FontSize(14).Muted()
-				}
-				f.Text(weatherText).FontSize(18).Bold().Color(theme.Foreground)
+				f.Text(locationBadge).FontSize(13).Bold().Color(theme.Primary)
 			})
-		} else {
-			// Digital Popout Clock: 超大字号数字时钟卡片 (88px 大时间 + 24px 双历 + 20px 徽章)
-			f.Column().Pad(32).Background(theme.Card).Radius(20).Border(1, theme.Border).Items(flex.Center).Gap(14).Children(func() {
-				// 所在国家/地区与本地时区徽章（若已探测到公网 IP，在最上方一并展示 IP 所在国家）
-				f.Row().PadX(16).PadY(6).Background(theme.Muted).Radius(12).Items(flex.Center).Gap(8).Children(func() {
-					if ipBadge != "" {
-						f.Text(ipBadge).FontSize(18).Bold().Color(theme.Accent)
-						f.Text("•").FontSize(16).Muted()
-					}
-					f.Text(locationBadge).FontSize(20).Bold().Color(theme.Primary)
-				})
 
-				// 超大数字时钟
-				f.Row().Items(flex.Baseline).Gap(12).Children(func() {
-					state.ApplyDigitsFont(f.Text(timeStr).FontSize(88).Bold()).Color(state.ClockColor(theme))
-					if period != "" {
-						f.Text(period).FontSize(28).Bold().Color(theme.Primary)
-					}
-				})
-
-				// 阳历与农历双历
-				f.Text(solarStr).FontSize(24).Bold().Color(theme.Foreground)
-				f.Text(lunarStr).FontSize(20).Color(theme.MutedForeground)
-
-				// 今日节日与节气
+			// 3. 阳历、农历与节假日
+			f.Column().Items(flex.Center).Gap(4).Children(func() {
+				f.Text(solarStr).FontSize(18).Bold().Color(theme.Foreground)
+				f.Text(lunarStr).FontSize(14).Color(theme.MutedForeground)
 				if holidayBadge != "" {
-					f.Row().PadX(14).PadY(5).Background(theme.Muted).Radius(10).Children(func() {
-						f.Text(holidayBadge).FontSize(17).Bold().Color(theme.Primary)
+					f.Row().PadX(10).PadY(2).Background(theme.Muted).Radius(6).Children(func() {
+						f.Text(holidayBadge).FontSize(12).Bold().Color(theme.Primary)
 					})
 				}
+			})
 
-				// 天气快照（天气温度前面加上 IP 所在国家省份和城市）
-				f.Row().PadX(14).PadY(5).Background(theme.Muted).Radius(10).Gap(6).Children(func() {
-					if ipLocStr != "" {
-						f.Text(fmt.Sprintf("📍 %s", ipLocStr)).FontSize(17).Bold().Color(theme.Foreground)
-						f.Text("•").FontSize(15).Muted()
+			// 4. 底部实时天气快照
+			f.Row().PadX(14).PadY(4).Background(theme.Muted).Radius(10).Gap(6).Children(func() {
+				if ipLocStr != "" {
+					f.Text(fmt.Sprintf("📍 %s", ipLocStr)).FontSize(13).Bold().Color(theme.Foreground)
+					f.Text("•").FontSize(11).Muted()
+				}
+				f.Text(weatherText).FontSize(14).Bold().Color(theme.Primary)
+			})
+		} else {
+			// Digital Popout Clock: 超大字号数字时钟卡片
+			f.Column().Pad(28).Background(theme.Card).Radius(20).Border(1, theme.Border).Items(flex.Center).Gap(14).Children(func() {
+				// 1. 超大数字时钟主体（居于最上方核心视觉焦点）
+				f.Row().Items(flex.Baseline).Gap(10).Children(func() {
+					state.ApplyDigitsFont(f.Text(timeStr).FontSize(76).Bold()).Color(state.ClockColor(theme))
+					if period != "" {
+						f.Text(period).FontSize(24).Bold().Color(theme.Primary)
 					}
-					f.Text(weatherText).FontSize(18).Bold().Color(theme.Primary)
+				})
+
+				// 2. 紧随时间下方：IP 所在国家 与 所在国家/地区 徽章
+				f.Row().PadX(14).PadY(4).Background(theme.Muted).Radius(10).Items(flex.Center).Gap(6).Children(func() {
+					if ipBadge != "" {
+						f.Text(ipBadge).FontSize(13).Bold().Color(theme.Accent)
+						f.Text("•").FontSize(11).Muted()
+					}
+					f.Text(locationBadge).FontSize(13).Bold().Color(theme.Primary)
+				})
+
+				// 3. 阳历、农历与节假日
+				f.Column().Items(flex.Center).Gap(4).Children(func() {
+					f.Text(solarStr).FontSize(18).Bold().Color(theme.Foreground)
+					f.Text(lunarStr).FontSize(14).Color(theme.MutedForeground)
+					if holidayBadge != "" {
+						f.Row().PadX(10).PadY(2).Background(theme.Muted).Radius(6).Children(func() {
+							f.Text(holidayBadge).FontSize(12).Bold().Color(theme.Primary)
+						})
+					}
+				})
+
+				// 4. 底部实时天气快照
+				f.Row().PadX(14).PadY(4).Background(theme.Muted).Radius(10).Gap(6).Children(func() {
+					if ipLocStr != "" {
+						f.Text(fmt.Sprintf("📍 %s", ipLocStr)).FontSize(13).Bold().Color(theme.Foreground)
+						f.Text("•").FontSize(11).Muted()
+					}
+					f.Text(weatherText).FontSize(14).Bold().Color(theme.Primary)
 				})
 			})
 		}
