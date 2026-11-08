@@ -120,8 +120,9 @@ type AppState struct {
 	View flex.View
 
 	// 当前帧统一的本地时间与 UTC 时间戳快照
-	Now time.Time
-	UTC time.Time
+	Now     time.Time
+	UTC     time.Time
+	NowHook func() time.Time // 测试与仿真时间注入钩子（若为空则使用 time.Now()）
 
 	// 硬件性能优化缓存：缓存当天的公历/农历双历、所在地与节日徽章，以及选城搜索过滤列表（避免每秒/每帧重复计算与堆分配）
 	dailyCache         DailyClockCache
@@ -563,6 +564,9 @@ func (a *AppState) ApplyDigitsFont(b flex.Box) flex.Box {
 
 // EnterEdgeBar 进入屏幕边缘精简状态条模式，并在桌面环境下将窗口自动缩小为顶部/边缘横条。
 func (a *AppState) EnterEdgeBar(edge string) {
+	if a.License != nil && !a.License.IsFeatureUnlocked(time.Now()) {
+		return
+	}
 	if edge == "" {
 		edge = "top"
 	}
@@ -588,6 +592,9 @@ func (a *AppState) ExitEdgeBar() {
 // HandleFrameChange 处理窗口位置或尺寸变化事件（由 Viva Config.OnFrameChange 回调驱动）。
 // 当检测到窗口靠近屏幕边缘且已启用边缘收缩功能时，自动将窗口收缩为状态条模式。
 func (a *AppState) HandleFrameChange(frame ui.Rect) {
+	if a.License != nil && !a.License.IsFeatureUnlocked(time.Now()) {
+		return
+	}
 	if frame.Width <= 0 || frame.Height <= 0 {
 		return
 	}

@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"worldclock/pkg/alarm"
 	"worldclock/pkg/clock"
 	"worldclock/pkg/sleep"
 	"worldclock/pkg/storage"
@@ -35,6 +36,9 @@ func NewAppConfig(state *AppState) app.Config {
 	cfg.Paint = func(canvas *ui.Canvas, size ui.Size) {
 		// 1. 记录当前帧统一时间戳，保证同一帧内所有时钟读数完全一致
 		now := time.Now()
+		if state.NowHook != nil {
+			now = state.NowHook()
+		}
 		state.Now = now
 		state.UTC = now.UTC()
 		if !state.topmostSynced {
@@ -48,14 +52,30 @@ func NewAppConfig(state *AppState) app.Config {
 		wpEnabled, wpCardOpacity := state.Wallpaper.RenderParams()
 		theme := BuildTheme(settings.Theme, wpEnabled, wpCardOpacity, settings.UIFontColor)
 
-		// 3. 检查当前分钟是否有闹钟应当触发响铃（若处于贪睡静音期内则返回 nil）
-		ringing := state.Scheduler.CheckTriggers(now)
+		// 3. 授权状态检查：若处于 7 天试用期内、已开通 Pro 订阅或处于免付测试版模式，正常开放功能；
+		// 若 7 天试用期已结束且未订阅，判定为试用过期锁定状态。
+		unlocked := state.License != nil && state.License.IsFeatureUnlocked(now)
 
-		// 4. 无论当前处于哪个标签页，零分配同步推进后台专注计时器、睡眠模式和倒计时器进度
-		trackerChanged := state.Tracker.Update(now)
-		slState, slVol := state.Sleep.Update(now)
-		_, slSound, _ := state.Sleep.Info()
-		timerRunning, timerRinging := state.TimerMgr.TickAll(now)
+		// 4. 驱动后台任务与闹钟调度器轮询检查（试用过期锁定状态下静音并暂停所有后台提醒）
+		var ringing *alarm.RingingAlarm
+		var trackerChanged bool
+		var slState sleep.State
+		var slVol float32
+		var slSound sleep.AmbientSound
+		var timerRunning, timerRinging bool
+
+		if unlocked {
+			ringing = state.Scheduler.CheckTriggers(now)
+			trackerChanged = state.Tracker.Update(now)
+			slState, slVol = state.Sleep.Update(now)
+			_, slSound, _ = state.Sleep.Info()
+			timerRunning, timerRinging = state.TimerMgr.TickAll(now)
+		} else {
+			// 试用过期锁死状态：强制停止一切正在播放的音频
+			if state.Audio != nil {
+				state.Audio.Stop()
+			}
+		}
 
 		// 4b. 同步闹钟响铃、倒计时到期提醒与睡眠环境白噪音的硬件音频输出状态
 		alarmActive := ringing != nil || timerRinging
@@ -66,7 +86,7 @@ func NewAppConfig(state *AppState) app.Config {
 			alarmSound = "Digital Bell"
 		}
 		sleepPlaying := slState == sleep.StateActive || slState == sleep.StateFading
-		if state.Audio != nil {
+		if state.Audio != nil && unlocked {
 			state.Audio.SyncState(alarmActive, alarmSound, sleepPlaying, string(slSound), slVol)
 			// 当番茄工作法阶段（专注 <-> 休息）切换且未开启勿扰模式时，触发单次柔和风铃提示音
 			if trackerChanged && !state.Tracker.Config().DoNotDisturb && !alarmActive && !sleepPlaying {
@@ -74,8 +94,8 @@ func NewAppConfig(state *AppState) app.Config {
 			}
 		}
 
-		// 4c. 后台非阻塞同步“历史上的今天”在线 API（每天每种语言仅请求一次，完成后自动触发单次重绘）
-		if state.News != nil {
+		// 4c. 后台非阻塞同步“历史上的今天”在线 API（仅在已解锁状态下同步）
+		if unlocked && state.News != nil {
 			state.News.EnsureFetchedAsync(now, string(state.Lang()), false, state.Invalidate)
 		}
 
@@ -86,10 +106,12 @@ func NewAppConfig(state *AppState) app.Config {
 		}
 
 		// 5. 判断是否存在需要高频刷新（约 25 FPS）的活动秒表、倒计时或番茄钟
-		fastTick := timerRunning || state.Stopwatch.State() == timer.StateRunning
-		trStatus := state.Tracker.Status()
-		if trStatus == "Working" || trStatus == "Short Break" || trStatus == "Big Break" {
-			fastTick = true
+		fastTick := unlocked && (timerRunning || state.Stopwatch.State() == timer.StateRunning)
+		if unlocked {
+			trStatus := state.Tracker.Status()
+			if trStatus == "Working" || trStatus == "Short Break" || trStatus == "Big Break" {
+				fastTick = true
+			}
 		}
 
 		// 6. 严格遵守 Viva 框架“空闲零重绘”准则：
@@ -106,8 +128,10 @@ func NewAppConfig(state *AppState) app.Config {
 
 		// 6b. 后台精准定时唤醒双重保障：为下一个即将到达的闹钟预约后台单次唤醒，
 		// 确保即使窗口被隐藏（Hide 到系统托盘）、没有任何用户交互，也能在到点时刻精准唤醒触发：
-		if nextAlarm, ok := state.Scheduler.NextOccurrence(now); ok {
-			state.SchedulePreciseWake(nextAlarm)
+		if unlocked {
+			if nextAlarm, ok := state.Scheduler.NextOccurrence(now); ok {
+				state.SchedulePreciseWake(nextAlarm)
+			}
 		}
 
 		// 7. 绘制窗口根背景色与自定义壁纸图层
@@ -119,6 +143,17 @@ func NewAppConfig(state *AppState) app.Config {
 
 		// 8. 绘制声明式 Flex UI 组件树
 		state.View.Draw(canvas, theme, bounds, func(f *flex.Frame) {
+			// ★★★ 核心授权拦截：7 天免费试用期到期强制全屏锁死屏障 ★★★
+			// 若当前 7 天试用期已耗尽且未订阅（且非免付测试版），强制锁死一切主界面与功能，
+			// 禁止使用时钟、世界时钟、闹钟、倒计时、番茄钟、白噪音、贴边条或悬浮小窗，
+			// 仅展示全屏订阅锁定屏障，杜绝任何免费白嫖使用。
+			if !unlocked {
+				state.IsEdgeBar = false
+				state.IsPopout = false
+				DrawTrialExpiredLockout(f, state, theme)
+				return
+			}
+
 			if state.IsEdgeBar {
 				DrawEdgeBar(f, state, theme)
 				return
@@ -212,8 +247,11 @@ func NewAppConfig(state *AppState) app.Config {
 		state.Persist()
 	}
 
-	// 支持将本地图片文件或整个图片文件夹直接拖拽进窗口设置为壁纸/轮播图
+	// 支持将本地图片文件或整个图片文件夹直接拖拽进窗口设置为壁纸/轮播图（仅在已解锁状态下生效）
 	cfg.OnFileDrop = func(event ui.FileDropEvent) ui.EventResult {
+		if state.License != nil && !state.License.IsFeatureUnlocked(time.Now()) {
+			return ui.EventResult{}
+		}
 		if event.Phase == ui.FileDropDrop && len(event.Paths) > 0 {
 			first := event.Paths[0]
 			if info, err := os.Stat(first); err == nil && info.IsDir() {

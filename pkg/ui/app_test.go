@@ -1847,6 +1847,96 @@ func TestProSubscriptionAndTrialCenter(t *testing.T) {
 	}
 }
 
+func TestTrialExpiredLockoutEnforced(t *testing.T) {
+	state, driver := setupTestApp(t)
+	defer driver.Close()
+
+	// Switch to Chinese UI
+	clickID(t, driver, TabSettingsID)
+	clickID(t, driver, IDSettingsTabLanguage)
+	clickID(t, driver, IDLangZH)
+	clickID(t, driver, TabClockID)
+
+	baseNow := time.Now()
+	mockNow := baseNow
+	state.NowHook = func() time.Time {
+		return mockNow
+	}
+
+	// 1. Initial state (Day 0): 7-Day trial is active, app functions normally
+	if !state.License.IsFeatureUnlocked(mockNow) {
+		t.Fatal("expected trial to be active initially")
+	}
+	if !hasLabel(driver.Snapshot(), "试用 7 天") {
+		t.Fatal("expected '试用 7 天' banner in header")
+	}
+
+	// 2. Advance time past 7 days (e.g. 8 days)
+	mockNow = baseNow.Add(8 * 24 * time.Hour)
+
+	// Advance driver to paint a new frame with updated time
+	_ = driver.Resize(900, 1201)
+
+	// Verify license manager reports trial expired and locked
+	if state.License.TrialDaysRemaining(mockNow) != 0 {
+		t.Fatalf("expected 0 trial days remaining, got %d", state.License.TrialDaysRemaining(mockNow))
+	}
+	if state.License.IsFeatureUnlocked(mockNow) {
+		t.Fatal("expected IsFeatureUnlocked to be false after 8 days")
+	}
+
+	// 3. Verify that the UI displays the Lockout View and hides all normal tabs
+	snapLockout := driver.Snapshot()
+	if !hasLabel(snapLockout, "7 天全功能免费试用已结束") {
+		var lbls []string
+		for _, l := range snapLockout.Labels {
+			lbls = append(lbls, l.Value)
+		}
+		t.Fatalf("expected lockout header '7 天全功能免费试用已结束', got labels: %v", lbls)
+	}
+	// Normal navigation tabs should be completely absent from hit targets
+	for _, hit := range snapLockout.Hits {
+		if hit.ID == TabClockID || hit.ID == TabWorldID || hit.ID == TabAlarmsID || hit.ID == TabTimersID {
+			t.Fatalf("normal navigation tab %v should NOT be rendered when locked out", hit.ID)
+		}
+	}
+
+	// 4. Verify clicking '退出应用程序' (IDBtnLockoutExit) triggers application exit
+	if !clickID(t, driver, IDBtnLockoutExit) {
+		t.Fatal("failed to click IDBtnLockoutExit")
+	}
+	if !state.ForceQuit {
+		t.Fatal("expected ForceQuit to be true after clicking exit on lockout screen")
+	}
+
+	// 5. Test unlock by subscribing: user clicks '开通按月订阅' (IDBtnProSubMonthly)
+	if !clickID(t, driver, IDBtnProSubMonthly) {
+		t.Fatal("failed to click IDBtnProSubMonthly on lockout screen")
+	}
+	if !state.License.IsFeatureUnlocked(mockNow) {
+		t.Fatal("expected features to be unlocked immediately after subscribing")
+	}
+
+	// Advance driver to paint the unlocked frame
+	_ = driver.Resize(900, 1200)
+
+	// Normal navigation tabs should now be restored
+	snapUnlocked := driver.Snapshot()
+	if hasLabel(snapUnlocked, "7 天全功能免费试用已结束") {
+		t.Fatal("lockout screen should disappear after subscribing")
+	}
+	var clockTabFound bool
+	for _, hit := range snapUnlocked.Hits {
+		if hit.ID == TabClockID {
+			clockTabFound = true
+			break
+		}
+	}
+	if !clockTabFound {
+		t.Fatal("expected TabClockID to be restored and interactive after subscribing")
+	}
+}
+
 func TestPreciseTimeSteppersInAlarmTimerSleepAndTracker(t *testing.T) {
 	state, driver := setupTestApp(t)
 	defer driver.Close()

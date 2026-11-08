@@ -33,6 +33,114 @@ func DrawProModal(f *flex.Frame, state *AppState, theme ui.Theme) {
 	})
 }
 
+// DrawTrialExpiredLockout 渲染试用期 7 天结束时的全屏强制锁定屏障（Lockout Paywall）。
+// 严格阻断任何未经订阅授权的时钟、世界时钟、闹钟、倒计时、番茄钟、白噪音与贴边条/悬浮窗访问。
+func DrawTrialExpiredLockout(f *flex.Frame, state *AppState, theme ui.Theme) {
+	scrollBox := f.ScrollArea(IDScrollLockout).Fill().Pad(24).Gap(16)
+	scrollBox.Children(func() {
+		// 1. 顶部醒目的危险/锁定警告卡片
+		f.Column().FillWidth().Pad(20).Background(theme.Card).Radius(12).Border(2, theme.Danger).Gap(10).Children(func() {
+			f.Row().Items(flex.Center).Gap(10).Children(func() {
+				f.Text(state.T("pro.lockout_title")).FontSize(20).Bold().Color(theme.Danger)
+			})
+			f.Text(state.T("pro.lockout_desc")).FontSize(13).Color(theme.Foreground)
+
+			// 操作反馈即时提示条
+			if noticeCode := state.License.LastNotice(); noticeCode != "" {
+				var noticeI18nKey string
+				switch noticeCode {
+				case "activated_monthly":
+					noticeI18nKey = "pro.notice_monthly"
+				case "activated_yearly":
+					noticeI18nKey = "pro.notice_yearly"
+				case "restored":
+					noticeI18nKey = "pro.notice_restored"
+				case "trial_reset":
+					noticeI18nKey = "pro.notice_trial"
+				case "full_test":
+					noticeI18nKey = "pro.notice_full"
+				}
+				if noticeI18nKey != "" {
+					f.Row().FillWidth().Pad(10).Background(theme.Background).Radius(8).Border(1, theme.Accent).Items(flex.Center).Children(func() {
+						f.Text(state.T(noticeI18nKey)).FontSize(13).Bold().Color(theme.Accent)
+					})
+				}
+			}
+		})
+
+		// 2. 核心订阅方案对比卡片区（按月订阅 ¥3/月 vs 按年订阅 ¥28/年）
+		f.Row().FillWidth().Gap(14).Children(func() {
+			// 方案 A：按月订阅（¥3 / 月）
+			f.Column().Grow(1).Pad(18).Background(theme.Card).Radius(12).Border(1, theme.Border).Gap(10).Children(func() {
+				f.Text(state.T("pro.plan_monthly_title")).FontSize(16).Bold().Color(theme.Foreground)
+				f.Text(state.T("pro.plan_monthly_price")).FontSize(26).Bold().Color(theme.Primary)
+				f.Text(state.T("pro.plan_monthly_desc")).FontSize(12).Muted()
+				f.Spacer()
+				if f.Button(IDBtnProSubMonthly, state.T("pro.plan_monthly_btn")).Clicked() {
+					state.License.ActivateMonthly(state.Now)
+					state.Persist()
+				}
+			})
+
+			// 方案 B：按年订阅（¥28 / 年 · 立省 22%）
+			f.Column().Grow(1).Pad(18).Background(theme.Card).Radius(12).Border(1, theme.Primary).Gap(10).Children(func() {
+				f.Text(state.T("pro.plan_yearly_title")).FontSize(16).Bold().Color(theme.Primary)
+				f.Text(state.T("pro.plan_yearly_price")).FontSize(26).Bold().Color(theme.Accent)
+				f.Text(state.T("pro.plan_yearly_desc")).FontSize(12).Muted()
+				f.Spacer()
+				if f.Button(IDBtnProSubYearly, state.T("pro.plan_yearly_btn")).Clicked() {
+					state.License.ActivateYearly(state.Now)
+					state.Persist()
+				}
+			})
+		})
+
+		// 3. Pro 会员核心权益说明（展示订阅后即可解锁的所有能力）
+		f.Column().FillWidth().Pad(16).Background(theme.Card).Radius(12).Border(1, theme.Border).Gap(8).Children(func() {
+			f.Text(state.T("pro.benefits_title")).FontSize(15).Bold().Color(theme.Primary)
+			f.Text(state.T("pro.benefit_1")).FontSize(13).Color(theme.Foreground)
+			f.Text(state.T("pro.benefit_2")).FontSize(13).Color(theme.Foreground)
+			f.Text(state.T("pro.benefit_3")).FontSize(13).Color(theme.Foreground)
+			f.Text(state.T("pro.benefit_4")).FontSize(13).Color(theme.Foreground)
+		})
+
+		// 4. 底部出路操作栏：恢复购买 / 管理订阅 / 退出程序 / 测试通道
+		f.Row().FillWidth().Items(flex.Center).Gap(10).Children(func() {
+			if f.Button(IDBtnProRestore, state.T("pro.restore_btn")).Small().Outline().Clicked() {
+				state.License.RestorePurchases(state.Now)
+				state.Persist()
+			}
+			if f.Button(IDBtnProManage, state.T("pro.manage_btn")).Small().Secondary().Clicked() {
+				state.License.RestorePurchases(state.Now)
+				state.Persist()
+			}
+			if f.Button(IDBtnLockoutExit, state.T("pro.lockout_exit")).Small().Secondary().Clicked() {
+				state.ForceQuit = true
+				if state.Window != nil {
+					state.Window.Close()
+				}
+				if state.Application != nil {
+					state.Application.Quit()
+				}
+			}
+
+			f.Spacer()
+
+			// 调试测试环境免付费通道（方便本地开发、测试与审核）
+			if f.Button(IDBtnProSimFullTest, state.T("pro.test_sim_full")).Small().Ghost().Clicked() {
+				state.License.ActivateFullTest()
+				state.Persist()
+			}
+			if f.Button(IDBtnProSimTrial, state.T("pro.test_sim_trial")).Small().Ghost().Clicked() {
+				state.License.ResetToTrial(state.Now)
+				state.Persist()
+			}
+		})
+	})
+	ss := state.View.ScrollState(IDScrollLockout)
+	DrawScrollbar(f.Canvas(), scrollBox, ss, theme)
+}
+
 // DrawProCenter 渲染 Pro 会员订阅、7 天免费试用倒计时、恢复购买与完整免付测试版切换中心。
 // DrawProCenter renders the Pro subscription plans (¥3/month, ¥28/year), 7-day trial status, and free full-test mode switcher.
 func DrawProCenter(f *flex.Frame, state *AppState, theme ui.Theme) {

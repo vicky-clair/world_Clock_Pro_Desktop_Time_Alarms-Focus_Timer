@@ -215,6 +215,8 @@ var (
 	IDBtnProManage      = Tree.ID(featPro, "btn-pro-manage")        // 管理或取消订阅 (Microsoft Store) 按钮
 	IDBtnProSimTrial    = Tree.ID(featPro, "btn-pro-sim-trial")     // 测试切换：重置为 7 天免费试用态
 	IDBtnProSimFullTest = Tree.ID(featPro, "btn-pro-sim-full-test") // 测试切换：切换为永久免付完整测试版
+	IDBtnLockoutExit    = Tree.ID(featPro, "btn-lockout-exit")      // 试用期结束全屏锁定屏障：退出程序按钮
+	IDScrollLockout     = Tree.ID(featPro, "scroll-lockout")        // 试用期结束全屏锁定屏障：滚动容器
 
 	// 界面语言切换按钮 (Language Controls)
 	IDLangZH = Tree.ID(featSetting, "lang-zh") // 切换为简体中文

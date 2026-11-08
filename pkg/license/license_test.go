@@ -71,4 +71,14 @@ func TestLicenseTrialAndSubscriptions(t *testing.T) {
 	if mgr.IsFeatureUnlocked(after8Days) {
 		t.Fatal("expected IsFeatureUnlocked to be false after trial expires without subscription")
 	}
+
+	// 8. 倒拨系统时钟防作弊检测：若系统时钟比记录的最后运行时间倒退超过 1 小时，判定试用失效并锁定
+	mgr.ResetToTrial(now)
+	rolledBackTime := now.Add(-2 * time.Hour)
+	if mgr.TrialDaysRemaining(rolledBackTime) != 0 {
+		t.Fatalf("expected 0 trial days when clock rolled back by 2 hours, got %d", mgr.TrialDaysRemaining(rolledBackTime))
+	}
+	if mgr.IsFeatureUnlocked(rolledBackTime) {
+		t.Fatal("expected IsFeatureUnlocked to be false when clock is rolled back")
+	}
 }

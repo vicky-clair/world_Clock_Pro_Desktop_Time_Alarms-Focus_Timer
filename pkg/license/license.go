@@ -41,6 +41,7 @@ type Config struct {
 	Plan                PlanType `json:"plan"`                // 当前计划类型："trial"、"monthly"、"yearly"、"full_test"
 	TrialStartUnix      int64    `json:"trialStartUnix"`      // 首次开启 7 天免费试用的 Unix 秒级时间戳
 	SubscriptionEndUnix int64    `json:"subscriptionEndUnix"` // 当前订阅周期到期时间戳（0 表示测试版无期限）
+	LastSeenUnix        int64    `json:"lastSeenUnix"`        // 上次记录的运行时钟时间戳（用于防范系统时钟倒拨作弊）
 }
 
 // Manager 线程安全地管理应用运行时的试用期计算、Pro 订阅激活与 Microsoft Store 授权状态恢复。
@@ -60,6 +61,9 @@ func NewManager(cfg Config, now time.Time) *Manager {
 	}
 	if cfg.TrialStartUnix <= 0 {
 		cfg.TrialStartUnix = now.Unix()
+	}
+	if cfg.LastSeenUnix <= 0 {
+		cfg.LastSeenUnix = now.Unix()
 	}
 	return &Manager{
 		cfg: cfg,
@@ -107,12 +111,24 @@ func (m *Manager) IsProActive() bool {
 // 2. 若为按月/按年订阅 (PlanMonthly/PlanYearly)，检查到期时间戳是否在有效期内；
 // 3. 若为 PlanFullTest（本地调试测试版模式），全功能免付费解锁；
 // 4. 若试用已过期且未订阅，返回 false（锁定高级功能，提示开通）。
+// 5. 若检测到系统时间倒退超过 1 小时（时钟倒拨作弊），在试用模式下直接锁定。
 func (m *Manager) IsFeatureUnlocked(now time.Time) bool {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if now.IsZero() {
 		now = time.Now()
 	}
+
+	// 防回拨系统时钟作弊检测：若系统时钟比记录的最后运行时间倒退超过 1 小时，且处于试用模式，直接判定试用无效锁定
+	if m.cfg.LastSeenUnix > 0 && now.Unix() < m.cfg.LastSeenUnix-3600 {
+		if m.cfg.Plan == PlanTrial {
+			return false
+		}
+	}
+	if now.Unix() > m.cfg.LastSeenUnix {
+		m.cfg.LastSeenUnix = now.Unix()
+	}
+
 	switch m.cfg.Plan {
 	case PlanFullTest:
 		return true
@@ -138,6 +154,10 @@ func (m *Manager) TrialDaysRemaining(now time.Time) int {
 func (m *Manager) trialDaysRemainingLocked(now time.Time) int {
 	if now.IsZero() {
 		now = time.Now()
+	}
+	// 防回拨系统时钟作弊：倒退超过 1 小时视为异常，返回 0 天剩余
+	if m.cfg.LastSeenUnix > 0 && now.Unix() < m.cfg.LastSeenUnix-3600 {
+		return 0
 	}
 	start := time.Unix(m.cfg.TrialStartUnix, 0)
 	elapsed := now.Sub(start)
@@ -168,6 +188,7 @@ func (m *Manager) ActivateMonthly(now time.Time) {
 	}
 	m.cfg.Plan = PlanMonthly
 	m.cfg.SubscriptionEndUnix = now.Add(31 * 24 * time.Hour).Unix()
+	m.cfg.LastSeenUnix = now.Unix()
 	m.lastNotice = "activated_monthly"
 }
 
@@ -180,6 +201,7 @@ func (m *Manager) ActivateYearly(now time.Time) {
 	}
 	m.cfg.Plan = PlanYearly
 	m.cfg.SubscriptionEndUnix = now.Add(365 * 24 * time.Hour).Unix()
+	m.cfg.LastSeenUnix = now.Unix()
 	m.lastNotice = "activated_yearly"
 }
 
@@ -192,6 +214,7 @@ func (m *Manager) ResetToTrial(now time.Time) {
 	}
 	m.cfg.Plan = PlanTrial
 	m.cfg.TrialStartUnix = now.Unix()
+	m.cfg.LastSeenUnix = now.Unix()
 	m.cfg.SubscriptionEndUnix = 0
 	m.lastNotice = "trial_reset"
 }
