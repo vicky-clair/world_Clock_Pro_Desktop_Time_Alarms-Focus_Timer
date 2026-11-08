@@ -406,6 +406,42 @@ func TestRingingAlarmAlert(t *testing.T) {
 	}
 }
 
+func TestAlarmCatchUpInUI(t *testing.T) {
+	state, driver := setupTestApp(t)
+	defer driver.Close()
+
+	// 添加一条 3 分钟前设定的闹钟（模拟电脑睡眠期间错过精确分钟点）
+	alarmTime := time.Now().Add(-3 * time.Minute)
+	state.Scheduler.AddAlarm(alarm.Alarm{
+		ID:           "test-sleep-catchup",
+		Title:        "Sleep Catchup Test",
+		Hour:         alarmTime.Hour(),
+		Minute:       alarmTime.Minute(),
+		ScheduleType: alarm.ScheduleDaily,
+		IsEnabled:    true,
+	})
+
+	// 触发真实 Paint 重绘管线，验证 CheckTriggers 在渲染中自动追赶并触发补响
+	if err := driver.Resize(920, 800); err != nil {
+		t.Fatal(err)
+	}
+	snap := driver.Snapshot()
+	if !hasLabel(snap, "ALARM ALERT") {
+		t.Fatal("expected alarm alert banner to catch up and trigger even if checked late")
+	}
+	if !hasLabel(snap, "Sleep Catchup Test") {
+		t.Fatal("expected alarm title in banner")
+	}
+
+	// 验证 Dismiss 解除
+	if !clickID(t, driver, IDBtnDismiss) {
+		t.Fatal("failed to click Dismiss button")
+	}
+	if state.Scheduler.Ringing() != nil {
+		t.Fatal("expected alarm to be dismissed")
+	}
+}
+
 func TestSettingsThemeSwitch(t *testing.T) {
 	state, driver := setupTestApp(t)
 	defer driver.Close()

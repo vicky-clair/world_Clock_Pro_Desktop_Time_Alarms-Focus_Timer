@@ -79,6 +79,12 @@ func NewAppConfig(state *AppState) app.Config {
 			state.News.EnsureFetchedAsync(now, string(state.Lang()), false, state.Invalidate)
 		}
 
+		// 4d. 关键体验保障：当闹钟响铃或倒计时任务到期归零时，若窗口隐藏在系统托盘后台，自动唤醒并恢复窗口显示，
+		// 确保用户不仅能听到提示音，还能第一时间看到醒目的红色响铃提醒横幅进行贪睡（Snooze）或解除（Dismiss）：
+		if alarmActive && state.Window != nil {
+			state.Window.Show()
+		}
+
 		// 5. 判断是否存在需要高频刷新（约 25 FPS）的活动秒表、倒计时或番茄钟
 		fastTick := timerRunning || state.Stopwatch.State() == timer.StateRunning
 		trStatus := state.Tracker.Status()
@@ -96,6 +102,12 @@ func NewAppConfig(state *AppState) app.Config {
 				delay = wpDelay
 			}
 			canvas.RequestFrameIn(delay)
+		}
+
+		// 6b. 后台精准定时唤醒双重保障：为下一个即将到达的闹钟预约后台单次唤醒，
+		// 确保即使窗口被隐藏（Hide 到系统托盘）、没有任何用户交互，也能在到点时刻精准唤醒触发：
+		if nextAlarm, ok := state.Scheduler.NextOccurrence(now); ok {
+			state.SchedulePreciseWake(nextAlarm)
 		}
 
 		// 7. 绘制窗口根背景色与自定义壁纸图层

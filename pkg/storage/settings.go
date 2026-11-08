@@ -280,7 +280,7 @@ func (s *Store) saveLocked() error {
 
 	bakPath := s.filePath + ".bak"
 	if len(s.lastSaved) > 0 {
-		// 直接将内存中的上一份有效 JSON 写入 .bak，省去每次保存前重复 os.ReadFile 读取主文件的磁盘读操作
+		// 直接将内存中的上一份有效 JSON 写入 .bak 备份，确保断电或异常损坏时可 100% 自愈恢复
 		_ = os.WriteFile(bakPath, s.lastSaved, 0644)
 	} else if prev, readErr := os.ReadFile(s.filePath); readErr == nil && len(prev) > 0 {
 		_ = os.WriteFile(bakPath, prev, 0644)

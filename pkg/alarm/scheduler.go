@@ -20,10 +20,10 @@ type RingingAlarm struct {
 // Scheduler handles alarm storage, recurrence scheduling, and firing.
 type Scheduler struct {
 	mu          sync.RWMutex
-	alarms      []Alarm          // 闹钟列表
-	lastFired   map[string]int64 // 记录每个闹钟上次触发的 Unix 分钟数，防止同一分钟内重复触发
-	ringing     *RingingAlarm    // 当前正在响铃的闹钟（无则为 nil）
-	snoozeUntil time.Time        // 贪睡静音截止时间
+	alarms      []Alarm         // 闹钟列表
+	lastFired   map[string]bool // 记录每个闹钟在具体日期区间的触发标记（key: alarmID@YYYY-MM-DD HH:MM），支持跨时钟/休眠补响与防重
+	ringing     *RingingAlarm   // 当前正在响铃的闹钟（无则为 nil）
+	snoozeUntil time.Time       // 贪睡静音截止时间
 }
 
 // NewScheduler 创建闹钟调度器；若传入的 initial 为 nil，则初始化两条默认示例闹钟。
@@ -31,7 +31,7 @@ type Scheduler struct {
 func NewScheduler(initial []Alarm) *Scheduler {
 	s := &Scheduler{
 		alarms:    initial,
-		lastFired: make(map[string]int64),
+		lastFired: make(map[string]bool),
 	}
 	if s.alarms == nil {
 		var weekdays [7]bool
@@ -123,7 +123,13 @@ func (s *Scheduler) DeleteAlarm(id string) bool {
 		return false
 	}
 	s.alarms = append(s.alarms[:idx], s.alarms[idx+1:]...)
-	delete(s.lastFired, id)
+	// 清理该闹钟的历史触发记录缓存
+	prefix := id + "@"
+	for k := range s.lastFired {
+		if len(k) >= len(prefix) && k[:len(prefix)] == prefix {
+			delete(s.lastFired, k)
+		}
+	}
 	return true
 }
 
@@ -187,9 +193,30 @@ func (s *Scheduler) Snooze(minutes int) {
 	s.SnoozeAt(time.Now(), minutes)
 }
 
-// CheckTriggers 检查给定时间点 now 是否有闹钟应当触发。
-// 若处于贪睡静音期内则返回 nil；贪睡到期或新闹钟命中时返回对应的 *RingingAlarm。
-// CheckTriggers checks if any alarm should fire at the given time.
+// NextOccurrence 返回当前所有启用的闹钟中，在参考时刻 after 之后最先触发的时刻（若无启用的闹钟则返回 false）。
+func (s *Scheduler) NextOccurrence(after time.Time) (time.Time, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var earliest time.Time
+	found := false
+	for i := range s.alarms {
+		if t, ok := s.alarms[i].NextOccurrence(after); ok {
+			if !found || t.Before(earliest) {
+				earliest = t
+				found = true
+			}
+		}
+	}
+	return earliest, found
+}
+
+// CheckTriggers 检查给定时间点 now 是否有闹钟满足触发条件：
+// 1. 若当前已有响铃中的闹钟且处于贪睡静音期，到达贪睡截止时间后自动恢复响铃；
+// 2. 检查当天及跨午夜周期，结合 15 分钟容错补响窗口（Catch-up Window）：
+//   - 若电脑处于睡眠/锁屏/后台托盘，在唤醒后 15 分钟内自动补响错过的闹钟；
+//   - 若已超过 15 分钟则平滑标记跳过，避免数小时后打扰用户；
+//
+// 3. 严格执行周期幂等，同一闹钟在同一周期内决不重复响铃。
 func (s *Scheduler) CheckTriggers(now time.Time) *RingingAlarm {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -207,45 +234,73 @@ func (s *Scheduler) CheckTriggers(now time.Time) *RingingAlarm {
 		return s.ringing
 	}
 
-	currentMinute := now.Unix() / 60
-	h, m, _ := now.Clock()
-	weekday := int(now.Weekday())
+	loc := now.Location()
+	year, month, day := now.Date()
+	todayBase := time.Date(year, month, day, 0, 0, 0, 0, loc)
+
+	// 仅在刚跨越午夜的 15 分钟内 (00:00 ~ 00:15)，才需要回溯检查前一天深夜 (23:45 ~ 23:59) 可能因休眠错过的重复闹钟
+	checkDates := []time.Time{todayBase}
+	if now.Hour() == 0 && now.Minute() < 15 {
+		checkDates = append(checkDates, todayBase.AddDate(0, 0, -1))
+	}
 
 	for i := range s.alarms {
 		alm := &s.alarms[i]
 		if !alm.IsEnabled {
 			continue
 		}
-		if alm.Hour != h || alm.Minute != m {
-			continue
-		}
 
-		// 检查重复周期是否匹配当天
-		matches := false
-		switch alm.ScheduleType {
-		case ScheduleOneTime, ScheduleDaily:
-			matches = true
-		case ScheduleWeekly:
-			matches = alm.DaysOfWeek[weekday]
-		}
+		for _, dateBase := range checkDates {
+			isYesterday := dateBase.Before(todayBase)
+			// 前一天的回溯仅适用于重复闹钟（Daily/Weekly），一次性闹钟绝不回溯前一天
+			if isYesterday && alm.ScheduleType == ScheduleOneTime {
+				continue
+			}
 
-		if !matches {
-			continue
-		}
+			weekday := int(dateBase.Weekday())
+			matches := false
+			switch alm.ScheduleType {
+			case ScheduleOneTime, ScheduleDaily:
+				matches = true
+			case ScheduleWeekly:
+				matches = alm.DaysOfWeek[weekday]
+			}
+			if !matches {
+				continue
+			}
 
-		// 幂等防重：同一分钟内已触发过的闹钟不再重复触发
-		if s.lastFired[alm.ID] == currentMinute {
-			continue
-		}
+			scheduled := time.Date(dateBase.Year(), dateBase.Month(), dateBase.Day(), alm.Hour, alm.Minute, 0, 0, loc)
+			occurrenceKey := fmt.Sprintf("%s@%04d-%02d-%02d %02d:%02d", alm.ID, scheduled.Year(), scheduled.Month(), scheduled.Day(), alm.Hour, alm.Minute)
 
-		s.lastFired[alm.ID] = currentMinute
-		s.ringing = &RingingAlarm{
-			AlarmID:     alm.ID,
-			Title:       alm.Title,
-			Sound:       alm.Sound,
-			TriggerTime: now,
+			// 尚未到达该触发时刻
+			if now.Before(scheduled) {
+				continue
+			}
+
+			elapsed := now.Sub(scheduled)
+			// 准时到达或处于 15 分钟睡眠唤醒/容错补响窗口内
+			if elapsed >= 0 && elapsed <= 15*time.Minute {
+				if s.lastFired[occurrenceKey] {
+					continue // 该周期已触发响铃过
+				}
+				s.lastFired[occurrenceKey] = true
+				s.ringing = &RingingAlarm{
+					AlarmID:     alm.ID,
+					Title:       alm.Title,
+					Sound:       alm.Sound,
+					TriggerTime: now,
+				}
+				return s.ringing
+			}
+
+			// 超过 15 分钟容错窗口且之前未触发过的历史闹钟，标记跳过（一次性闹钟停用）
+			if elapsed > 15*time.Minute && !s.lastFired[occurrenceKey] {
+				s.lastFired[occurrenceKey] = true
+				if !isYesterday && alm.ScheduleType == ScheduleOneTime {
+					alm.IsEnabled = false
+				}
+			}
 		}
-		return s.ringing
 	}
 
 	return nil

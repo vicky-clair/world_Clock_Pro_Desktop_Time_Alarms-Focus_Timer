@@ -37,7 +37,7 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	if primaryCity == "" {
 		primaryCity = "beijing"
 	}
-	wSnap := state.Weather.GetWeather(primaryCity)
+	wSnap := state.Weather.EnsureFresh(primaryCity, state.Invalidate)
 	tempStr := weather.FormatTemperature(wSnap.TempCelsius, cfg.TempFahrenheit)
 	condStr := string(wSnap.Condition)
 	switch wSnap.Condition {

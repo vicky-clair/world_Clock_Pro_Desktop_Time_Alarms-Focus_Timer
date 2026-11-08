@@ -102,16 +102,40 @@ func (m *Manager) IsProActive() bool {
 }
 
 // IsFeatureUnlocked 判断当前是否允许使用全部高级功能。
-// 在完整测试版本中始终返回 true，保证无需真实付费即可正常使用并测试全部功能。
-func (m *Manager) IsFeatureUnlocked(_ time.Time) bool {
-	return true
+// 规则：
+// 1. 若处于 7 天免费试用期内 (TrialDaysRemaining > 0)，全功能免费解锁；
+// 2. 若为按月/按年订阅 (PlanMonthly/PlanYearly)，检查到期时间戳是否在有效期内；
+// 3. 若为 PlanFullTest（本地调试测试版模式），全功能免付费解锁；
+// 4. 若试用已过期且未订阅，返回 false（锁定高级功能，提示开通）。
+func (m *Manager) IsFeatureUnlocked(now time.Time) bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	if now.IsZero() {
+		now = time.Now()
+	}
+	switch m.cfg.Plan {
+	case PlanFullTest:
+		return true
+	case PlanMonthly, PlanYearly:
+		if m.cfg.SubscriptionEndUnix == 0 {
+			return true
+		}
+		return now.Unix() <= m.cfg.SubscriptionEndUnix
+	case PlanTrial:
+		return m.trialDaysRemainingLocked(now) > 0
+	default:
+		return m.trialDaysRemainingLocked(now) > 0
+	}
 }
 
 // TrialDaysRemaining 计算 7 天免费试用期的剩余天数（范围 0 ~ 7）。
 func (m *Manager) TrialDaysRemaining(now time.Time) int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
+	return m.trialDaysRemainingLocked(now)
+}
 
+func (m *Manager) trialDaysRemainingLocked(now time.Time) int {
 	if now.IsZero() {
 		now = time.Now()
 	}

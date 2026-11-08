@@ -112,3 +112,88 @@ func TestSchedulerLifecycle(t *testing.T) {
 		t.Errorf("expected alarm to be deleted")
 	}
 }
+
+func TestAlarmCatchUpAfterSleep(t *testing.T) {
+	sched := NewScheduler([]Alarm{
+		{
+			ID:           "sleep-catchup",
+			Title:        "Wake Up Alarm",
+			Hour:         14,
+			Minute:       30,
+			ScheduleType: ScheduleDaily,
+			IsEnabled:    true,
+		},
+	})
+
+	// 模拟电脑在 14:28 进入睡眠/盒盖，并在 14:33（3 分钟后）唤醒并刷新
+	wakeTime := time.Date(2026, 11, 5, 14, 33, 10, 0, time.UTC)
+	ringing := sched.CheckTriggers(wakeTime)
+	if ringing == nil {
+		t.Fatal("expected alarm to catch up and trigger within 15-minute window after sleep")
+	}
+	if ringing.AlarmID != "sleep-catchup" {
+		t.Fatalf("expected alarm sleep-catchup, got %s", ringing.AlarmID)
+	}
+
+	// 确认在解除后，同一天的后续检查不会再次误触发
+	sched.Dismiss()
+	nextCheck := time.Date(2026, 11, 5, 14, 34, 0, 0, time.UTC)
+	if r := sched.CheckTriggers(nextCheck); r != nil {
+		t.Fatalf("expected alarm not to trigger again on same day after dismiss, got %v", r)
+	}
+}
+
+func TestAlarmPastGracePeriod(t *testing.T) {
+	sched := NewScheduler([]Alarm{
+		{
+			ID:           "long-missed",
+			Title:        "Morning 8am",
+			Hour:         8,
+			Minute:       0,
+			ScheduleType: ScheduleOneTime,
+			IsEnabled:    true,
+		},
+	})
+
+	// 模拟电脑断电/休眠 4 小时，在 12:00 开机
+	lateTime := time.Date(2026, 11, 5, 12, 0, 0, 0, time.UTC)
+	ringing := sched.CheckTriggers(lateTime)
+	if ringing != nil {
+		t.Fatalf("expected alarm past 15-minute grace window NOT to startle user, got %v", ringing)
+	}
+
+	// 一次性闹钟在严重超期后应自动标记为已过期禁用
+	for _, a := range sched.Alarms() {
+		if a.ID == "long-missed" && a.IsEnabled {
+			t.Fatal("expected long-missed OneTime alarm to be disabled")
+		}
+	}
+}
+
+func TestSchedulerNextOccurrence(t *testing.T) {
+	sched := NewScheduler([]Alarm{
+		{
+			ID:           "alm-1",
+			Hour:         18,
+			Minute:       0,
+			ScheduleType: ScheduleDaily,
+			IsEnabled:    true,
+		},
+		{
+			ID:           "alm-2",
+			Hour:         15,
+			Minute:       30,
+			ScheduleType: ScheduleDaily,
+			IsEnabled:    true,
+		},
+	})
+
+	ref := time.Date(2026, 11, 5, 14, 0, 0, 0, time.UTC)
+	earliest, ok := sched.NextOccurrence(ref)
+	if !ok {
+		t.Fatal("expected earliest occurrence found")
+	}
+	if earliest.Hour() != 15 || earliest.Minute() != 30 {
+		t.Fatalf("expected 15:30, got %02d:%02d", earliest.Hour(), earliest.Minute())
+	}
+}

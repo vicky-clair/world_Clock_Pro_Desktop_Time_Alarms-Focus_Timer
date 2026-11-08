@@ -59,10 +59,12 @@ type AppState struct {
 	Application *app.Application // 当前 Viva 应用实例引用
 	ForceQuit   bool             // 是否由系统托盘菜单发起强制退出
 
-	wakeMu                 sync.Mutex // 保护跨线程唤醒队列的互斥锁
-	pendingShowWindow      bool       // 是否存在待处理的恢复显示主窗口请求
-	pendingWallpaperFiles  []string   // 异步文件选择框选中的待加载壁纸文件列表
-	pendingWallpaperFolder string     // 异步文件夹选择框选中的待加载壁纸目录
+	bgTimerMu              sync.Mutex  // 保护后台唤醒定时器的互斥锁
+	bgTimer                *time.Timer // 精确后台定时唤醒器，避免最小化到系统托盘后错过定时提醒
+	wakeMu                 sync.Mutex  // 保护跨线程唤醒队列的互斥锁
+	pendingShowWindow      bool        // 是否存在待处理的恢复显示主窗口请求
+	pendingWallpaperFiles  []string    // 异步文件选择框选中的待加载壁纸文件列表
+	pendingWallpaperFolder string      // 异步文件夹选择框选中的待加载壁纸目录
 
 	ActiveTab Tab  // 当前激活的功能标签页
 	IsPopout  bool // 是否处于紧凑型悬浮小窗模式
@@ -205,6 +207,12 @@ func NewAppState(store *storage.Store) *AppState {
 	timerMgr := timer.NewManagerWithTimers(s.Timers)
 	sw := timer.NewStopwatch()
 	wSvc := weather.NewService()
+	wSvc.SetCoordResolver(func(cityID string) (float64, float64, bool) {
+		if c, ok := world.FindCityByID(cityID); ok {
+			return c.Latitude, c.Longitude, true
+		}
+		return 0, 0, false
+	})
 	tr := tracker.NewTracker(nil)
 	sl := sleep.NewSession()
 	news := rss.NewFeedStore()
@@ -435,6 +443,27 @@ func (a *AppState) Invalidate() {
 	if a.Invalidator != nil {
 		a.Invalidator.Invalidate()
 	}
+}
+
+// SchedulePreciseWake 在后台安排一个精准的一次性唤醒定时器，确保即使窗口隐藏在系统托盘或处于空闲状态，
+// 也能在闹钟到达、倒计时到期或睡眠模式阶段变化的最早时刻精准唤醒 UI 线程。
+func (a *AppState) SchedulePreciseWake(target time.Time) {
+	if a.Invalidator == nil || target.IsZero() {
+		return
+	}
+	delay := time.Until(target)
+	if delay <= 0 {
+		a.Invalidate()
+		return
+	}
+	a.bgTimerMu.Lock()
+	defer a.bgTimerMu.Unlock()
+	if a.bgTimer != nil {
+		a.bgTimer.Stop()
+	}
+	a.bgTimer = time.AfterFunc(delay, func() {
+		a.Invalidate()
+	})
 }
 
 // SetAutoStart 更新“开机自动启动”设置并同步写入操作系统当前用户的登录启动项。

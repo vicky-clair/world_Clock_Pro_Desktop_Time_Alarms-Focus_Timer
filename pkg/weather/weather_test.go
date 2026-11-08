@@ -35,4 +35,26 @@ func TestWeatherService(t *testing.T) {
 	if snapCustom.CityID != "custom-city-xyz" || snapCustom.Icon == "" {
 		t.Errorf("unexpected custom snapshot: %+v", snapCustom)
 	}
+
+	// Test WMO code parser
+	cond, icon := parseWMOCode(0)
+	if cond != ConditionSunny || icon != "☀️" {
+		t.Errorf("expected Sunny for WMO code 0, got %v %s", cond, icon)
+	}
+	condRain, iconRain := parseWMOCode(63)
+	if condRain != ConditionRainy || iconRain != "🌧️" {
+		t.Errorf("expected Rainy for WMO code 63, got %v %s", condRain, iconRain)
+	}
+
+	// Test CoordResolver injection and EnsureFresh
+	svc.SetCoordResolver(func(cityID string) (float64, float64, bool) {
+		if cityID == "beijing" {
+			return 39.9042, 116.4074, true
+		}
+		return 0, 0, false
+	})
+	snapBeijing := svc.EnsureFresh("beijing", nil)
+	if snapBeijing.CityID != "beijing" {
+		t.Fatalf("expected beijing snapshot, got %+v", snapBeijing)
+	}
 }

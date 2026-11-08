@@ -62,4 +62,13 @@ func TestLicenseTrialAndSubscriptions(t *testing.T) {
 	if mgr.Plan() != PlanTrial || mgr.TrialDaysRemaining(now) != 7 {
 		t.Fatalf("expected reset to 7-day trial, got plan=%s days=%d", mgr.Plan(), mgr.TrialDaysRemaining(now))
 	}
+
+	// 7. 试用期过期后正确报告功能锁定
+	after8Days := now.Add(8 * 24 * time.Hour)
+	if mgr.TrialDaysRemaining(after8Days) != 0 {
+		t.Fatalf("expected 0 trial days after 8 days, got %d", mgr.TrialDaysRemaining(after8Days))
+	}
+	if mgr.IsFeatureUnlocked(after8Days) {
+		t.Fatal("expected IsFeatureUnlocked to be false after trial expires without subscription")
+	}
 }

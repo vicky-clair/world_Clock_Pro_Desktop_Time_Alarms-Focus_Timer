@@ -66,7 +66,7 @@ func DrawWorldClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 										}
 									}
 								})
-								wSnap := state.Weather.GetWeather(cityID)
+								wSnap := state.Weather.EnsureFresh(cityID, state.Invalidate)
 								tempStr := weather.FormatTemperature(wSnap.TempCelsius, cfg.TempFahrenheit)
 								dayDiffStr := snap.DayDiff
 								switch snap.DayDiff {
