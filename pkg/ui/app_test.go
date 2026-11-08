@@ -1964,13 +1964,13 @@ func TestIPLocationAndWeatherDisplay(t *testing.T) {
 	_ = driver.Resize(900, 1202)
 	snap := driver.Snapshot()
 
-	// 1. Verify IP country badge at the top
-	if !hasLabel(snap, "IP 所在国家：中国") {
+	// 1. Verify IP country badge with full IP
+	if !hasLabel(snap, "IP 所在国家：中国") || !hasLabel(snap, "120.244.11.22") {
 		var lbls []string
 		for _, l := range snap.Labels {
 			lbls = append(lbls, l.Value)
 		}
-		t.Fatalf("expected IP country badge at the top, got labels: %v", lbls)
+		t.Fatalf("expected IP country badge with full IP, got labels: %v", lbls)
 	}
 
 	// 2. Verify IP Country, Province, and City in front of the weather temperature

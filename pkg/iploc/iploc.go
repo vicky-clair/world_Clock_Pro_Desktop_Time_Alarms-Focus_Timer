@@ -72,26 +72,26 @@ func (info Info) FormatLocation() string {
 	return strings.Join(parts, " ")
 }
 
-// FormatBadge 根据当前界面语言返回 IP 所在国家的展示徽章文本。
+// FormatBadge 根据当前界面语言返回 IP 所在国家的展示徽章文本（包含完整公网 IP 地址）。
 func (info Info) FormatBadge(lang string) string {
 	if !info.IsSuccess || info.Country == "" {
 		return ""
 	}
-	masked := MaskIP(info.IP)
+	ipStr := strings.TrimSpace(info.IP)
 	switch lang {
 	case "zh":
-		if masked != "" {
-			return fmt.Sprintf("🌐 IP 所在国家：%s (%s)", info.Country, masked)
+		if ipStr != "" {
+			return fmt.Sprintf("🌐 IP 所在国家：%s (%s)", info.Country, ipStr)
 		}
 		return fmt.Sprintf("🌐 IP 所在国家：%s", info.Country)
 	case "ja":
-		if masked != "" {
-			return fmt.Sprintf("🌐 IP の国：%s (%s)", info.Country, masked)
+		if ipStr != "" {
+			return fmt.Sprintf("🌐 IP の国：%s (%s)", info.Country, ipStr)
 		}
 		return fmt.Sprintf("🌐 IP の国：%s", info.Country)
 	default:
-		if masked != "" {
-			return fmt.Sprintf("🌐 IP Country: %s (%s)", info.Country, masked)
+		if ipStr != "" {
+			return fmt.Sprintf("🌐 IP Country: %s (%s)", info.Country, ipStr)
 		}
 		return fmt.Sprintf("🌐 IP Country: %s", info.Country)
 	}

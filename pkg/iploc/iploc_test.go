@@ -37,7 +37,7 @@ func TestFormatBadge(t *testing.T) {
 	}
 
 	badgeZH := info.FormatBadge("zh")
-	if !strings.Contains(badgeZH, "新加坡") || !strings.Contains(badgeZH, "45.129.***.101") {
+	if !strings.Contains(badgeZH, "新加坡") || !strings.Contains(badgeZH, "45.129.228.101") {
 		t.Errorf("unexpected badgeZH: %s", badgeZH)
 	}
 
