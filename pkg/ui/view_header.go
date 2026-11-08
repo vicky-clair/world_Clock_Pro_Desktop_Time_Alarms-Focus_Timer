@@ -29,9 +29,9 @@ func DrawHeader(f *flex.Frame, state *AppState, theme ui.Theme) {
 		})
 	}
 
-	// Navigation Bar
+	// 顶部全局导航栏：按功能模块提供分段按钮路由，并集成 Pro 会员中心与悬浮小窗一键切换
 	f.Row().FillWidth().PadX(12).PadY(8).Background(theme.Card).Border(1, theme.Border).Items(flex.Center).Gap(4).Children(func() {
-		// Modern Segmented Navigation Tabs
+		// 1. 主时钟标签页按钮
 		btnClk := f.Button(TabClockID, state.T("nav.clock")).Small()
 		if state.ActiveTab == TabClock && !state.ShowProModal {
 			btnClk.Outline()

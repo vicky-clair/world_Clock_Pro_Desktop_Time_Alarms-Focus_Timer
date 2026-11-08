@@ -568,9 +568,9 @@ func TestTemperatureUnitToggle(t *testing.T) {
 	state, driver := setupTestApp(t)
 	defer driver.Close()
 
-	// Navigate to Settings -> Language tab
+	// Navigate to Settings -> Clock tab (where Temperature Unit is located)
 	clickID(t, driver, TabSettingsID)
-	clickID(t, driver, IDSettingsTabLanguage)
+	clickID(t, driver, IDSettingsTabClock)
 	if state.Store.Get().TempFahrenheit {
 		t.Fatal("expected default Celsius")
 	}
@@ -787,10 +787,10 @@ func TestFontSizeAndColorCustomization(t *testing.T) {
 	state, driver := setupTestApp(t)
 	defer driver.Close()
 
-	// Navigate to Settings -> Clock sub-tab
+	// Navigate to Settings -> Language sub-tab (merged Language & Font settings)
 	clickID(t, driver, TabSettingsID)
-	if !clickID(t, driver, IDSettingsTabFont) {
-		t.Fatal("failed to click Font sub-tab")
+	if !clickID(t, driver, IDSettingsTabLanguage) {
+		t.Fatal("failed to click Language sub-tab")
 	}
 
 	// 1. Change Font Size to 76px
@@ -1740,8 +1740,8 @@ func TestProSubscriptionAndTrialCenter(t *testing.T) {
 		t.Fatal("expected ShowProModal to be true after clicking TabProID")
 	}
 	snapPro := driver.Snapshot()
-	if !hasLabel(snapPro, "¥3 / 月") || !hasLabel(snapPro, "¥30 / 年") {
-		t.Fatal("expected both ¥3/月 and ¥30/年 subscription plans on Pro modal")
+	if !hasLabel(snapPro, "¥3 / 月") || !hasLabel(snapPro, "¥28 / 年") {
+		t.Fatal("expected both ¥3/月 and ¥28/年 subscription plans on Pro modal")
 	}
 
 	// 3. Click Monthly subscription (¥3/月) -> activates immediately for free testing and persists
@@ -1758,7 +1758,7 @@ func TestProSubscriptionAndTrialCenter(t *testing.T) {
 		t.Fatal("expected top navigation button to update to '👑 Pro 会员'")
 	}
 
-	// 4. Click Yearly subscription (¥30/年) -> activates immediately for free testing and persists
+	// 4. Click Yearly subscription (¥28/年) -> activates immediately for free testing and persists
 	if !clickID(t, driver, IDBtnProSubYearly) {
 		t.Fatal("failed to click IDBtnProSubYearly")
 	}
@@ -1806,7 +1806,121 @@ func TestProSubscriptionAndTrialCenter(t *testing.T) {
 		t.Fatalf("expected SettingsTab 'pro', got '%s'", state.SettingsTab)
 	}
 	snapSettingsPro := driver.Snapshot()
-	if !hasLabel(snapSettingsPro, "¥3 / 月") || !hasLabel(snapSettingsPro, "¥30 / 年") {
+	if !hasLabel(snapSettingsPro, "¥3 / 月") || !hasLabel(snapSettingsPro, "¥28 / 年") {
 		t.Fatal("expected subscription plans to render inside Settings -> Pro sub-tab")
+	}
+}
+
+func TestPreciseTimeSteppersInAlarmTimerSleepAndTracker(t *testing.T) {
+	state, driver := setupTestApp(t)
+	defer driver.Close()
+
+	// Switch to Chinese UI
+	clickID(t, driver, TabSettingsID)
+	clickID(t, driver, IDSettingsTabLanguage)
+	clickID(t, driver, IDLangZH)
+
+	// 1. Alarm Creation Modal: test +1分钟 / -1分钟 and hour/midnight carry & borrow
+	clickID(t, driver, TabAlarmsID)
+	if !clickID(t, driver, IDBtnNewAlarmModal) {
+		t.Fatal("failed to open New Alarm modal")
+	}
+	if !clickID(t, driver, IDBtnPresetMorning) { // 07:30
+		t.Fatal("failed to click Morning preset")
+	}
+	if !clickID(t, driver, IDBtnAlarmMin1Up) {
+		t.Fatal("failed to click +1分钟 button in Alarm modal")
+	}
+	if state.NewAlarmHour != 7 || state.NewAlarmMinute != 31 {
+		t.Fatalf("expected 07:31 after +1m, got %02d:%02d", state.NewAlarmHour, state.NewAlarmMinute)
+	}
+	if !clickID(t, driver, IDBtnAlarmMin1Down) {
+		t.Fatal("failed to click -1分钟 button in Alarm modal")
+	}
+	if state.NewAlarmHour != 7 || state.NewAlarmMinute != 30 {
+		t.Fatalf("expected 07:30 after -1m, got %02d:%02d", state.NewAlarmHour, state.NewAlarmMinute)
+	}
+
+	// Test boundary carry: 07:59 + 1m -> 08:00, and 08:00 - 1m -> 07:59
+	state.NewAlarmHour, state.NewAlarmMinute = 7, 59
+	driver.Advance(10 * time.Millisecond)
+	clickID(t, driver, IDBtnAlarmMin1Up)
+	if state.NewAlarmHour != 8 || state.NewAlarmMinute != 0 {
+		t.Fatalf("expected 07:59 + 1m -> 08:00, got %02d:%02d", state.NewAlarmHour, state.NewAlarmMinute)
+	}
+	clickID(t, driver, IDBtnAlarmMin1Down)
+	if state.NewAlarmHour != 7 || state.NewAlarmMinute != 59 {
+		t.Fatalf("expected 08:00 - 1m -> 07:59, got %02d:%02d", state.NewAlarmHour, state.NewAlarmMinute)
+	}
+
+	// Test midnight wrap: 23:59 + 1m -> 00:00, and 00:00 - 1m -> 23:59
+	if h, m := StepAlarmTime(23, 59, 0, 1); h != 0 || m != 0 {
+		t.Fatalf("expected 23:59 + 1m -> 00:00, got %02d:%02d", h, m)
+	}
+	if h, m := StepAlarmTime(0, 0, 0, -1); h != 23 || m != 59 {
+		t.Fatalf("expected 00:00 - 1m -> 23:59, got %02d:%02d", h, m)
+	}
+	clickID(t, driver, IDBtnCloseNewAlarm)
+
+	// 2. Timer Creation Modal: test +1m/-1m, +1s/-1s, and carry/borrow across minute & hour boundaries
+	clickID(t, driver, TabTimersID)
+	if !clickID(t, driver, IDBtnOpenTimerModal) {
+		t.Fatal("failed to open Timer modal")
+	}
+	// Initial is 00:15:00 -> click +1s -> 00:15:01 -> click -1s -> 00:15:00 -> click -1s -> 00:14:59
+	if !clickID(t, driver, IDBtnTimerSec1Up) {
+		t.Fatal("failed to click +1秒 in Timer modal")
+	}
+	if state.TimerModalMinutes != 15 || state.TimerModalSeconds != 1 {
+		t.Fatalf("expected 00:15:01, got %02d:%02d:%02d", state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds)
+	}
+	clickID(t, driver, IDBtnTimerSec1Down)
+	clickID(t, driver, IDBtnTimerSec1Down)
+	if state.TimerModalMinutes != 14 || state.TimerModalSeconds != 59 {
+		t.Fatalf("expected 00:15:00 - 1s -> 00:14:59 (minute borrow), got %02d:%02d:%02d", state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds)
+	}
+	clickID(t, driver, IDBtnTimerSec1Up) // back to 00:15:00
+
+	// Test hour carry & borrow: 00:59:00 + 1m -> 01:00:00, and 01:00:00 - 1m -> 00:59:00
+	if h, m, s := StepTimerHMS(0, 59, 0, 60); h != 1 || m != 0 || s != 0 {
+		t.Fatalf("expected 00:59:00 + 1m -> 01:00:00, got %02d:%02d:%02d", h, m, s)
+	}
+	if h, m, s := StepTimerHMS(1, 0, 0, -60); h != 0 || m != 59 || s != 0 {
+		t.Fatalf("expected 01:00:00 - 1m -> 00:59:00, got %02d:%02d:%02d", h, m, s)
+	}
+	if h, m, s := StepTimerHMS(0, 0, 10, -15); h != 0 || m != 0 || s != 0 {
+		t.Fatalf("expected 00:00:10 - 15s to clamp to 00:00:00, got %02d:%02d:%02d", h, m, s)
+	}
+	clickID(t, driver, IDBtnCloseTimerModal)
+
+	// 3. Sleep Mode: test +1分钟 / -1分钟 / +5分钟 / -5分钟 steppers
+	clickID(t, driver, TabSleepID)
+	clickID(t, driver, IDBtnSleep30m)
+	if !clickID(t, driver, IDBtnSleepMin1Up) {
+		t.Fatal("failed to click +1分钟 in Sleep Mode")
+	}
+	if state.SleepDuration != 31*time.Minute {
+		t.Fatalf("expected 31m sleep duration after +1m, got %v", state.SleepDuration)
+	}
+	if !clickID(t, driver, IDBtnSleepMin1Down) {
+		t.Fatal("failed to click -1分钟 in Sleep Mode")
+	}
+	if state.SleepDuration != 30*time.Minute {
+		t.Fatalf("expected 30m sleep duration after -1m, got %v", state.SleepDuration)
+	}
+
+	// 4. Productivity Tracker (Pomodoro): test +1分钟 / -1分钟 steppers when Idle
+	clickID(t, driver, TabTrackerID)
+	if !clickID(t, driver, IDBtnTrackerMin1Up) {
+		t.Fatal("failed to click +1分钟 in Tracker")
+	}
+	if state.Tracker.Config().WorkDuration != 26*time.Minute || state.Tracker.FormatRemaining() != "26:00" {
+		t.Fatalf("expected 26:00 work duration after +1m, got %v (%s)", state.Tracker.Config().WorkDuration, state.Tracker.FormatRemaining())
+	}
+	if !clickID(t, driver, IDBtnTrackerMin1Down) {
+		t.Fatal("failed to click -1分钟 in Tracker")
+	}
+	if state.Tracker.Config().WorkDuration != 25*time.Minute || state.Tracker.FormatRemaining() != "25:00" {
+		t.Fatalf("expected 25:00 work duration after -1m, got %v (%s)", state.Tracker.Config().WorkDuration, state.Tracker.FormatRemaining())
 	}
 }

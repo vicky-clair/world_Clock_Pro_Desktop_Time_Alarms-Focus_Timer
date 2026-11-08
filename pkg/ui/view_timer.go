@@ -270,35 +270,41 @@ func DrawTimerModal(f *flex.Frame, state *AppState, theme ui.Theme) {
 			}
 		})
 
-		// Custom Duration Steppers (Hours : Minutes : Seconds)
+		// Custom Duration Steppers (Hours : Minutes : Seconds) with exact total-seconds carry/borrow arithmetic
 		f.Text(state.T("timer.duration_label")).FontSize(13).Muted()
 		durDisplay := fmt.Sprintf("%02d:%02d:%02d", state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds)
 		f.Row().Items(flex.Center).Gap(6).Children(func() {
 			f.Text(durDisplay).FontSize(24).Bold().Mono().Color(theme.Foreground)
 
-			if f.Button(IDBtnTimerHrDown, "-1h").Small().Secondary().Clicked() {
-				state.TimerModalHours = (state.TimerModalHours + 23) % 24
+			if f.Button(IDBtnTimerHrDown, state.T("timer.step_h_down")).Small().Secondary().Clicked() {
+				state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds = StepTimerHMS(state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds, -3600)
 			}
-			if f.Button(IDBtnTimerHrUp, "+1h").Small().Secondary().Clicked() {
-				state.TimerModalHours = (state.TimerModalHours + 1) % 24
+			if f.Button(IDBtnTimerHrUp, state.T("timer.step_h_up")).Small().Secondary().Clicked() {
+				state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds = StepTimerHMS(state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds, 3600)
 			}
-			if f.Button(IDBtnTimerMin10Down, "-10m").Small().Secondary().Clicked() {
-				state.TimerModalMinutes = (state.TimerModalMinutes + 50) % 60
+			if f.Button(IDBtnTimerMin10Down, state.T("timer.step_m10_down")).Small().Secondary().Clicked() {
+				state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds = StepTimerHMS(state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds, -600)
 			}
-			if f.Button(IDBtnTimerMinDown, "-1m").Small().Secondary().Clicked() {
-				state.TimerModalMinutes = (state.TimerModalMinutes + 59) % 60
+			if f.Button(IDBtnTimerMinDown, state.T("timer.step_m1_down")).Small().Secondary().Clicked() {
+				state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds = StepTimerHMS(state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds, -60)
 			}
-			if f.Button(IDBtnTimerMinUp, "+1m").Small().Secondary().Clicked() {
-				state.TimerModalMinutes = (state.TimerModalMinutes + 1) % 60
+			if f.Button(IDBtnTimerMinUp, state.T("timer.step_m1_up")).Small().Secondary().Clicked() {
+				state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds = StepTimerHMS(state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds, 60)
 			}
-			if f.Button(IDBtnTimerMin10Up, "+10m").Small().Secondary().Clicked() {
-				state.TimerModalMinutes = (state.TimerModalMinutes + 10) % 60
+			if f.Button(IDBtnTimerMin10Up, state.T("timer.step_m10_up")).Small().Secondary().Clicked() {
+				state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds = StepTimerHMS(state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds, 600)
 			}
-			if f.Button(IDBtnTimerSecDown, "-15s").Small().Secondary().Clicked() {
-				state.TimerModalSeconds = (state.TimerModalSeconds + 45) % 60
+			if f.Button(IDBtnTimerSecDown, state.T("timer.step_s15_down")).Small().Secondary().Clicked() {
+				state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds = StepTimerHMS(state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds, -15)
 			}
-			if f.Button(IDBtnTimerSecUp, "+15s").Small().Secondary().Clicked() {
-				state.TimerModalSeconds = (state.TimerModalSeconds + 15) % 60
+			if f.Button(IDBtnTimerSec1Down, state.T("timer.step_s1_down")).Small().Secondary().Clicked() {
+				state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds = StepTimerHMS(state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds, -1)
+			}
+			if f.Button(IDBtnTimerSec1Up, state.T("timer.step_s1_up")).Small().Secondary().Clicked() {
+				state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds = StepTimerHMS(state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds, 1)
+			}
+			if f.Button(IDBtnTimerSecUp, state.T("timer.step_s15_up")).Small().Secondary().Clicked() {
+				state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds = StepTimerHMS(state.TimerModalHours, state.TimerModalMinutes, state.TimerModalSeconds, 15)
 			}
 		})
 
@@ -343,4 +349,18 @@ func cleanPresetLabel(label string) string {
 		return strings.TrimSpace(label[:idx])
 	}
 	return label
+}
+
+// StepTimerHMS 按总秒数精确计算倒计时长（时:分:秒）的进位与借位，并严格限制在 [00:00:00, 23:59:59] 范围内。
+// StepTimerHMS accurately computes timer duration adjustments with full hour/minute/second carry and borrow.
+func StepTimerHMS(hours, minutes, seconds, deltaSeconds int) (int, int, int) {
+	const maxSec = 24*3600 - 1 // 23:59:59
+	total := hours*3600 + minutes*60 + seconds + deltaSeconds
+	if total < 0 {
+		total = 0
+	}
+	if total > maxSec {
+		total = maxSec
+	}
+	return total / 3600, (total % 3600) / 60, total % 60
 }

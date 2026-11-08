@@ -34,7 +34,7 @@ func DrawProModal(f *flex.Frame, state *AppState, theme ui.Theme) {
 }
 
 // DrawProCenter 渲染 Pro 会员订阅、7 天免费试用倒计时、恢复购买与完整免付测试版切换中心。
-// DrawProCenter renders the Pro subscription plans (¥3/month, ¥30/year), 7-day trial status, and free full-test mode switcher.
+// DrawProCenter renders the Pro subscription plans (¥3/month, ¥28/year), 7-day trial status, and free full-test mode switcher.
 func DrawProCenter(f *flex.Frame, state *AppState, theme ui.Theme) {
 	plan := state.License.Plan()
 	daysLeft := state.License.TrialDaysRemaining(state.Now)
@@ -84,7 +84,7 @@ func DrawProCenter(f *flex.Frame, state *AppState, theme ui.Theme) {
 			}
 		})
 
-		// 卡片 2：订阅方案对比卡片（7天免费试用 + 按月 ¥3/月 vs 按年 ¥30/年）
+		// 卡片 2：订阅方案对比卡片（7天免费试用 + 按月 ¥3/月 vs 按年 ¥28/年）
 		f.Row().FillWidth().Gap(14).Children(func() {
 			// 方案 A：按月连续订阅（¥3 / 月）
 			monthlyBorder := theme.Border
@@ -109,7 +109,7 @@ func DrawProCenter(f *flex.Frame, state *AppState, theme ui.Theme) {
 				}
 			})
 
-			// 方案 B：按年连续订阅（¥30 / 年 · 立省 17%）
+			// 方案 B：按年连续订阅（¥28 / 年 · 立省 22%）
 			yearlyBorder := theme.Border
 			if plan == license.PlanYearly {
 				yearlyBorder = theme.Primary

@@ -1,6 +1,7 @@
+// Package world 维护全球 193 个联合国成员国及核心国际城市的时区、中英日三语名称与时差计算。
 package world
 
-// Global193Countries returns all 193 UN member states and regions matching https://world-clock.app/zh/
+// Global193Countries 返回全球 193 个联合国成员国及地区的完整列表（包含中/英/日三语国家名、首都名、所属大洲与 IANA 标准时区 ID）。
 func Global193Countries() []City {
 	return []City{
 		{

@@ -1,4 +1,4 @@
-# World Clock Pro: Desktop Time, Alarms & Focus Timer - Windows Clean Build & Authenticode Signing Script
+﻿# 小瑞综合时钟桌面 (Xiaoru Integrated Clock Desktop) - Windows Clean Build & Authenticode Signing Script
 # Avoids AV heuristic false-positives (e.g., VHO:Trojan-PSW.Win32.Stealer.gen) by:
 # 1. Linking native COFF .syso PE resources (RT_MANIFEST asInvoker, RT_VERSION, RT_GROUP_ICON) via Go linker
 # 2. Preserving Go symbol table & BuildID (avoiding -s -w -buildid= obfuscation heuristics)
@@ -11,29 +11,47 @@ if (-not (Test-Path $OutDir)) {
     New-Item -ItemType Directory -Path $OutDir | Out-Null
 }
 
-$ExePath = Join-Path $OutDir "WorldClockPro.exe"
-$RootExePath = Join-Path $PSScriptRoot "WorldClockPro.exe"
-$ZipPath = Join-Path $OutDir "WorldClockPro-Windows-x64.zip"
+# Stop running instances before rebuilding so output .exe files are not locked
+Get-Process -Name "小瑞综合时钟桌面", "XiaoruIntegratedClockDesktop" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+Start-Sleep -Milliseconds 200
 
-Write-Host "[1/4] Building WorldClockPro.exe with native PE resources (.syso)..." -ForegroundColor Cyan
+$ExePath = Join-Path $OutDir "小瑞综合时钟桌面.exe"
+$EnExePath = Join-Path $OutDir "XiaoruIntegratedClockDesktop.exe"
+$RootExePath = Join-Path $PSScriptRoot "小瑞综合时钟桌面.exe"
+$ZipPath = Join-Path $OutDir "小瑞综合时钟桌面-Windows-x64.zip"
+
+Write-Host "[1/4] Building 小瑞综合时钟桌面.exe with native PE resources (.syso)..." -ForegroundColor Cyan
 go build -ldflags="-H=windowsgui" -o $ExePath .\cmd\worldclock
 
 Write-Host "[2/4] Applying Authenticode signature..." -ForegroundColor Cyan
-$cert = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert | Where-Object { $_.Subject -like "*World Clock Pro*" } | Select-Object -First 1
+$cert = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert | Where-Object { $_.Subject -like "*Xiaoru Studio*" } | Select-Object -First 1
 if (-not $cert) {
     $cert = New-SelfSignedCertificate -Type CodeSigningCert `
-        -Subject "CN=World Clock Pro Studio, O=World Clock Pro Studio, C=CN" `
+        -Subject "CN=Xiaoru Studio, O=Xiaoru Studio, C=CN" `
         -CertStoreLocation "Cert:\CurrentUser\My" `
         -NotAfter (Get-Date).AddYears(5)
 }
 Set-AuthenticodeSignature -FilePath $ExePath -Certificate $cert -HashAlgorithm SHA256 | Out-Null
+Copy-Item -Force $ExePath $EnExePath
 Copy-Item -Force $ExePath $RootExePath
 
 Write-Host "[3/4] Creating release package zip..." -ForegroundColor Cyan
 if (Test-Path $ZipPath) {
     Remove-Item -Force $ZipPath
 }
-Compress-Archive -Path $ExePath, (Join-Path $PSScriptRoot "README.md") -DestinationPath $ZipPath -Force
+Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+$zipStream = [System.IO.File]::Open($ZipPath, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
+$zipArchive = New-Object System.IO.Compression.ZipArchive($zipStream, [System.IO.Compression.ZipArchiveMode]::Create, $false)
+foreach ($src in @($ExePath, $EnExePath, (Join-Path $PSScriptRoot "README.md"))) {
+    $entry = $zipArchive.CreateEntry((Split-Path $src -Leaf), [System.IO.Compression.CompressionLevel]::Optimal)
+    $entryStream = $entry.Open()
+    $fileStream = [System.IO.File]::Open($src, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+    $fileStream.CopyTo($entryStream)
+    $fileStream.Close()
+    $entryStream.Close()
+}
+$zipArchive.Dispose()
+$zipStream.Close()
 
 Write-Host "[4/4] Verifying output binary..." -ForegroundColor Cyan
 $item = Get-Item $ExePath

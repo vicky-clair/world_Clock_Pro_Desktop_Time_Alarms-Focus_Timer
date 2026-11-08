@@ -19,14 +19,14 @@ func DrawSleepMode(f *flex.Frame, state *AppState, theme ui.Theme) {
 	sl := state.Sleep
 	status, sound, vol := sl.Info()
 
-	cfg := state.Store.Get()
+	cfg := state.Store.GetPrefs()
 	timeStr, period := clock.FormatTime(now, cfg.TimeFormat24H, cfg.ShowSeconds)
 
-	// Low-light background for sleep comfort
+	// 专为暗室与夜间助眠调校的超低亮度护眼背景色
 	sleepBg := ui.RGB24(0x0E1210)
 
 	f.Column().Fill().Pad(28).Background(sleepBg).Items(flex.Center).Gap(24).Children(func() {
-		// Header
+		// 顶部标题与退出睡眠模式按钮
 		f.Row().FillWidth().Items(flex.Center).Children(func() {
 			f.Text(state.T("sleep.title")).FontSize(16).Bold().Color(theme.Accent)
 			f.Spacer()
@@ -42,10 +42,10 @@ func DrawSleepMode(f *flex.Frame, state *AppState, theme ui.Theme) {
 
 		f.Spacer()
 
-		// Central Ambient Night Clock
+		// 中央柔和暗光夜钟显示区
 		f.Column().Items(flex.Center).Gap(8).Children(func() {
 			f.Row().Items(flex.Baseline).Gap(10).Children(func() {
-				// Gentle warm/dim olive text for dark environment
+				// 采用柔和低对比度森系暗绿文字，避免夜间刺眼
 				ambientColor := ui.RGB24(0x8F9779)
 				f.Text(timeStr).FontSize(72).Bold().Mono().Color(ambientColor)
 				if period != "" {
@@ -57,16 +57,22 @@ func DrawSleepMode(f *flex.Frame, state *AppState, theme ui.Theme) {
 
 		f.Spacer()
 
-		// Session Status or Configuration Panel
+		// 底部：睡眠时长/环境音配置面板 或 运行中倒计时与音量渐弱状态卡
 		if status == sleep.StateIdle {
-			// Configuration
+			// 待机配置面板：支持预设时长 (15/30/60 分钟) 与 -5m / -1m / +1m / +5m 精确微调
 			f.Column().FillWidth().Pad(22).Background(theme.Card).Radius(16).Border(1, theme.Border).Items(flex.Center).Gap(14).Children(func() {
 				f.Text(state.T("sleep.prepare")).FontSize(16).Bold().Color(theme.Primary)
 
-				// Duration selector
+				// Duration selector (Quick presets + precise -5m / -1m / +1m / +5m steppers)
+				if state.SleepDuration < time.Minute {
+					state.SleepDuration = 30 * time.Minute
+				}
+				curSleepMins := int(state.SleepDuration.Round(time.Minute).Minutes())
 				f.Row().Items(flex.Center).Gap(8).Children(func() {
 					f.Text(state.T("sleep.duration")).FontSize(13).Muted()
-					btn15 := f.Button(IDBtnSleep15m, state.T("sleep.dur_15m"))
+					f.Text(fmt.Sprintf(state.T("sleep.dur_fmt"), curSleepMins)).FontSize(16).Bold().Mono().Color(theme.Primary)
+
+					btn15 := f.Button(IDBtnSleep15m, state.T("sleep.dur_15m")).Small()
 					if state.SleepDuration == 15*time.Minute {
 						btn15.Outline()
 					} else {
@@ -76,7 +82,7 @@ func DrawSleepMode(f *flex.Frame, state *AppState, theme ui.Theme) {
 						state.SleepDuration = 15 * time.Minute
 					}
 
-					btn30 := f.Button(IDBtnSleep30m, state.T("sleep.dur_30m"))
+					btn30 := f.Button(IDBtnSleep30m, state.T("sleep.dur_30m")).Small()
 					if state.SleepDuration == 30*time.Minute {
 						btn30.Outline()
 					} else {
@@ -86,7 +92,7 @@ func DrawSleepMode(f *flex.Frame, state *AppState, theme ui.Theme) {
 						state.SleepDuration = 30 * time.Minute
 					}
 
-					btn60 := f.Button(IDBtnSleep60m, state.T("sleep.dur_60m"))
+					btn60 := f.Button(IDBtnSleep60m, state.T("sleep.dur_60m")).Small()
 					if state.SleepDuration == 60*time.Minute {
 						btn60.Outline()
 					} else {
@@ -94,6 +100,19 @@ func DrawSleepMode(f *flex.Frame, state *AppState, theme ui.Theme) {
 					}
 					if btn60.Clicked() {
 						state.SleepDuration = 60 * time.Minute
+					}
+
+					if f.Button(IDBtnSleepMin5Down, state.T("sleep.step_m5_down")).Small().Secondary().Clicked() {
+						state.SleepDuration = StepSleepDuration(state.SleepDuration, -5)
+					}
+					if f.Button(IDBtnSleepMin1Down, state.T("sleep.step_m1_down")).Small().Secondary().Clicked() {
+						state.SleepDuration = StepSleepDuration(state.SleepDuration, -1)
+					}
+					if f.Button(IDBtnSleepMin1Up, state.T("sleep.step_m1_up")).Small().Secondary().Clicked() {
+						state.SleepDuration = StepSleepDuration(state.SleepDuration, 1)
+					}
+					if f.Button(IDBtnSleepMin5Up, state.T("sleep.step_m5_up")).Small().Secondary().Clicked() {
+						state.SleepDuration = StepSleepDuration(state.SleepDuration, 5)
 					}
 				})
 
@@ -195,4 +214,17 @@ func DrawSleepMode(f *flex.Frame, state *AppState, theme ui.Theme) {
 			})
 		}
 	})
+}
+
+// StepSleepDuration 按分钟精确增减睡眠定时长，并限制在 [1分钟, 480分钟(8小时)] 安全区间内。
+// StepSleepDuration accurately adjusts sleep duration in minutes within [1m, 480m].
+func StepSleepDuration(cur time.Duration, deltaMinutes int) time.Duration {
+	mins := int(cur.Round(time.Minute).Minutes()) + deltaMinutes
+	if mins < 1 {
+		mins = 1
+	}
+	if mins > 480 {
+		mins = 480
+	}
+	return time.Duration(mins) * time.Minute
 }

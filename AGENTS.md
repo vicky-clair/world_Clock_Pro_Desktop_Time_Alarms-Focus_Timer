@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This project is **The World Clock on the Desktop**, a desktop application built with the [Viva](https://github.com/vivaui/viva) framework.
+This project is **小瑞综合时钟桌面 (Xiaoru Integrated Clock Desktop / 小瑞総合時計デスクトップ)**, a desktop application built with the [Viva](https://github.com/vivaui/viva) framework.
 
 All AI coding assistants (including Gemini, Claude, Codex, GPT) working on this codebase MUST strictly follow the Viva framework rules outlined below.
 

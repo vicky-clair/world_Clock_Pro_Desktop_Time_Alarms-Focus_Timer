@@ -1,9 +1,10 @@
+// Package ui 实现小瑞综合时钟桌面 (Xiaoru Integrated Clock Desktop) 的 Viva GPU 原生声明式界面、路由、主题与交互控制。
 package ui
 
 import "github.com/vivaui/viva/ui"
 
 // Tree 保存全局唯一的 Viva 控件身份标识树（ui.Tree），用于在跨帧绘制时稳定追踪焦点、悬停与点击命中。
-// Tree holds the static identity tree for the World Clock application.
+// 遵循 Viva 框架规范：所有命中目标均通过具名 Feature 与稳定 ID 声明，绝不在绘制循环中手写数字编号。
 var (
 	Tree = ui.Tree{}
 
@@ -17,7 +18,7 @@ var (
 	featPopout  = Tree.Feature("popout")   // 桌面悬浮小窗区域
 	featTracker = Tree.Feature("tracker")  // 专注计时器（番茄钟）区域
 	featSleep   = Tree.Feature("sleep")    // 睡眠与环境音区域
-	featNews    = Tree.Feature("news")     // 资讯阅读区域
+	featNews    = Tree.Feature("news")     // 历史上的今天资讯阅读区域
 	featSetting = Tree.Feature("settings") // 设置与偏好区域
 	featDialog  = Tree.Feature("dialog")   // 全局模态对话框区域
 	featEdgeBar = Tree.Feature("edgebar")  // 屏幕边缘收缩状态条区域
@@ -49,228 +50,242 @@ var (
 	// 屏幕边缘收缩状态条按钮 (Edge Bar Controls)
 	IDBtnRestoreEdgeBar = Tree.ID(featEdgeBar, "btn-restore-edgebar") // 从状态条恢复正常窗口按钮
 
-	// World Clock Controls
-	IDBtnAddCityModal         = Tree.ID(featWorld, "btn-add-city-modal")
-	IDBtnCloseAddCity         = Tree.ID(featWorld, "btn-close-add-city")
-	IDInputCitySearch         = Tree.ID(featWorld, "input-city-search")
-	IDBtnClearCitySearch      = Tree.ID(featWorld, "btn-clear-city-search")
-	IDScrollCityModal         = Tree.ID(featWorld, "scroll-city-modal")
-	IDScrollWorldList         = Tree.ID(featWorld, "scroll-world-list")
-	IDDialogDupCityScope      = Tree.ID(featDialog, "dup-city-scope")
-	IDDialogDupCityBackdrop   = Tree.ID(featDialog, "dup-city-backdrop")
-	IDDialogDupCityClose      = Tree.ID(featDialog, "dup-city-close")
-	IDBtnDismissDuplicateCity = Tree.ID(featDialog, "btn-dismiss-dup-city")
+	// 世界时钟与 193 国目录选择弹窗控件 (World Clock Controls)
+	IDBtnAddCityModal         = Tree.ID(featWorld, "btn-add-city-modal")    // 打开“添加城市”弹窗按钮
+	IDBtnCloseAddCity         = Tree.ID(featWorld, "btn-close-add-city")    // 关闭“添加城市”弹窗按钮
+	IDInputCitySearch         = Tree.ID(featWorld, "input-city-search")     // 城市/国家多语言搜索输入框
+	IDBtnClearCitySearch      = Tree.ID(featWorld, "btn-clear-city-search") // 清空搜索词按钮
+	IDScrollCityModal         = Tree.ID(featWorld, "scroll-city-modal")     // 193 国目录弹窗滚动容器
+	IDScrollWorldList         = Tree.ID(featWorld, "scroll-world-list")     // 已添加世界时钟列表滚动容器
+	IDDialogDupCityScope      = Tree.ID(featDialog, "dup-city-scope")       // 重复添加城市提醒弹窗作用域
+	IDDialogDupCityBackdrop   = Tree.ID(featDialog, "dup-city-backdrop")    // 重复添加城市提醒弹窗遮罩层
+	IDDialogDupCityClose      = Tree.ID(featDialog, "dup-city-close")       // 重复添加城市提醒弹窗右上角关闭按钮
+	IDBtnDismissDuplicateCity = Tree.ID(featDialog, "btn-dismiss-dup-city") // 重复添加城市提醒弹窗“知道了”确认按钮
 
-	IDQuickFilterCN = Tree.ID(featWorld, "qf-cn")
-	IDQuickFilterUS = Tree.ID(featWorld, "qf-us")
-	IDQuickFilterJP = Tree.ID(featWorld, "qf-jp")
-	IDQuickFilterUK = Tree.ID(featWorld, "qf-uk")
-	IDQuickFilterFR = Tree.ID(featWorld, "qf-fr")
-	IDQuickFilterDE = Tree.ID(featWorld, "qf-de")
-	// Continent filter tabs
-	IDContAll          = Tree.ID(featWorld, "cont-all")
-	IDContAsia         = Tree.ID(featWorld, "cont-asia")
-	IDContEurope       = Tree.ID(featWorld, "cont-europe")
-	IDContAfrica       = Tree.ID(featWorld, "cont-africa")
-	IDContNorthAmerica = Tree.ID(featWorld, "cont-na")
-	IDContSouthAmerica = Tree.ID(featWorld, "cont-sa")
-	IDContOceania      = Tree.ID(featWorld, "cont-oc")
+	// 选城弹窗常用国家快捷筛选按钮 (Quick Country Filter Buttons)
+	IDQuickFilterCN = Tree.ID(featWorld, "qf-cn") // 快捷筛选：中国
+	IDQuickFilterUS = Tree.ID(featWorld, "qf-us") // 快捷筛选：美国
+	IDQuickFilterJP = Tree.ID(featWorld, "qf-jp") // 快捷筛选：日本
+	IDQuickFilterUK = Tree.ID(featWorld, "qf-uk") // 快捷筛选：英国
+	IDQuickFilterFR = Tree.ID(featWorld, "qf-fr") // 快捷筛选：法国
+	IDQuickFilterDE = Tree.ID(featWorld, "qf-de") // 快捷筛选：德国
 
-	// Alarm Controls
-	IDBtnNewAlarmModal     = Tree.ID(featAlarms, "btn-new-alarm-modal")
-	IDBtnCloseNewAlarm     = Tree.ID(featAlarms, "btn-close-new-alarm")
-	IDBtnSaveNewAlarm      = Tree.ID(featAlarms, "btn-save-new-alarm")
-	IDBtnPresetMorning     = Tree.ID(featAlarms, "preset-morning")
-	IDBtnPresetNoon        = Tree.ID(featAlarms, "preset-noon")
-	IDBtnPresetEvening     = Tree.ID(featAlarms, "preset-evening")
-	IDBtnAlarmHourDown     = Tree.ID(featAlarms, "alarm-hr-down")
-	IDBtnAlarmHourUp       = Tree.ID(featAlarms, "alarm-hr-up")
-	IDBtnAlarmMinDown      = Tree.ID(featAlarms, "alarm-min-down")
-	IDBtnAlarmMinUp        = Tree.ID(featAlarms, "alarm-min-up")
-	IDBtnRecurOnce         = Tree.ID(featAlarms, "recur-once")
-	IDBtnRecurDaily        = Tree.ID(featAlarms, "recur-daily")
-	IDBtnRecurWeekdays     = Tree.ID(featAlarms, "recur-weekdays")
-	IDBtnAlarmSoundGentle  = Tree.ID(featAlarms, "alarm-snd-gentle")
-	IDBtnAlarmSoundDigital = Tree.ID(featAlarms, "alarm-snd-digital")
-	IDBtnAlarmSoundClassic = Tree.ID(featAlarms, "alarm-snd-classic")
-	IDBtnAlarmPreviewSound = Tree.ID(featAlarms, "alarm-snd-preview")
+	// 选城弹窗六大洲分类筛选标签 (Continent Filter Tabs)
+	IDContAll          = Tree.ID(featWorld, "cont-all")    // 全部大洲 (193 国)
+	IDContAsia         = Tree.ID(featWorld, "cont-asia")   // 亚洲
+	IDContEurope       = Tree.ID(featWorld, "cont-europe") // 欧洲
+	IDContAfrica       = Tree.ID(featWorld, "cont-africa") // 非洲
+	IDContNorthAmerica = Tree.ID(featWorld, "cont-na")     // 北美洲
+	IDContSouthAmerica = Tree.ID(featWorld, "cont-sa")     // 南美洲
+	IDContOceania      = Tree.ID(featWorld, "cont-oc")     // 大洋洲
 
-	// Timers Controls
-	IDBtnAddTimerCustom     = Tree.ID(featTimers, "btn-add-timer-custom")
-	IDBtnOpenTimerModal     = Tree.ID(featTimers, "btn-open-timer-modal")
-	IDBtnCloseTimerModal    = Tree.ID(featTimers, "btn-close-timer-modal")
-	IDBtnSaveTimerModal     = Tree.ID(featTimers, "btn-save-timer-modal")
-	IDInputTimerName        = Tree.ID(featTimers, "input-timer-name")
-	IDBtnTimerPresetTea     = Tree.ID(featTimers, "timer-preset-tea")
-	IDBtnTimerPresetNoodle  = Tree.ID(featTimers, "timer-preset-noodle")
-	IDBtnTimerPresetNap     = Tree.ID(featTimers, "timer-preset-nap")
-	IDBtnTimerPresetPomo    = Tree.ID(featTimers, "timer-preset-pomo")
-	IDBtnTimerPresetRead    = Tree.ID(featTimers, "timer-preset-read")
-	IDBtnTimerPresetWorkout = Tree.ID(featTimers, "timer-preset-workout")
-	IDBtnTimerHrDown        = Tree.ID(featTimers, "timer-hr-down")
-	IDBtnTimerHrUp          = Tree.ID(featTimers, "timer-hr-up")
-	IDBtnTimerMin10Down     = Tree.ID(featTimers, "timer-min10-down")
-	IDBtnTimerMinDown       = Tree.ID(featTimers, "timer-min-down")
-	IDBtnTimerMinUp         = Tree.ID(featTimers, "timer-min-up")
-	IDBtnTimerMin10Up       = Tree.ID(featTimers, "timer-min10-up")
-	IDBtnTimerSecDown       = Tree.ID(featTimers, "timer-sec-down")
-	IDBtnTimerSecUp         = Tree.ID(featTimers, "timer-sec-up")
-	IDBtnSwStart            = Tree.ID(featTimers, "btn-sw-start")
-	IDBtnSwPause            = Tree.ID(featTimers, "btn-sw-pause")
-	IDBtnSwReset            = Tree.ID(featTimers, "btn-sw-reset")
-	IDBtnSwLap              = Tree.ID(featTimers, "btn-sw-lap")
-	// Tracker Controls
-	IDBtnTrackerStart    = Tree.ID(featTracker, "btn-tracker-start")
-	IDBtnTrackerPause    = Tree.ID(featTracker, "btn-tracker-pause")
-	IDBtnTrackerResume   = Tree.ID(featTracker, "btn-tracker-resume")
-	IDBtnTrackerReset    = Tree.ID(featTracker, "btn-tracker-reset")
-	IDBtnTrackerSkip     = Tree.ID(featTracker, "btn-tracker-skip")
-	IDBtnTrackerPostpone = Tree.ID(featTracker, "btn-tracker-postpone")
-	IDBtnTrackerDND      = Tree.ID(featTracker, "btn-tracker-dnd")
+	// 闹钟管理与新建闹钟面板控件 (Alarm Controls)
+	IDBtnNewAlarmModal     = Tree.ID(featAlarms, "btn-new-alarm-modal") // 打开“新建闹钟”面板按钮
+	IDBtnCloseNewAlarm     = Tree.ID(featAlarms, "btn-close-new-alarm") // 取消/关闭“新建闹钟”面板按钮
+	IDBtnSaveNewAlarm      = Tree.ID(featAlarms, "btn-save-new-alarm")  // 保存新建闹钟按钮
+	IDBtnPresetMorning     = Tree.ID(featAlarms, "preset-morning")      // 闹钟预设：早晨 07:30
+	IDBtnPresetNoon        = Tree.ID(featAlarms, "preset-noon")         // 闹钟预设：午休 12:30
+	IDBtnPresetEvening     = Tree.ID(featAlarms, "preset-evening")      // 闹钟预设：晚间 20:00
+	IDBtnAlarmHourDown     = Tree.ID(featAlarms, "alarm-hr-down")       // 闹钟时间微调：-1 小时
+	IDBtnAlarmHourUp       = Tree.ID(featAlarms, "alarm-hr-up")         // 闹钟时间微调：+1 小时
+	IDBtnAlarmMinDown      = Tree.ID(featAlarms, "alarm-min-down")      // 闹钟时间微调：-5 分钟
+	IDBtnAlarmMin1Down     = Tree.ID(featAlarms, "alarm-min1-down")     // 闹钟时间精准微调：-1 分钟（支持跨小时/跨午夜借位）
+	IDBtnAlarmMin1Up       = Tree.ID(featAlarms, "alarm-min1-up")       // 闹钟时间精准微调：+1 分钟（支持跨小时/跨午夜进位）
+	IDBtnAlarmMinUp        = Tree.ID(featAlarms, "alarm-min-up")        // 闹钟时间微调：+5 分钟
+	IDBtnRecurOnce         = Tree.ID(featAlarms, "recur-once")          // 重复周期：仅一次
+	IDBtnRecurDaily        = Tree.ID(featAlarms, "recur-daily")         // 重复周期：每天
+	IDBtnRecurWeekdays     = Tree.ID(featAlarms, "recur-weekdays")      // 重复周期：工作日 (周一至周五)
+	IDBtnAlarmSoundGentle  = Tree.ID(featAlarms, "alarm-snd-gentle")    // 闹钟铃声：柔和风铃
+	IDBtnAlarmSoundDigital = Tree.ID(featAlarms, "alarm-snd-digital")   // 闹钟铃声：数字脉冲
+	IDBtnAlarmSoundClassic = Tree.ID(featAlarms, "alarm-snd-classic")   // 闹钟铃声：经典钟声
+	IDBtnAlarmPreviewSound = Tree.ID(featAlarms, "alarm-snd-preview")   // 试听/停止闹钟铃声按钮
 
-	// Sleep Controls
-	IDBtnSleepStart   = Tree.ID(featSleep, "btn-sleep-start")
-	IDBtnSleepStop    = Tree.ID(featSleep, "btn-sleep-stop")
-	IDBtnSleep15m     = Tree.ID(featSleep, "btn-sleep-15m")
-	IDBtnSleep30m     = Tree.ID(featSleep, "btn-sleep-30m")
-	IDBtnSleep60m     = Tree.ID(featSleep, "btn-sleep-60m")
-	IDBtnSleepRain    = Tree.ID(featSleep, "btn-sleep-rain")
-	IDBtnSleepStream  = Tree.ID(featSleep, "btn-sleep-stream")
-	IDBtnSleepWaves   = Tree.ID(featSleep, "btn-sleep-waves")
-	IDBtnSleepWhite   = Tree.ID(featSleep, "btn-sleep-white")
-	IDBtnSleepPreview = Tree.ID(featSleep, "btn-sleep-preview")
+	// 倒计时器与高精度秒表控件 (Timers & Stopwatch Controls)
+	IDBtnAddTimerCustom     = Tree.ID(featTimers, "btn-add-timer-custom")  // 快捷添加 +10 分钟倒计时按钮
+	IDBtnOpenTimerModal     = Tree.ID(featTimers, "btn-open-timer-modal")  // 打开“自定义任务”倒计时面板按钮
+	IDBtnCloseTimerModal    = Tree.ID(featTimers, "btn-close-timer-modal") // 关闭自定义倒计时面板按钮
+	IDBtnSaveTimerModal     = Tree.ID(featTimers, "btn-save-timer-modal")  // 保存自定义倒计时任务按钮
+	IDInputTimerName        = Tree.ID(featTimers, "input-timer-name")      // 倒计时任务名称输入框
+	IDBtnTimerPresetTea     = Tree.ID(featTimers, "timer-preset-tea")      // 倒计时模板：泡茶 3 分钟
+	IDBtnTimerPresetNoodle  = Tree.ID(featTimers, "timer-preset-noodle")   // 倒计时模板：煮面 5 分钟
+	IDBtnTimerPresetNap     = Tree.ID(featTimers, "timer-preset-nap")      // 倒计时模板：午休 20 分钟
+	IDBtnTimerPresetPomo    = Tree.ID(featTimers, "timer-preset-pomo")     // 倒计时模板：番茄专注 25 分钟
+	IDBtnTimerPresetRead    = Tree.ID(featTimers, "timer-preset-read")     // 倒计时模板：沉浸阅读 45 分钟
+	IDBtnTimerPresetWorkout = Tree.ID(featTimers, "timer-preset-workout")  // 倒计时模板：运动健身 1 小时
+	IDBtnTimerHrDown        = Tree.ID(featTimers, "timer-hr-down")         // 倒计时时长调节：-1 小时
+	IDBtnTimerHrUp          = Tree.ID(featTimers, "timer-hr-up")           // 倒计时时长调节：+1 小时
+	IDBtnTimerMin10Down     = Tree.ID(featTimers, "timer-min10-down")      // 倒计时时长调节：-10 分钟
+	IDBtnTimerMinDown       = Tree.ID(featTimers, "timer-min-down")        // 倒计时时长精准调节：-1 分钟（支持跨小时借位）
+	IDBtnTimerMinUp         = Tree.ID(featTimers, "timer-min-up")          // 倒计时时长精准调节：+1 分钟（支持跨小时进位）
+	IDBtnTimerMin10Up       = Tree.ID(featTimers, "timer-min10-up")        // 倒计时时长调节：+10 分钟
+	IDBtnTimerSecDown       = Tree.ID(featTimers, "timer-sec-down")        // 倒计时时长调节：-15 秒
+	IDBtnTimerSec1Down      = Tree.ID(featTimers, "timer-sec1-down")       // 倒计时时长精准调节：-1 秒（支持跨分/跨时借位）
+	IDBtnTimerSec1Up        = Tree.ID(featTimers, "timer-sec1-up")         // 倒计时时长精准调节：+1 秒（支持跨分/跨时进位）
+	IDBtnTimerSecUp         = Tree.ID(featTimers, "timer-sec-up")          // 倒计时时长调节：+15 秒
+	IDBtnSwStart            = Tree.ID(featTimers, "btn-sw-start")          // 秒表：开始计时
+	IDBtnSwPause            = Tree.ID(featTimers, "btn-sw-pause")          // 秒表：暂停计时
+	IDBtnSwReset            = Tree.ID(featTimers, "btn-sw-reset")          // 秒表：清零重置
+	IDBtnSwLap              = Tree.ID(featTimers, "btn-sw-lap")            // 秒表：记录分圈 (Lap)
 
-	// News / History Today Controls
-	IDNewsCatAll        = Tree.ID(featNews, "cat-all")
-	IDNewsCatTech       = Tree.ID(featNews, "cat-tech")
-	IDNewsCatWorld      = Tree.ID(featNews, "cat-world")
-	IDNewsCatScience    = Tree.ID(featNews, "cat-science")
-	IDBtnRefreshHistory = Tree.ID(featNews, "btn-refresh-history")
+	// 生产力专注计时器（番茄工作法）控件 (Productivity Tracker Controls)
+	IDBtnTrackerStart    = Tree.ID(featTracker, "btn-tracker-start")     // 开始专注工作阶段按钮
+	IDBtnTrackerPause    = Tree.ID(featTracker, "btn-tracker-pause")     // 暂停当前番茄钟按钮
+	IDBtnTrackerResume   = Tree.ID(featTracker, "btn-tracker-resume")    // 继续当前番茄钟按钮
+	IDBtnTrackerReset    = Tree.ID(featTracker, "btn-tracker-reset")     // 重置当前番茄钟按钮
+	IDBtnTrackerSkip     = Tree.ID(featTracker, "btn-tracker-skip")      // 跳过休息进入下一工作段按钮
+	IDBtnTrackerPostpone = Tree.ID(featTracker, "btn-tracker-postpone")  // 推迟休息 (+5 分钟) 按钮
+	IDBtnTrackerDND      = Tree.ID(featTracker, "btn-tracker-dnd")       // 专注勿扰模式开关按钮
+	IDBtnTrackerMin5Down = Tree.ID(featTracker, "btn-tracker-min5-down") // 番茄工作时长调节：-5 分钟
+	IDBtnTrackerMin1Down = Tree.ID(featTracker, "btn-tracker-min1-down") // 番茄工作时长精准调节：-1 分钟
+	IDBtnTrackerMin1Up   = Tree.ID(featTracker, "btn-tracker-min1-up")   // 番茄工作时长精准调节：+1 分钟
+	IDBtnTrackerMin5Up   = Tree.ID(featTracker, "btn-tracker-min5-up")   // 番茄工作时长调节：+5 分钟
 
-	// Popout Controls
-	IDBtnExitPopout      = Tree.ID(featPopout, "btn-exit-popout")
-	IDBtnPinPopout       = Tree.ID(featPopout, "btn-pin-popout")
-	IDBtnPopoutPosTop    = Tree.ID(featPopout, "btn-popout-pos-top")
-	IDBtnPopoutPosCenter = Tree.ID(featPopout, "btn-popout-pos-center")
-	IDBtnPopoutPosBottom = Tree.ID(featPopout, "btn-popout-pos-bottom")
+	// 睡眠与环境音模式控件 (Sleep & Ambient Mode Controls)
+	IDBtnSleepStart    = Tree.ID(featSleep, "btn-sleep-start")     // 启动睡眠模式与环境音伴眠按钮
+	IDBtnSleepStop     = Tree.ID(featSleep, "btn-sleep-stop")      // 退出睡眠模式并停止音频按钮
+	IDBtnSleep15m      = Tree.ID(featSleep, "btn-sleep-15m")       // 睡眠时长预设：15 分钟
+	IDBtnSleep30m      = Tree.ID(featSleep, "btn-sleep-30m")       // 睡眠时长预设：30 分钟
+	IDBtnSleep60m      = Tree.ID(featSleep, "btn-sleep-60m")       // 睡眠时长预设：60 分钟
+	IDBtnSleepMin5Down = Tree.ID(featSleep, "btn-sleep-min5-down") // 睡眠时长调节：-5 分钟
+	IDBtnSleepMin1Down = Tree.ID(featSleep, "btn-sleep-min1-down") // 睡眠时长精准调节：-1 分钟
+	IDBtnSleepMin1Up   = Tree.ID(featSleep, "btn-sleep-min1-up")   // 睡眠时长精准调节：+1 分钟
+	IDBtnSleepMin5Up   = Tree.ID(featSleep, "btn-sleep-min5-up")   // 睡眠时长调节：+5 分钟
+	IDBtnSleepRain     = Tree.ID(featSleep, "btn-sleep-rain")      // 助眠环境音：柔和夜雨
+	IDBtnSleepStream   = Tree.ID(featSleep, "btn-sleep-stream")    // 助眠环境音：林间溪流
+	IDBtnSleepWaves    = Tree.ID(featSleep, "btn-sleep-waves")     // 助眠环境音：舒缓海浪
+	IDBtnSleepWhite    = Tree.ID(featSleep, "btn-sleep-white")     // 助眠环境音：纯净白噪音
+	IDBtnSleepPreview  = Tree.ID(featSleep, "btn-sleep-preview")   // 试听/停止当前助眠环境音按钮
 
-	// Settings Controls
-	IDThemeOlive = Tree.ID(featSetting, "theme-olive")
-	IDThemeDark  = Tree.ID(featSetting, "theme-dark")
-	IDThemeLight = Tree.ID(featSetting, "theme-light")
-	IDThemeNord  = Tree.ID(featSetting, "theme-nord")
+	// 历史上的今天资讯控件 (On This Day in History Controls)
+	IDNewsCatAll        = Tree.ID(featNews, "cat-all")             // 分类筛选：全部事件
+	IDNewsCatTech       = Tree.ID(featNews, "cat-tech")            // 分类筛选：科技突破
+	IDNewsCatWorld      = Tree.ID(featNews, "cat-world")           // 分类筛选：世界历史
+	IDNewsCatScience    = Tree.ID(featNews, "cat-science")         // 分类筛选：科学探索
+	IDBtnRefreshHistory = Tree.ID(featNews, "btn-refresh-history") // 联网刷新今日百科历史事件按钮
 
-	IDOptShowSeconds            = Tree.ID(featSetting, "opt-show-seconds")
-	IDOptFormat24H              = Tree.ID(featSetting, "opt-format-24h")
-	IDOptFullDate               = Tree.ID(featSetting, "opt-full-date")
-	IDOptShowHolidays           = Tree.ID(featSetting, "opt-show-holidays")
-	IDOptStyleDigital           = Tree.ID(featSetting, "opt-style-digital")
-	IDOptStyleAnalog            = Tree.ID(featSetting, "opt-style-analog")
-	IDOptPopoutPosTop           = Tree.ID(featSetting, "opt-popout-pos-top")
-	IDOptPopoutPosCenter        = Tree.ID(featSetting, "opt-popout-pos-center")
-	IDOptPopoutPosBottom        = Tree.ID(featSetting, "opt-popout-pos-bottom")
-	IDProfileDefault            = Tree.ID(featSetting, "profile-default")
-	IDProfileWork               = Tree.ID(featSetting, "profile-work")
-	IDOptTempFahrenheit         = Tree.ID(featSetting, "opt-temp-unit")
-	IDCloseBehaviorMinimize     = Tree.ID(featSetting, "close-behavior-minimize")
-	IDCloseBehaviorExit         = Tree.ID(featSetting, "close-behavior-exit")
-	IDOptAutoStart              = Tree.ID(featSetting, "opt-autostart")
-	IDOptAutoStartEnable        = Tree.ID(featSetting, "opt-autostart-enable")
-	IDOptAutoStartDisable       = Tree.ID(featSetting, "opt-autostart-disable")
-	IDOptEdgeDock               = Tree.ID(featSetting, "opt-edge-dock")
-	IDOptEdgeDockEnable         = Tree.ID(featSetting, "opt-edge-dock-enable")
-	IDOptEdgeDockDisable        = Tree.ID(featSetting, "opt-edge-dock-disable")
-	IDBtnSettingsEdgeBarPreview = Tree.ID(featSetting, "btn-settings-edgebar-preview")
+	// 桌面悬浮小窗控件 (Popout Clock Controls)
+	IDBtnExitPopout      = Tree.ID(featPopout, "btn-exit-popout")       // 还原回主窗口按钮
+	IDBtnPinPopout       = Tree.ID(featPopout, "btn-pin-popout")        // 悬浮窗置顶锁定开关按钮
+	IDBtnPopoutPosTop    = Tree.ID(featPopout, "btn-popout-pos-top")    // 悬浮窗时钟对齐：靠顶
+	IDBtnPopoutPosCenter = Tree.ID(featPopout, "btn-popout-pos-center") // 悬浮窗时钟对齐：居中
+	IDBtnPopoutPosBottom = Tree.ID(featPopout, "btn-popout-pos-bottom") // 悬浮窗时钟对齐：靠底
 
-	// Settings Sub-Tabs
-	IDSettingsTabFont      = Tree.ID(featSetting, "subtab-font")
-	IDSettingsTabWallpaper = Tree.ID(featSetting, "subtab-wallpaper")
-	IDSettingsTabLanguage  = Tree.ID(featSetting, "subtab-language")
-	IDSettingsTabClock     = Tree.ID(featSetting, "subtab-clock")
-	IDSettingsTabPro       = Tree.ID(featSetting, "subtab-pro")
-	IDSettingsTabAbout     = Tree.ID(featSetting, "subtab-about")
+	// 设置与偏好：视觉主题控件 (Theme Controls)
+	IDThemeOlive = Tree.ID(featSetting, "theme-olive") // 经典橄榄绿主题
+	IDThemeDark  = Tree.ID(featSetting, "theme-dark")  // 深邃暗黑主题
+	IDThemeLight = Tree.ID(featSetting, "theme-light") // 明亮清爽主题
+	IDThemeNord  = Tree.ID(featSetting, "theme-nord")  // 极地冰蓝 (Nord) 主题
+
+	// 设置与偏好：时钟、温度单位、开机自启与窗口行为控件 (Clock & Window Behavior Controls)
+	IDOptShowSeconds            = Tree.ID(featSetting, "opt-show-seconds")             // 是否显示秒数开关
+	IDOptFormat24H              = Tree.ID(featSetting, "opt-format-24h")               // 12/24 小时制切换
+	IDOptFullDate               = Tree.ID(featSetting, "opt-full-date")                // 完整/简短日期格式切换
+	IDOptShowHolidays           = Tree.ID(featSetting, "opt-show-holidays")            // 是否显示节假日与二十四节气开关
+	IDOptStyleDigital           = Tree.ID(featSetting, "opt-style-digital")            // 数字时钟样式按钮
+	IDOptStyleAnalog            = Tree.ID(featSetting, "opt-style-analog")             // 模拟指针表盘样式按钮
+	IDOptPopoutPosTop           = Tree.ID(featSetting, "opt-popout-pos-top")           // 设置页：悬浮时钟靠顶
+	IDOptPopoutPosCenter        = Tree.ID(featSetting, "opt-popout-pos-center")        // 设置页：悬浮时钟居中
+	IDOptPopoutPosBottom        = Tree.ID(featSetting, "opt-popout-pos-bottom")        // 设置页：悬浮时钟靠底
+	IDOptTempFahrenheit         = Tree.ID(featSetting, "opt-temp-unit")                // 温度计量单位切换（摄氏度 °C / 华氏度 °F）
+	IDCloseBehaviorMinimize     = Tree.ID(featSetting, "close-behavior-minimize")      // 点击关闭按钮（✕）时：最小化到系统托盘
+	IDCloseBehaviorExit         = Tree.ID(featSetting, "close-behavior-exit")          // 点击关闭按钮（✕）时：直接退出程序
+	IDOptAutoStart              = Tree.ID(featSetting, "opt-autostart")                // 开机自动启动状态徽章开关
+	IDOptAutoStartEnable        = Tree.ID(featSetting, "opt-autostart-enable")         // 启用开机自动启动按钮
+	IDOptAutoStartDisable       = Tree.ID(featSetting, "opt-autostart-disable")        // 不启用开机自动启动按钮
+	IDOptEdgeDock               = Tree.ID(featSetting, "opt-edge-dock")                // 靠近屏幕边缘自动缩为状态条徽章开关
+	IDOptEdgeDockEnable         = Tree.ID(featSetting, "opt-edge-dock-enable")         // 启用状态条收缩按钮
+	IDOptEdgeDockDisable        = Tree.ID(featSetting, "opt-edge-dock-disable")        // 不启用状态条收缩按钮
+	IDBtnSettingsEdgeBarPreview = Tree.ID(featSetting, "btn-settings-edgebar-preview") // 立即体验缩为边缘状态条按钮
+
+	// 设置中心顶部五大子模块切换按钮 (Settings Sub-Tabs)
+	IDSettingsTabLanguage  = Tree.ID(featSetting, "subtab-language")  // 🌐 语言（含中/英/日切换与字体大小/颜色定制）
+	IDSettingsTabWallpaper = Tree.ID(featSetting, "subtab-wallpaper") // 🖼️ 壁纸（含本地壁纸轮播、预设与主题配色）
+	IDSettingsTabClock     = Tree.ID(featSetting, "subtab-clock")     // ⏰ 时钟（含边缘状态条、开机自启、显示格式、温度单位与关闭行为）
+	IDSettingsTabPro       = Tree.ID(featSetting, "subtab-pro")       // 👑 会员（含 7 天免费试用与 ¥3/月、¥28/年 订阅管理）
+	IDSettingsTabAbout     = Tree.ID(featSetting, "subtab-about")     // ℹ️ 关于（含架构说明与版本号）
 
 	// Pro 会员订阅与 7 天试用中心按钮 (Pro Subscription & Trial Center Controls)
 	IDBtnCloseProModal  = Tree.ID(featPro, "btn-close-pro-modal")   // 关闭 Pro 订阅面板按钮
 	IDBtnProSubMonthly  = Tree.ID(featPro, "btn-pro-sub-monthly")   // 开通按月订阅 (¥3/月) 按钮
-	IDBtnProSubYearly   = Tree.ID(featPro, "btn-pro-sub-yearly")    // 开通按年订阅 (¥30/年) 按钮
+	IDBtnProSubYearly   = Tree.ID(featPro, "btn-pro-sub-yearly")    // 开通按年订阅 (¥28/年) 按钮
 	IDBtnProRestore     = Tree.ID(featPro, "btn-pro-restore")       // 恢复购买 / 刷新授权按钮
 	IDBtnProManage      = Tree.ID(featPro, "btn-pro-manage")        // 管理或取消订阅 (Microsoft Store) 按钮
 	IDBtnProSimTrial    = Tree.ID(featPro, "btn-pro-sim-trial")     // 测试切换：重置为 7 天免费试用态
 	IDBtnProSimFullTest = Tree.ID(featPro, "btn-pro-sim-full-test") // 测试切换：切换为永久免付完整测试版
-	// Language Controls
-	IDLangZH = Tree.ID(featSetting, "lang-zh")
-	IDLangEN = Tree.ID(featSetting, "lang-en")
-	IDLangJA = Tree.ID(featSetting, "lang-ja")
 
-	// Wallpaper Controls
-	IDWallpaperToggle          = Tree.ID(featSetting, "wp-toggle")
-	IDBtnBrowseWallpaper       = Tree.ID(featSetting, "wp-browse")
-	IDBtnBrowseFolder          = Tree.ID(featSetting, "wp-browse-folder")
-	IDBtnSampleWallpaper       = Tree.ID(featSetting, "wp-sample")
-	IDBtnSampleSlideshow       = Tree.ID(featSetting, "wp-sample-slideshow")
-	IDBtnClearWallpaper        = Tree.ID(featSetting, "wp-clear")
-	IDWallpaperSlideshowToggle = Tree.ID(featSetting, "wp-slideshow-toggle")
-	IDWallpaperSlidePrev       = Tree.ID(featSetting, "wp-slide-prev")
-	IDWallpaperSlideNext       = Tree.ID(featSetting, "wp-slide-next")
-	IDWallpaperInt1m           = Tree.ID(featSetting, "wp-int-1m")
-	IDWallpaperInt5m           = Tree.ID(featSetting, "wp-int-5m")
-	IDWallpaperInt10m          = Tree.ID(featSetting, "wp-int-10m")
-	IDWallpaperInt15m          = Tree.ID(featSetting, "wp-int-15m")
-	IDWallpaperOrderShuffle    = Tree.ID(featSetting, "wp-order-shuffle")
-	IDWallpaperOrderSeq        = Tree.ID(featSetting, "wp-order-seq")
-	IDPresetGrid               = Tree.ID(featSetting, "wp-preset-grid")
-	IDPresetAurora             = Tree.ID(featSetting, "wp-preset-aurora")
-	IDPresetForest             = Tree.ID(featSetting, "wp-preset-forest")
-	IDPresetSunset             = Tree.ID(featSetting, "wp-preset-sunset")
-	IDWallpaperFitFill         = Tree.ID(featSetting, "wp-fit-fill")
-	IDWallpaperFitFit          = Tree.ID(featSetting, "wp-fit-fit")
-	IDWallpaperFitStretch      = Tree.ID(featSetting, "wp-fit-stretch")
-	IDWallpaperFitTile         = Tree.ID(featSetting, "wp-fit-tile")
-	IDWallpaperFitCenter       = Tree.ID(featSetting, "wp-fit-center")
-	IDWallpaperOpacityDown     = Tree.ID(featSetting, "wp-opacity-down")
-	IDWallpaperOpacityUp       = Tree.ID(featSetting, "wp-opacity-up")
-	IDCardGlassDown            = Tree.ID(featSetting, "card-glass-down")
-	IDCardGlassUp              = Tree.ID(featSetting, "card-glass-up")
+	// 界面语言切换按钮 (Language Controls)
+	IDLangZH = Tree.ID(featSetting, "lang-zh") // 切换为简体中文
+	IDLangEN = Tree.ID(featSetting, "lang-en") // 切换为英文 (English)
+	IDLangJA = Tree.ID(featSetting, "lang-ja") // 切换为日文 (日本語)
 
-	// ScrollArea IDs
-	IDScrollSettings = Tree.ID(featSetting, "scroll-settings")
-	IDScrollAlarms   = Tree.ID(featAlarms, "scroll-alarms")
-	IDScrollTimers   = Tree.ID(featTimers, "scroll-timers")
-	IDScrollNews     = Tree.ID(featNews, "scroll-news")
-	IDScrollTracker  = Tree.ID(featTracker, "scroll-tracker")
-	// Font Size & Color Controls
-	IDFontSize48         = Tree.ID(featSetting, "fs-48")
-	IDFontSize64         = Tree.ID(featSetting, "fs-64")
-	IDFontSize76         = Tree.ID(featSetting, "fs-76")
-	IDFontSize88         = Tree.ID(featSetting, "fs-88")
-	IDFontSize96         = Tree.ID(featSetting, "fs-96")
-	IDFontSizeCustomDown = Tree.ID(featSetting, "fs-custom-down")
-	IDFontSizeCustomUp   = Tree.ID(featSetting, "fs-custom-up")
+	// 壁纸与轮播图控制按钮 (Wallpaper Controls)
+	IDWallpaperToggle          = Tree.ID(featSetting, "wp-toggle")           // 启用/关闭自定义背景壁纸开关
+	IDBtnBrowseWallpaper       = Tree.ID(featSetting, "wp-browse")           // 选择本地图片（支持多选）按钮
+	IDBtnBrowseFolder          = Tree.ID(featSetting, "wp-browse-folder")    // 选择图片文件夹轮播按钮
+	IDBtnSampleWallpaper       = Tree.ID(featSetting, "wp-sample")           // 加载示例高清壁纸按钮
+	IDBtnSampleSlideshow       = Tree.ID(featSetting, "wp-sample-slideshow") // 加载 4 张示例轮播图集按钮
+	IDBtnClearWallpaper        = Tree.ID(featSetting, "wp-clear")            // 清除壁纸列表按钮
+	IDWallpaperSlideshowToggle = Tree.ID(featSetting, "wp-slideshow-toggle") // 自动轮播开关按钮
+	IDWallpaperSlidePrev       = Tree.ID(featSetting, "wp-slide-prev")       // 上一张壁纸按钮
+	IDWallpaperSlideNext       = Tree.ID(featSetting, "wp-slide-next")       // 下一张壁纸按钮
+	IDWallpaperInt1m           = Tree.ID(featSetting, "wp-int-1m")           // 轮播间隔：1 分钟
+	IDWallpaperInt5m           = Tree.ID(featSetting, "wp-int-5m")           // 轮播间隔：5 分钟
+	IDWallpaperInt10m          = Tree.ID(featSetting, "wp-int-10m")          // 轮播间隔：10 分钟
+	IDWallpaperInt15m          = Tree.ID(featSetting, "wp-int-15m")          // 轮播间隔：15 分钟
+	IDWallpaperOrderShuffle    = Tree.ID(featSetting, "wp-order-shuffle")    // 轮播顺序：随机不重复洗牌
+	IDWallpaperOrderSeq        = Tree.ID(featSetting, "wp-order-seq")        // 轮播顺序：按文件名顺序
+	IDPresetGrid               = Tree.ID(featSetting, "wp-preset-grid")      // 内置艺术壁纸：赛博网格
+	IDPresetAurora             = Tree.ID(featSetting, "wp-preset-aurora")    // 内置艺术壁纸：极光星夜
+	IDPresetForest             = Tree.ID(featSetting, "wp-preset-forest")    // 内置艺术壁纸：迷雾森林
+	IDPresetSunset             = Tree.ID(featSetting, "wp-preset-sunset")    // 内置艺术壁纸：暮色地平线
+	IDWallpaperFitFill         = Tree.ID(featSetting, "wp-fit-fill")         // 画面缩放：填充 (Fill)
+	IDWallpaperFitFit          = Tree.ID(featSetting, "wp-fit-fit")          // 画面缩放：适应 (Fit)
+	IDWallpaperFitStretch      = Tree.ID(featSetting, "wp-fit-stretch")      // 画面缩放：拉伸 (Stretch)
+	IDWallpaperFitTile         = Tree.ID(featSetting, "wp-fit-tile")         // 画面缩放：平铺 (Tile)
+	IDWallpaperFitCenter       = Tree.ID(featSetting, "wp-fit-center")       // 画面缩放：居中 (Center)
+	IDWallpaperOpacityDown     = Tree.ID(featSetting, "wp-opacity-down")     // 降低背景图片不透明度 (-10%)
+	IDWallpaperOpacityUp       = Tree.ID(featSetting, "wp-opacity-up")       // 提高背景图片不透明度 (+10%)
+	IDCardGlassDown            = Tree.ID(featSetting, "card-glass-down")     // 降低前景卡片毛玻璃浓度 (-10%)
+	IDCardGlassUp              = Tree.ID(featSetting, "card-glass-up")       // 提高前景卡片毛玻璃浓度 (+10%)
 
-	IDFontColorWhite  = Tree.ID(featSetting, "fc-white")
-	IDFontColorGold   = Tree.ID(featSetting, "fc-gold")
-	IDFontColorOlive  = Tree.ID(featSetting, "fc-olive")
-	IDFontColorCyan   = Tree.ID(featSetting, "fc-cyan")
-	IDFontColorPurple = Tree.ID(featSetting, "fc-purple")
-	IDFontColorCoral  = Tree.ID(featSetting, "fc-coral")
+	// 滚动区域容器 ID (ScrollArea IDs)
+	IDScrollSettings = Tree.ID(featSetting, "scroll-settings") // 设置页滚动容器
+	IDScrollAlarms   = Tree.ID(featAlarms, "scroll-alarms")    // 闹钟列表滚动容器
+	IDScrollTimers   = Tree.ID(featTimers, "scroll-timers")    // 倒计时与秒表页滚动容器
+	IDScrollNews     = Tree.ID(featNews, "scroll-news")        // 历史上的今天页面滚动容器
+	IDScrollTracker  = Tree.ID(featTracker, "scroll-tracker")  // 专注计时页面滚动容器
 
-	IDUIColorDefault = Tree.ID(featSetting, "uic-default")
-	IDUIColorWhite   = Tree.ID(featSetting, "uic-white")
-	IDUIColorBlack   = Tree.ID(featSetting, "uic-black")
-	IDUIColorGold    = Tree.ID(featSetting, "uic-gold")
-	IDUIColorCyan    = Tree.ID(featSetting, "uic-cyan")
-	IDUIColorPurple  = Tree.ID(featSetting, "uic-purple")
-	IDUIColorOlive   = Tree.ID(featSetting, "uic-olive")
+	// 字体大小、时钟数字颜色、界面文字颜色与全局缩放按钮 (Font & Color Customization Controls)
+	IDFontSize48         = Tree.ID(featSetting, "fs-48")          // 时钟字号预设：紧凑 48px
+	IDFontSize64         = Tree.ID(featSetting, "fs-64")          // 时钟字号预设：标准 64px
+	IDFontSize76         = Tree.ID(featSetting, "fs-76")          // 时钟字号预设：大号 76px
+	IDFontSize88         = Tree.ID(featSetting, "fs-88")          // 时钟字号预设：特大 88px
+	IDFontSize96         = Tree.ID(featSetting, "fs-96")          // 时钟字号预设：超大 96px
+	IDFontSizeCustomDown = Tree.ID(featSetting, "fs-custom-down") // 时钟字号步进微调：-2px
+	IDFontSizeCustomUp   = Tree.ID(featSetting, "fs-custom-up")   // 时钟字号步进微调：+2px
 
-	IDFontScale90  = Tree.ID(featSetting, "fscale-90")
-	IDFontScale100 = Tree.ID(featSetting, "fscale-100")
-	IDFontScale110 = Tree.ID(featSetting, "fscale-110")
-	IDFontScale120 = Tree.ID(featSetting, "fscale-120")
+	IDFontColorWhite  = Tree.ID(featSetting, "fc-white")  // 时钟数字颜色：纯白
+	IDFontColorGold   = Tree.ID(featSetting, "fc-gold")   // 时钟数字颜色：琥珀金
+	IDFontColorOlive  = Tree.ID(featSetting, "fc-olive")  // 时钟数字颜色：橄榄翠绿
+	IDFontColorCyan   = Tree.ID(featSetting, "fc-cyan")   // 时钟数字颜色：冰川青
+	IDFontColorPurple = Tree.ID(featSetting, "fc-purple") // 时钟数字颜色：霓虹紫
+	IDFontColorCoral  = Tree.ID(featSetting, "fc-coral")  // 时钟数字颜色：珊瑚橙红
+
+	IDUIColorDefault = Tree.ID(featSetting, "uic-default") // 全局界面文字颜色：跟随主题默认
+	IDUIColorWhite   = Tree.ID(featSetting, "uic-white")   // 全局界面文字颜色：纯白（适合深色壁纸）
+	IDUIColorBlack   = Tree.ID(featSetting, "uic-black")   // 全局界面文字颜色：深黑（适合浅色壁纸）
+	IDUIColorGold    = Tree.ID(featSetting, "uic-gold")    // 全局界面文字颜色：暖金
+	IDUIColorCyan    = Tree.ID(featSetting, "uic-cyan")    // 全局界面文字颜色：亮青
+	IDUIColorPurple  = Tree.ID(featSetting, "uic-purple")  // 全局界面文字颜色：柔紫
+	IDUIColorOlive   = Tree.ID(featSetting, "uic-olive")   // 全局界面文字颜色：翠绿
+
+	IDFontScale90  = Tree.ID(featSetting, "fscale-90")  // 全局字号缩放：90%
+	IDFontScale100 = Tree.ID(featSetting, "fscale-100") // 全局字号缩放：100%（默认）
+	IDFontScale110 = Tree.ID(featSetting, "fscale-110") // 全局字号缩放：110%
+	IDFontScale120 = Tree.ID(featSetting, "fscale-120") // 全局字号缩放：120%
 )
 
-// 根据动态业务主键生成稳定的控件 ID（遵循 Viva 规范：基于名称拼接而非运行时手写数字编号）
-// Dynamic IDs generation helpers with stable names inside feature scopes
+// CityToggleFavID 返回世界时钟城市列表中指定城市的收藏星标按钮 ID。
 func CityToggleFavID(cityID string) ui.ID {
 	return Tree.ID(featWorld, "fav-"+cityID)
 }

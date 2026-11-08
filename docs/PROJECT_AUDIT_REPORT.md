@@ -1,4 +1,4 @@
-# World Clock Pro: Desktop Time, Alarms & Focus Timer — 项目全面审计报告 (Project Audit Report)
+# 小瑞综合时钟桌面 (Xiaoru Integrated Clock Desktop) — 项目全面审计报告 (Project Audit Report)
 
 > **审计日期**：2026-11-06  
 > **审计范围**：全量 Go 源码（`cmd/worldclock`、`pkg/*`）、Viva 框架合规性（`AGENTS.md`）、并发与数据持久化安全性、性能与内存分配、以及 Microsoft Store 上架准备度。
@@ -59,7 +59,7 @@ flowchart TD
 
 ### 3. 允许程序多开导致配置冲突与资源浪费（已修复）
 - **修复方案**：
-  - 在 [`cmd/worldclock/main.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/cmd/worldclock/main.go#L21-L32) 接入 Viva 官方跨进程单实例锁 `singleinstance.SingleInstance("com.worldclockpro.desktop.v1", ...)`。
+  - 在 [`cmd/worldclock/main.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/cmd/worldclock/main.go#L21-L32) 接入 Viva 官方跨进程单实例锁 `singleinstance.SingleInstance("com.xiaoru.clockdesktop.v1", ...)`。
   - 当检测到已有实例运行时，新进程立即退出，并通过 IPC 自动唤醒已有实例窗口（即使原窗口已最小化隐藏到系统托盘，也会自动 `Show()` + `SetMinimized(false)` + `RequestFocus()` 置顶恢复）。
 
 ### 4. 关闭按钮（✕）行为配置：最小化到后台托盘或直接退出（已实现）
@@ -131,7 +131,7 @@ flowchart TD
      - 在 `AppState` 中缓存 `lastSearchQuery`、`lastContinent` 与 `cachedCatalogResults []world.CityInfo`，仅在搜索词或大洲过滤变化时重新计算。
 
 3. **配置目录标准化（`pkg/storage/settings.go`）**
-   - **现状**：[`NewStore`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/storage/settings.go#L110-L120) 默认使用 `%APPDATA%\WorldClockPro\settings.json`，并在每次写入时自动维护 `settings.json.bak` 热备份以保障异常断电自愈。
+   - **现状**：[`NewStore`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/storage/settings.go#L110-L120) 默认使用 `%APPDATA%\XiaoruIntegratedClockDesktop\settings.json`，采用内存 `lastSaved` 内容比对消除冗余写入，并在每次写入时直接从内存写 `settings.json.bak` 热备份以保障异常断电自愈。
 
 ---
 

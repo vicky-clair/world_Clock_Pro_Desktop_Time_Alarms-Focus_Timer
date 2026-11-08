@@ -14,16 +14,17 @@ import (
 // DrawWorldClock 渲染多城市世界时钟列表、全球 193 国搜索添加面板以及重复添加提醒对话框。
 // DrawWorldClock renders the multi-city world clock screen and city picker modal.
 func DrawWorldClock(f *flex.Frame, state *AppState, theme ui.Theme) {
-	cfg := state.Store.Get()
+	cfg := state.Store.GetPrefs()
 	localNow := state.Now.Local()
-	sysLoc := clock.DetectSystemLocation(localNow)
-	snapshots := state.World.Snapshots(state.UTC, localNow, cfg.TimeFormat24H, cfg.ShowSeconds, string(state.Lang()))
+	langStr := string(state.Lang())
+	meta := state.DailyClockMeta(localNow, langStr)
+	snapshots := state.World.Snapshots(state.UTC, localNow, cfg.TimeFormat24H, cfg.ShowSeconds, langStr)
 
 	f.Column().Fill().Pad(24).Gap(16).Children(func() {
 		// Top Action Bar
 		f.Row().FillWidth().Items(flex.Center).Gap(12).Children(func() {
 			f.Text(state.T("world.title")).FontSize(22).Bold().Color(theme.Foreground)
-			f.Text(sysLoc.FormatBadge(string(state.Lang()))).FontSize(12).Color(theme.Primary)
+			f.Text(meta.LocationText).FontSize(12).Color(theme.Primary)
 			f.Spacer()
 			if f.Button(IDBtnAddCityModal, state.T("world.add_city")).Clicked() {
 				state.ShowAddCityModal = true
@@ -122,9 +123,10 @@ func DrawWorldClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	})
 }
 
+// DrawAddCityModal 渲染全球 193 个主权国家与国际城市的搜索添加面板（支持多语言实时搜索、六大洲分类、常用国家快捷按钮及已添加状态标识）。
 // DrawAddCityModal renders the city catalog picker dialog.
 func DrawAddCityModal(f *flex.Frame, state *AppState, theme ui.Theme) {
-	// Two-way sync between interactive Viva text field and CitySearchQuery
+	// 双向同步 Viva 输入框组件文本与 CitySearchQuery 搜索状态
 	fieldVal := state.CitySearchField.Text()
 	if fieldVal != state.lastFieldText {
 		state.lastFieldText = fieldVal
@@ -135,7 +137,7 @@ func DrawAddCityModal(f *flex.Frame, state *AppState, theme ui.Theme) {
 		state.lastFieldText = state.CitySearchQuery
 	}
 
-	catalog := world.SearchCatalog(state.CitySearchQuery, state.SelectedContinent)
+	catalog := state.FilteredCatalog()
 
 	f.Column().FillWidth().Pad(20).Background(theme.Card).Border(2, theme.Primary).Radius(10).Gap(10).Children(func() {
 		// Modal Header
@@ -338,6 +340,7 @@ func DrawAddCityModal(f *flex.Frame, state *AppState, theme ui.Theme) {
 	}
 }
 
+// tryAddCityFromModal 尝试从选城面板添加指定城市；若列表中已存在该城市或其国家/首都同义词，则触发模态重复提醒框。
 func tryAddCityFromModal(state *AppState, city world.City) {
 	if state.World.AddCity(city.ID) {
 		state.DuplicateCityAlert = ""

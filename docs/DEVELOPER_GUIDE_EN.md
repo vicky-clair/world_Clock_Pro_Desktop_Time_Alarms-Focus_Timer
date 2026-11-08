@@ -1,4 +1,4 @@
-# World Clock Pro: Desktop Time, Alarms & Focus Timer — Complete Developer Guide
+# Xiaoru Integrated Clock Desktop (小瑞综合时钟桌面) — Complete Developer Guide
 
 > **Document Version**: 1.0.0  
 > **Target Audience**: Desktop Engineers, Go Developers, Maintainers  
@@ -33,7 +33,7 @@
 
 ## 1. Project Overview & Design Philosophy
 
-**World Clock Pro: Desktop Time, Alarms & Focus Timer** is a high-performance native desktop time suite built in Go on top of the [Viva](https://github.com/vivaui/viva) GPU-native UI framework. It runs without a WebView, HTML/CSS, or JavaScript engine, compiling into a single standalone binary (~8.1 MiB).
+**Xiaoru Integrated Clock Desktop** (Chinese: **小瑞综合时钟桌面**, Japanese: **小瑞総合時計デスクトップ**) is a high-performance native desktop time suite built in Go on top of the [Viva](https://github.com/vivaui/viva) GPU-native UI framework. It runs without a WebView, HTML/CSS, or JavaScript engine, compiling into a single standalone binary (~8.1 MiB).
 
 ### Core Engineering Principles (Strictly Enforced by `AGENTS.md`)
 1. **Declarative Value-Type Painting (`Painting is the UI`)**: The paint callback declares the screen using lightweight value types on each redraw. No retained DOM tree or manual layout cache invalidation is needed in application code.
@@ -116,10 +116,11 @@ the-world-clock-on-the-desktop/
 │       ├── view_timer.go         # Countdown timers & centisecond stopwatch screen
 │       ├── view_tracker.go       # Productivity focus tracker (Pomodoro) screen
 │       ├── view_sleep.go         # Low-light ambient sleep mode screen
-│       ├── view_news.go          # News reader screen with localized articles
-│       ├── view_settings.go      # 5-tab settings screen (Font / Wallpaper / Language / Clock / About)
+│       ├── view_news.go          # On This Day in History screen with localized articles
+│       ├── view_pro.go           # Pro subscription (¥3/mo, ¥28/yr) & 7-day free trial center
+│       ├── view_settings.go      # 5-tab settings screen (🌐 Language & Font / 🖼️ Wallpaper / ⏰ Clock & Temp Unit / 👑 Pro / ℹ️ About)
 │       ├── view_popout.go        # Compact desktop popout clock widget (top/center/bottom position alignment & dual calendar)
-│       └── app_test.go           # 17 end-to-end headless UI tests powered by app.Driver
+│       └── app_test.go           # 21 end-to-end headless UI tests & benchmarks powered by app.Driver
 ├── docs/
 │   ├── DEVELOPER_GUIDE_ZH.md     # Chinese Developer Guide
 │   ├── DEVELOPER_GUIDE_EN.md     # English Developer Guide (this file)
@@ -204,7 +205,7 @@ sequenceDiagram
 ### 4.1 Application Lifecycle, Single-Instance Lock & System Tray
 
 In [`cmd/worldclock/main.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/cmd/worldclock/main.go):
-1. **Single-Instance Enforcement**: Calls `singleinstance.SingleInstance("com.worldclockpro.desktop.v1", ...)`. When a second process is launched, `primary` is `false`; the second process immediately exits while the primary instance receives the IPC callback, invokes `state.RequestShowWindow()`, and restores/focuses its window even if hidden in the system tray.
+1. **Single-Instance Enforcement**: Calls `singleinstance.SingleInstance("com.xiaoru.clockdesktop.v1", ...)`. When a second process is launched, `primary` is `false`; the second process immediately exits while the primary instance receives the IPC callback, invokes `state.RequestShowWindow()`, and restores/focuses its window even if hidden in the system tray.
 2. **Close Button (`✕`) Interception**: In [`pkg/ui/app.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/app.go), `cfg.OnCloseRequest`:
    - Calls `state.Persist()` first so no state is ever lost.
    - If `state.ForceQuit` is true (user clicked "Exit Application" in the system tray) or `CloseBehavior == "exit"`, calls `allow()` and quits the application.
@@ -281,7 +282,7 @@ In [`pkg/timer/timer.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ti
 ### 4.11 System Autostart Integration
 
 In [`pkg/ui/autostart.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/autostart.go), [`pkg/ui/state.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/state.go), and [`cmd/worldclock/main.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/cmd/worldclock/main.go):
-1. **Native OS Login Registration**: Wraps Viva's `app.SetAutostart(app.Autostart{ID: "com.worldclockpro.desktop", Name: "World Clock Pro"}, enabled)` to manage the current user's login startup entry (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run` on Windows).
+1. **Native OS Login Registration**: Wraps Viva's `app.SetAutostart(app.Autostart{ID: "com.xiaoru.clockdesktop", Name: "Xiaoru Integrated Clock Desktop"}, enabled)` to manage the current user's login startup entry (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run` on Windows).
 2. **Explicit Enable / Disable Controls**: Provides side-by-side **`✅ Enable Autostart`** (`IDOptAutoStartEnable`) and **`🚫 Disable`** (`IDOptAutoStartDisable`) buttons in **Settings → ⏰ Clock**, persisting to `Settings.AutoStart`.
 3. **Test Isolation**: Automatically detects `go test` binaries via `isTestBinary()` so running unit tests never mutates the host machine's real startup registry.
 
@@ -345,7 +346,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build_windows.ps1
 
 1. **Native PE Resource Linking (`.syso`)**: `cmd/worldclock/resource_windows.syso` embeds the multi-resolution icon (`RT_GROUP_ICON`), version metadata (`RT_VERSION`), and `asInvoker` manifest (`RT_MANIFEST`).
 2. **Preserved Symbol Table for AV Cleanliness**: Builds with `-ldflags="-H=windowsgui"` without `-s -w`, preserving standard Go symbols and BuildID to prevent heuristic false positives from antivirus scanners.
-3. **SHA-256 Authenticode Signature**: Signs `dist/WorldClockPro.exe` with a SHA-256 code-signing certificate and packages `dist/WorldClockPro-Windows-x64.zip`.
+3. **SHA-256 Authenticode Signature**: Signs `dist/小瑞综合时钟桌面.exe` and `dist/XiaoruIntegratedClockDesktop.exe` with a SHA-256 code-signing certificate and packages `dist/小瑞综合时钟桌面-Windows-x64.zip`.
 
 ---
 

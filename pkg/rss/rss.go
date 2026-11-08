@@ -210,7 +210,7 @@ func fetchBaiduHistory(ctx context.Context, urlFmt string, month, day int) ([]Ar
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) WorldClockPro/1.0")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) XiaoruIntegratedClockDesktop/1.0")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -290,7 +290,7 @@ func fetchWikipediaHistory(ctx context.Context, urlFmt string, wikiLang string, 
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "WorldClockPro/1.0 (Desktop Time & History Suite)")
+	req.Header.Set("User-Agent", "XiaoruIntegratedClockDesktop/1.0 (Desktop Time & History Suite)")
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)

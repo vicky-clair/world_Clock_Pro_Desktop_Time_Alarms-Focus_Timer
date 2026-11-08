@@ -88,3 +88,30 @@ func TestStorageDeepCopyAndBackupRecovery(t *testing.T) {
 		t.Fatal("expected recovered settings to retain WorldCities")
 	}
 }
+
+func TestStorageZeroDiskWriteWhenUnchanged(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "settings.json")
+
+	store := NewStore(path)
+	if err := store.Save(); err != nil {
+		t.Fatalf("initial save failed: %v", err)
+	}
+
+	// Corrupt disk file in-memory check: if we call Save() when settings are unchanged,
+	// saveLocked() must skip disk I/O completely because bytes.Equal(data, s.lastSaved) is true.
+	sentinel := []byte(`{"sentinel":true}`)
+	if err := os.WriteFile(path, sentinel, 0644); err != nil {
+		t.Fatalf("write sentinel failed: %v", err)
+	}
+	if err := store.Save(); err != nil {
+		t.Fatalf("unchanged save failed: %v", err)
+	}
+	afterBytes, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read after unchanged save failed: %v", err)
+	}
+	if string(afterBytes) != string(sentinel) {
+		t.Fatalf("expected unchanged Save() to perform zero disk writes, but file was overwritten")
+	}
+}

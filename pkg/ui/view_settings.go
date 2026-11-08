@@ -14,33 +14,33 @@ import (
 	"github.com/vivaui/viva/ui"
 )
 
-// DrawSettings 渲染设置与偏好中心（包含字体定制、壁纸与轮播图、语言与温度单位、时钟与关闭按钮行为、关于与配置文件五大子标签页）。
+// DrawSettings 渲染设置与偏好中心（包含语言与字体定制、壁纸与轮播图、时钟与温度单位及关闭按钮行为、Pro 会员、关于五大子标签页）。
 // DrawSettings renders configuration preferences with sub-tabs, full scrolling, and wallpaper controls.
 func DrawSettings(f *flex.Frame, state *AppState, theme ui.Theme) {
-	cfg := state.Store.Get()
+	cfg := state.Store.GetPrefs()
 	currentLang := state.Lang()
 	wpCfg := state.Wallpaper.Config()
 
-	if state.SettingsTab == "" {
-		state.SettingsTab = "wallpaper"
+	if state.SettingsTab == "" || state.SettingsTab == "font" {
+		state.SettingsTab = "lang"
 	}
 
 	f.Column().Fill().Pad(20).Gap(14).Children(func() {
-		// Top Bar: Title + Sub-Tabs + On-screen Scroll Buttons
+		// Top Bar: Title + Sub-Tabs
 		f.Row().FillWidth().Items(flex.Center).Gap(10).Children(func() {
 			f.Text(state.T("settings.title")).FontSize(20).Bold().Color(theme.Foreground)
 
 			f.Spacer()
 
 			// Sub-Category Tabs
-			btnFont := f.Button(IDSettingsTabFont, state.T("settings.subtab_font")).Small()
-			if state.SettingsTab == "font" {
-				btnFont.Outline()
+			btnLang := f.Button(IDSettingsTabLanguage, state.T("settings.subtab_language")).Small()
+			if state.SettingsTab == "lang" {
+				btnLang.Outline()
 			} else {
-				btnFont.Ghost()
+				btnLang.Ghost()
 			}
-			if btnFont.Clicked() {
-				state.SettingsTab = "font"
+			if btnLang.Clicked() {
+				state.SettingsTab = "lang"
 				state.ResetScroll()
 			}
 
@@ -52,16 +52,6 @@ func DrawSettings(f *flex.Frame, state *AppState, theme ui.Theme) {
 			}
 			if btnWp.Clicked() {
 				state.SettingsTab = "wallpaper"
-				state.ResetScroll()
-			}
-			btnLang := f.Button(IDSettingsTabLanguage, state.T("settings.subtab_language")).Small()
-			if state.SettingsTab == "lang" {
-				btnLang.Outline()
-			} else {
-				btnLang.Ghost()
-			}
-			if btnLang.Clicked() {
-				state.SettingsTab = "lang"
 				state.ResetScroll()
 			}
 
@@ -108,12 +98,10 @@ func DrawSettings(f *flex.Frame, state *AppState, theme ui.Theme) {
 		scrollBox.Children(func() {
 			f.Column().FillWidth().Gap(16).Children(func() {
 				switch state.SettingsTab {
-				case "font":
-					drawSettingsFont(f, state, theme, cfg)
+				case "lang", "font":
+					drawSettingsLanguage(f, state, theme, cfg, currentLang)
 				case "wallpaper":
 					drawSettingsWallpaper(f, state, theme, cfg, wpCfg)
-				case "lang":
-					drawSettingsLanguage(f, state, theme, cfg, currentLang)
 				case "clock":
 					drawSettingsClock(f, state, theme, cfg)
 				case "pro":
@@ -121,7 +109,7 @@ func DrawSettings(f *flex.Frame, state *AppState, theme ui.Theme) {
 				case "about":
 					drawSettingsAbout(f, state, theme)
 				default:
-					drawSettingsFont(f, state, theme, cfg)
+					drawSettingsLanguage(f, state, theme, cfg, currentLang)
 				}
 			})
 		})
@@ -573,9 +561,9 @@ func drawSettingsWallpaper(f *flex.Frame, state *AppState, theme ui.Theme, cfg s
 	})
 }
 
-// drawSettingsLanguage 渲染“🌐 语言”子标签页（简体中文 / English / 日本語 三语实时切换与摄氏度/华氏度温度单位切换）。
+// drawSettingsLanguage 渲染“🌐 语言”子标签页（合并了简体中文 / English / 日本語 三语实时切换以及字体大小、颜色与全局字号缩放定制）。
 func drawSettingsLanguage(f *flex.Frame, state *AppState, theme ui.Theme, cfg storage.Settings, currentLang i18n.Language) {
-	f.Column().FillWidth().Pad(16).Background(theme.Card).Radius(8).Border(1, theme.Border).Gap(12).Children(func() {
+	f.Column().FillWidth().Pad(16).Background(theme.Card).Radius(12).Border(1, theme.Border).Gap(12).Children(func() {
 		f.Text(state.T("settings.lang")).FontSize(16).Bold().Color(theme.Primary)
 		f.Text(state.T("settings.lang_desc")).FontSize(13).Muted()
 
@@ -616,28 +604,12 @@ func drawSettingsLanguage(f *flex.Frame, state *AppState, theme ui.Theme, cfg st
 				})
 			}
 		})
-
-		f.Divider()
-
-		// Temperature Unit
-		f.Row().Items(flex.Center).Children(func() {
-			f.Text(state.T("settings.temp_unit")).Bold()
-			f.Spacer()
-			unitLabel := state.T("settings.unit_celsius")
-			if cfg.TempFahrenheit {
-				unitLabel = state.T("settings.unit_fahrenheit")
-			}
-			btnUnit := f.Button(IDOptTempFahrenheit, unitLabel).Outline()
-			if btnUnit.Clicked() {
-				state.UpdateSettings(func(s *storage.Settings) {
-					s.TempFahrenheit = !s.TempFahrenheit
-				})
-			}
-		})
 	})
+
+	drawSettingsFont(f, state, theme, cfg)
 }
 
-// drawSettingsFont 渲染“🔤 字体”子标签页（实时字体预览、时钟字号预设与 2px 步进微调、时钟数字高亮色、界面全域文字颜色以及全局字号缩放）。
+// drawSettingsFont 渲染字体与排版定制卡片组（实时字体预览、时钟字号预设与 2px 步进微调、时钟数字高亮色、界面全域文字颜色以及全局字号缩放）。
 func drawSettingsFont(f *flex.Frame, state *AppState, theme ui.Theme, cfg storage.Settings) {
 	// Card 1: 实时效果预览 (Live Preview)
 	f.Column().FillWidth().Pad(20).Background(theme.Card).Radius(12).Border(1, theme.Border).Items(flex.Center).Gap(10).Children(func() {
@@ -1081,35 +1053,21 @@ func drawSettingsClock(f *flex.Frame, state *AppState, theme ui.Theme, cfg stora
 				}
 			})
 		})
-	})
 
-	// Profiles
-	f.Column().FillWidth().Pad(16).Background(theme.Card).Radius(8).Border(1, theme.Border).Gap(12).Children(func() {
-		f.Text(state.T("settings.profile")).FontSize(16).Bold().Color(theme.Primary)
-		f.Text(state.T("settings.profile_desc")).FontSize(13).Muted()
+		f.Divider()
 
-		f.Row().Gap(8).Children(func() {
-			btnDef := f.Button(IDProfileDefault, state.T("settings.profile_default"))
-			if cfg.ActiveProfile == "Default" {
-				btnDef.Outline()
-			} else {
-				btnDef.Secondary()
+		// Temperature Unit (温度计量单位)
+		f.Row().Items(flex.Center).Children(func() {
+			f.Text(state.T("settings.temp_unit"))
+			f.Spacer()
+			unitLabel := state.T("settings.unit_celsius")
+			if cfg.TempFahrenheit {
+				unitLabel = state.T("settings.unit_fahrenheit")
 			}
-			if btnDef.Clicked() {
+			btnUnit := f.Button(IDOptTempFahrenheit, unitLabel).Outline()
+			if btnUnit.Clicked() {
 				state.UpdateSettings(func(s *storage.Settings) {
-					s.ActiveProfile = "Default"
-				})
-			}
-
-			btnWork := f.Button(IDProfileWork, state.T("settings.profile_work"))
-			if cfg.ActiveProfile == "Work" {
-				btnWork.Outline()
-			} else {
-				btnWork.Secondary()
-			}
-			if btnWork.Clicked() {
-				state.UpdateSettings(func(s *storage.Settings) {
-					s.ActiveProfile = "Work"
+					s.TempFahrenheit = !s.TempFahrenheit
 				})
 			}
 		})

@@ -34,6 +34,7 @@ func GeneratePresetImage(preset PresetID) image.Image {
 	}
 }
 
+// generateGridImage 生成 160x160 高对比度几何网格图像，便于直观对比平铺 (Tile)、填充 (Fill)、适应 (Fit) 与居中 (Center) 效果。
 // generateGridImage generates a 160x160 high-contrast grid pattern.
 // Makes Tile vs Cover vs Fit vs Center instantly and unmistakably recognizable.
 func generateGridImage() *image.RGBA {
@@ -63,6 +64,7 @@ func generateGridImage() *image.RGBA {
 	return img
 }
 
+// generateAuroraImage 生成 500x350 极光星夜渐变图像。
 // generateAuroraImage creates a 500x350 starry aurora sky.
 func generateAuroraImage() *image.RGBA {
 	w, h := 500, 350
@@ -109,6 +111,7 @@ func generateAuroraImage() *image.RGBA {
 	return img
 }
 
+// generateForestImage 生成 500x350 幽静森林与林间阳光束图像。
 // generateForestImage creates a 500x350 deep emerald nature canopy.
 func generateForestImage() *image.RGBA {
 	w, h := 500, 350
@@ -142,6 +145,7 @@ func generateForestImage() *image.RGBA {
 	return img
 }
 
+// generateSunsetImage 生成 500x350 暮色远山落日余晖图像。
 // generateSunsetImage creates a 500x350 warm amber and purple mountain sunset.
 func generateSunsetImage() *image.RGBA {
 	w, h := 500, 350

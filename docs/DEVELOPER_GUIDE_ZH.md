@@ -1,4 +1,4 @@
-# World Clock Pro: Desktop Time, Alarms & Focus Timer — 完整开发文档 (Developer Guide)
+# 小瑞综合时钟桌面 (Xiaoru Integrated Clock Desktop) — 完整开发文档 (Developer Guide)
 
 > **文档版本**：1.0.0  
 > **适用对象**：桌面端工程师、Go 开发者、项目维护者  
@@ -33,7 +33,7 @@
 
 ## 1. 项目概述与设计哲学
 
-**World Clock Pro: Desktop Time, Alarms & Focus Timer** 是一款基于 Go 语言与 [Viva](https://github.com/vivaui/viva) GPU 原生桌面框架构建的现代化全功能时间工作台。应用无任何 WebView、HTML/CSS 或 JavaScript 运行时开销，编译后为单一原生可执行文件（约 8.1 MiB）。
+**小瑞综合时钟桌面**（英文：**Xiaoru Integrated Clock Desktop**，日文：**小瑞総合時計デスクトップ**）是一款基于 Go 语言与 [Viva](https://github.com/vivaui/viva) GPU 原生桌面框架构建的现代化全功能时间工作台。应用无任何 WebView、HTML/CSS 或 JavaScript 运行时开销，编译后为单一原生可执行文件（约 8.1 MiB）。
 
 ### 核心设计准则（严格遵循 `AGENTS.md`）
 1. **声明式值类型绘制（Painting is the UI）**：UI 即绘制函数，每帧重绘通过值类型声明界面布局，不在业务层维护脆弱的 DOM 或 Retained-Mode 节点树。
@@ -77,6 +77,9 @@ the-world-clock-on-the-desktop/
 │   ├── i18n/
 │   │   ├── i18n.go               # 中 (zh) / 英 (en) / 日 (ja) 全量翻译键值表与本地化日期格式
 │   │   └── i18n_test.go
+│   ├── license/
+│   │   ├── license.go            # 7 天全功能免费试用与 Pro 订阅管理（¥3/月、¥28/年 及免付测试版）
+│   │   └── license_test.go
 │   ├── rss/
 │   │   ├── rss.go                # “历史上的今天”百度百科 / Wikipedia API 异步拉取、HTML 清洗与离线档案库
 │   │   └── rss_test.go
@@ -84,14 +87,14 @@ the-world-clock-on-the-desktop/
 │   │   ├── sleep.go              # 睡眠与白噪音会话状态机、末段音量线性渐弱算法
 │   │   └── sleep_test.go
 │   ├── storage/
-│   │   ├── settings.go           # JSON 配置持久化、深拷贝快照、.bak 自动备份与损坏恢复
+│   │   ├── settings.go           # JSON 配置持久化、lastSaved 免写去重、GetPrefs 零分配读取、.bak 自动备份与损坏恢复
 │   │   └── storage_test.go
 │   ├── timer/
-│   │   ├── timer.go              # 多路倒计时器数据模型、增删改查、导出/导入与进度百分比计算
+│   │   ├── timer.go              # 多路倒计时器数据模型、增删改查、TickAll 零分配刷新与进度百分比计算
 │   │   ├── stopwatch.go          # 百分之一秒精度单调时钟秒表与计圈（Lap）历史
 │   │   └── timer_test.go
 │   ├── tracker/
-│   │   ├── tracker.go            # 番茄工作法专注计时器（工作/短休/长休自动流转与勿扰模式）
+│   │   ├── tracker.go            # 番茄工作法专注计时器（工作/短休/长休自动流转、±1m/±5m 微调与勿扰模式）
 │   │   └── tracker_test.go
 │   ├── wallpaper/
 │   │   ├── wallpaper.go          # 本地壁纸与轮播引擎、1080p 降采样、顺序/洗牌算法、预设程序化壁纸
@@ -102,24 +105,27 @@ the-world-clock-on-the-desktop/
 │   ├── world/
 │   │   ├── world.go              # 世界时钟管理器、IANA 时区缓存、多语言检索、判重与排序
 │   │   ├── catalog.go            # 核心国际城市目录、首都/国家同义词映射 (SameCityID)
-│   │   ├── countries193.go       # 联合国 193 个主权国家完整中英日名称、首都与 IANA 时区表
+│   │   ├── global_catalog.go     # 联合国 193 个主权国家完整中英日名称、首都与 IANA 时区表
 │   │   └── world_test.go
 │   └── ui/
 │       ├── app.go                # Viva app.Config 构建、帧重绘调度、关闭拦截、系统托盘图标生成
-│       ├── state.go              # 全局运行时状态 AppState、持久化同步封装 UpdateSettings、唤醒队列
+│       ├── state.go              # 全局运行时状态 AppState、DailyClockMeta 按天缓存、FilteredCatalog 搜索缓存与唤醒队列
 │       ├── ids.go                # 全局唯一 ui.Tree 与所有静态/动态控件 ui.ID 注册表
 │       ├── theme.go              # 四大内置主题（Olive/Dark/Light/Nord）与毛玻璃透明度/字体颜色合成
 │       ├── scrollbar.go          # 自定义现代圆角胶囊滚动条绘制器
+│       ├── edgebar.go            # 窗口靠近屏幕边缘检测、防抖回差与状态条进入/恢复状态机
 │       ├── view_main.go          # 主时钟视图（数字毛玻璃卡片 / 矢量模拟表盘 + 底部快捷悬浮栏）
+│       ├── view_edgebar.go       # 屏幕边缘紧凑时间日期状态条视图与一键恢复按钮
 │       ├── view_world.go         # 世界时钟列表视图、193 国搜索添加弹窗、重复添加提醒模态框
-│       ├── view_alarms.go        # 闹钟列表视图与新建闹钟面板
-│       ├── view_timer.go         # 倒计时器与高精度秒表视图
-│       ├── view_tracker.go       # 生产力专注计时（番茄钟）视图
-│       ├── view_sleep.go         # 极简暗光睡眠与环境音视图
-│       ├── view_news.go          # 资讯阅读视图与三语文章本地化
-│       ├── view_settings.go      # 五大分类设置视图（字体/壁纸轮播/语言与温度/时钟与关闭行为/关于）
+│       ├── view_alarms.go        # 闹钟列表视图与新建闹钟面板（支持 ±1小时/±5分钟/±1分钟精确进位借位微调）
+│       ├── view_timer.go         # 倒计时器（支持 ±1小时/±10分/±1分/±15秒/±1秒精确微调）与高精度秒表视图
+│       ├── view_tracker.go       # 生产力专注计时（番茄钟，支持 ±1分/±5分微调）视图
+│       ├── view_sleep.go         # 极简暗光睡眠与环境音视图（支持 ±1分/±5分微调）
+│       ├── view_news.go          # 历史上的今天视图与三语文章本地化
+│       ├── view_pro.go           # Pro 会员订阅（¥3/月、¥28/年）与 7 天免费试用中心视图及弹窗
+│       ├── view_settings.go      # 五大模块设置视图（🌐语言含字体定制 / 🖼️壁纸轮播 / ⏰时钟含温度单位与关闭行为 / 👑会员 / ℹ️关于）
 │       ├── view_popout.go        # 紧凑型桌面悬浮小窗视图（支持顶/中/底三段垂直位置自由切换与双历大字）
-│       └── app_test.go           # 基于 app.Driver 的 17 组端到端无头 UI 交互测试
+│       └── app_test.go           # 基于 app.Driver 的 21 组端到端无头 UI 交互测试与性能基准测试
 ├── docs/
 │   ├── DEVELOPER_GUIDE_ZH.md     # 中文完整开发文档（本文档）
 │   ├── DEVELOPER_GUIDE_EN.md     # 英文完整开发文档
@@ -204,7 +210,7 @@ sequenceDiagram
 ### 4.1 应用生命周期、单实例锁与系统托盘
 
 在 [`cmd/worldclock/main.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/cmd/worldclock/main.go) 中：
-1. **单实例互斥锁**：调用 `singleinstance.SingleInstance("com.worldclockpro.desktop.v1", ...)`。当用户第二次双击应用图标时，新进程检测到 `primary == false` 会立即退出，并通过 IPC 触发主实例的回调 `state.RequestShowWindow()`，将已最小化或隐藏在托盘的主窗口恢复并置顶。
+1. **单实例互斥锁**：调用 `singleinstance.SingleInstance("com.xiaoru.clockdesktop.v1", ...)`。当用户第二次双击应用图标时，新进程检测到 `primary == false` 会立即退出，并通过 IPC 触发主实例的回调 `state.RequestShowWindow()`，将已最小化或隐藏在托盘的主窗口恢复并置顶。
 2. **关闭按钮（✕）拦截机制**：在 [`pkg/ui/app.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/app.go) 的 `cfg.OnCloseRequest` 中：
    - 先调用 `state.Persist()` 确保所有最新配置落盘。
    - 若 `state.ForceQuit == true`（用户从托盘菜单点击“退出程序”）或 `CloseBehavior == "exit"`（用户在设置中选择了“直接退出程序”），调用 `allow()` 并退出应用。
@@ -281,7 +287,7 @@ sequenceDiagram
 ### 4.11 开机自动启动与系统登录项同步
 
 在 [`pkg/ui/autostart.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/autostart.go)、[`pkg/ui/state.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/state.go) 与 [`cmd/worldclock/main.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/cmd/worldclock/main.go) 中：
-1. **跨平台系统自启注册**：封装 Viva 原生 `app.SetAutostart(app.Autostart{ID: "com.worldclockpro.desktop", Name: "World Clock Pro"}, enabled)`，在 Windows 下自动维护 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` 注册表项，在 macOS/Linux 下自动维护 LaunchAgent / XDG Autostart。
+1. **跨平台系统自启注册**：封装 Viva 原生 `app.SetAutostart(app.Autostart{ID: "com.xiaoru.clockdesktop", Name: "Xiaoru Integrated Clock Desktop"}, enabled)`，在 Windows 下自动维护 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` 注册表项，在 macOS/Linux 下自动维护 LaunchAgent / XDG Autostart。
 2. **显式双按钮设置交互**：在 **设置 → ⏰ 时钟** 卡片中同时提供 **`✅ 启用开机自启`**（`IDOptAutoStartEnable`）与 **`🚫 不启用`**（`IDOptAutoStartDisable`）双按钮，点击即刻持久化至 `Settings.AutoStart` 并同步系统启动项。
 3. **启动路径自刷新与测试隔离**：程序每次启动时若 `AutoStart == true` 会自动刷新当前可执行文件路径；在 `go test` 单元测试环境下通过 `isTestBinary()` 自动跳过真实系统注册表修改，确保测试绝对干净。
 
@@ -366,7 +372,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build_windows.ps1
 ### 构建流程说明
 1. **PE 资源自动链接（`.syso`）**：`cmd/worldclock/resource_windows.syso` 包含应用高清图标（`RT_GROUP_ICON`）、版本信息（`RT_VERSION`）与标准权限清单（`asInvoker`），`go build` 会自动将其链接进 EXE。
 2. **保留符号表避免启发式误报**：编译参数使用 `-ldflags="-H=windowsgui"` 隐藏控制台黑框，同时**不添加 `-s -w`**，保留完整 Go 符号表与 BuildID，避免卡巴斯基等杀毒软件将剥离符号的 Go 程序误判为加壳木马。
-3. **SHA-256 Authenticode 数字签名**：自动查找或生成本地代码签名证书，对 `dist/WorldClockPro.exe` 进行 SHA-256 数字签名，并打包生成 `dist/WorldClockPro-Windows-x64.zip`。
+3. **SHA-256 Authenticode 数字签名**：自动查找或生成本地代码签名证书，对 `dist/小瑞综合时钟桌面.exe` 与 `dist/XiaoruIntegratedClockDesktop.exe` 进行 SHA-256 数字签名，并打包生成 `dist/小瑞综合时钟桌面-Windows-x64.zip`。
 
 ---
 

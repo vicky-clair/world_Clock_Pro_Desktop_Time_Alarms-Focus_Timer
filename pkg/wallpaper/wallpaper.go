@@ -226,6 +226,15 @@ func (m *Manager) Config() Config {
 	return cfgCopy
 }
 
+// RenderParams O(1) 零内存分配读取壁纸启用状态与卡片毛玻璃不透明度，专供每帧 Paint 高频调用，避免拷贝 ImagePaths 切片。
+func (m *Manager) RenderParams() (enabled bool, cardOpacity float32) {
+	m.mu.RLock()
+	enabled = m.cfg.Enabled
+	cardOpacity = m.cfg.CardOpacity
+	m.mu.RUnlock()
+	return enabled, cardOpacity
+}
+
 // SetConfig updates wallpaper configuration.
 func (m *Manager) SetConfig(cfg Config) {
 	m.mu.Lock()

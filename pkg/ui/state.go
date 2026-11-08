@@ -9,6 +9,7 @@ import (
 	"github.com/vivaui/viva/ui"
 	"worldclock/pkg/alarm"
 	"worldclock/pkg/audio"
+	"worldclock/pkg/clock"
 	"worldclock/pkg/i18n"
 	"worldclock/pkg/license"
 	"worldclock/pkg/rss"
@@ -51,7 +52,7 @@ type AppState struct {
 	News      *rss.FeedStore     // 历史上的今天与精选事件流存储
 	Wallpaper *wallpaper.Manager // 壁纸与轮播引擎
 	Audio     *audio.Engine      // 原生程序化合成音频播放引擎（闹钟铃声与睡眠白噪音）
-	License   *license.Manager   // 7天免费试用与 Pro 会员订阅管理器（支持 ¥3/月、¥30/年 及免付测试版）
+	License   *license.Manager   // 7天免费试用与 Pro 会员订阅管理器（支持 ¥3/月、¥28/年 及免付测试版）
 
 	Invalidator *app.Invalidator // 跨线程触发窗口重绘与 OnWake 的通知器
 	Window      *app.Window      // 当前主窗口引用
@@ -110,6 +111,76 @@ type AppState struct {
 	// 当前帧统一的本地时间与 UTC 时间戳快照
 	Now time.Time
 	UTC time.Time
+
+	// 硬件性能优化缓存：缓存当天的公历/农历双历、所在地与节日徽章，以及选城搜索过滤列表（避免每秒/每帧重复计算与堆分配）
+	dailyCache         DailyClockCache
+	cachedCatalogValid bool
+	cachedCatalogQuery string
+	cachedCatalogCont  string
+	cachedCatalog      []world.City
+}
+
+// DailyClockCache 缓存同一自然日、同一时区偏移与同一语言下的阳历/农历双历文本、所在地徽章与节日徽章，
+// 将原本每秒重复执行的 1900-2050 农历推算与节日扫描降至每天仅计算 1 次。
+type DailyClockCache struct {
+	valid        bool
+	year         int
+	month        time.Month
+	day          int
+	tzOffset     int
+	lang         string
+	SysLoc       clock.SystemLocation
+	LocationText string
+	SolarText    string
+	LunarText    string
+	HolidayBadge string
+}
+
+// DailyClockMeta 返回当前本地时间的日历、所在地与节日缓存快照（同一自然日内 O(1) 零内存分配命中）。
+func (a *AppState) DailyClockMeta(localNow time.Time, langStr string) DailyClockCache {
+	y, m, d := localNow.Date()
+	_, tzOff := localNow.Zone()
+	if a.dailyCache.valid &&
+		a.dailyCache.year == y &&
+		a.dailyCache.month == m &&
+		a.dailyCache.day == d &&
+		a.dailyCache.tzOffset == tzOff &&
+		a.dailyCache.lang == langStr {
+		return a.dailyCache
+	}
+	sysLoc := clock.DetectSystemLocation(localNow)
+	locBadge := sysLoc.FormatBadge(langStr)
+	solarStr, lunarStr := clock.FormatDualCalendar(localNow, langStr)
+	holidays := clock.GetHolidays(localNow, sysLoc.CountryCode)
+	holBadge := clock.FormatHolidayBadge(holidays, langStr)
+	a.dailyCache = DailyClockCache{
+		valid:        true,
+		year:         y,
+		month:        m,
+		day:          d,
+		tzOffset:     tzOff,
+		lang:         langStr,
+		SysLoc:       sysLoc,
+		LocationText: locBadge,
+		SolarText:    solarStr,
+		LunarText:    lunarStr,
+		HolidayBadge: holBadge,
+	}
+	return a.dailyCache
+}
+
+// FilteredCatalog 返回经搜索关键词与大洲过滤后的 193 国城市列表（带输入缓存，避免弹窗每帧重绘重复遍历与切片分配）。
+func (a *AppState) FilteredCatalog() []world.City {
+	if a.cachedCatalogValid &&
+		a.cachedCatalogQuery == a.CitySearchQuery &&
+		a.cachedCatalogCont == a.SelectedContinent {
+		return a.cachedCatalog
+	}
+	a.cachedCatalog = world.SearchCatalog(a.CitySearchQuery, a.SelectedContinent)
+	a.cachedCatalogQuery = a.CitySearchQuery
+	a.cachedCatalogCont = a.SelectedContinent
+	a.cachedCatalogValid = true
+	return a.cachedCatalog
 }
 
 // NewAppState initializes application state with persistent storage.
@@ -160,7 +231,7 @@ func NewAppState(store *storage.Store) *AppState {
 		NewsCategory:      "All",
 		SleepDuration:     30 * time.Minute,
 		SleepSound:        sleep.SoundRain,
-		SettingsTab:       "font",
+		SettingsTab:       "lang",
 		NewAlarmHour:      8,
 		NewAlarmMinute:    0,
 		NewAlarmTitle:     "New Alarm",
@@ -173,10 +244,10 @@ func NewAppState(store *storage.Store) *AppState {
 	}
 }
 
-// Lang 返回当前选中的界面显示语言（默认回退为简体中文）。
+// Lang 返回当前选中的界面显示语言（默认回退为简体中文；使用 GetPrefs 零切片分配读取）。
 // Lang returns current selected language.
 func (a *AppState) Lang() i18n.Language {
-	l := i18n.Language(a.Store.Get().Language)
+	l := i18n.Language(a.Store.GetPrefs().Language)
 	if l == "" {
 		return i18n.LangZH
 	}
@@ -313,7 +384,7 @@ func (a *AppState) SetCitySearchQuery(q string) {
 // ClockColor 返回用户自定义的时钟数字高亮颜色；若未指定则回退为主题前景色。
 // ClockColor returns user-customized clock font color or theme foreground.
 func (a *AppState) ClockColor(theme ui.Theme) ui.Color {
-	col := a.Store.Get().ClockFontColor
+	col := a.Store.GetPrefs().ClockFontColor
 	switch col {
 	case "white":
 		return ui.RGB24(0xEDEDED)
@@ -335,7 +406,7 @@ func (a *AppState) ClockColor(theme ui.Theme) ui.Color {
 // EffectiveClockFontSize 计算经全局界面缩放系数 (FontScale) 加权后的主时钟有效字号。
 // EffectiveClockFontSize returns user-customized font size scaled by FontScale.
 func (a *AppState) EffectiveClockFontSize() float32 {
-	cfg := a.Store.Get()
+	cfg := a.Store.GetPrefs()
 	sz := float32(cfg.ClockFontSize)
 	if sz <= 0 {
 		sz = 64
@@ -414,7 +485,7 @@ func (a *AppState) HandleFrameChange(frame ui.Rect) {
 		return
 	}
 
-	if !a.Store.Get().EdgeDockEnabled {
+	if !a.Store.GetPrefs().EdgeDockEnabled {
 		a.LastNormalFrame = frame
 		return
 	}

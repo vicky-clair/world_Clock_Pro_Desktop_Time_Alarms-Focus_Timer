@@ -96,6 +96,24 @@ func (t *Tracker) SetDND(dnd bool) {
 	t.cfg.DoNotDisturb = dnd
 }
 
+// AdjustWorkDuration 按指定分钟或时长增量精确调整单次专注工作时长（限制在 1 分钟 ~ 180 分钟之间）。
+// 若当前处于空闲待机状态（StatusIdle），同步刷新待机剩余时长显示。
+func (t *Tracker) AdjustWorkDuration(delta time.Duration) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	next := t.cfg.WorkDuration + delta
+	if next < time.Minute {
+		next = time.Minute
+	}
+	if next > 180*time.Minute {
+		next = 180 * time.Minute
+	}
+	t.cfg.WorkDuration = next
+	if t.status == StatusIdle {
+		t.remaining = next
+	}
+}
+
 // Start 启动一个新的专注工作周期。
 // Start begins a work session.
 func (t *Tracker) Start(now time.Time) {

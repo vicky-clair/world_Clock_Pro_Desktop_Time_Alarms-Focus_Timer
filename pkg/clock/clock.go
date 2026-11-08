@@ -2,7 +2,6 @@
 package clock
 
 import (
-	"fmt"
 	"math"
 	"time"
 )
@@ -16,7 +15,7 @@ const (
 	StyleAnalog  ClockStyle = "analog"  // 模拟表盘指针模式
 )
 
-// FormatTime 根据 24 小时制/12 小时制及是否显示秒数，格式化给定时间并返回时间字符串与 AM/PM 标识。
+// FormatTime 根据 24 小时制/12 小时制及是否显示秒数，使用栈上定长字节缓冲格式化给定时间（避免 fmt.Sprintf 逃逸分配）。
 // FormatTime formats a time into hours, minutes, and optional seconds based on 24h/12h preference.
 func FormatTime(t time.Time, is24H, showSeconds bool) (timeStr string, period string) {
 	hour := t.Hour()
@@ -34,12 +33,19 @@ func FormatTime(t time.Time, is24H, showSeconds bool) (timeStr string, period st
 		}
 	}
 
+	var buf [8]byte
+	buf[0] = byte('0' + (hour/10)%10)
+	buf[1] = byte('0' + hour%10)
+	buf[2] = ':'
+	buf[3] = byte('0' + (minute/10)%10)
+	buf[4] = byte('0' + minute%10)
 	if showSeconds {
-		timeStr = fmt.Sprintf("%02d:%02d:%02d", hour, minute, second)
-	} else {
-		timeStr = fmt.Sprintf("%02d:%02d", hour, minute)
+		buf[5] = ':'
+		buf[6] = byte('0' + (second/10)%10)
+		buf[7] = byte('0' + second%10)
+		return string(buf[:8]), period
 	}
-	return timeStr, period
+	return string(buf[:5]), period
 }
 
 // FormatDate 按照完整格式或简短格式输出英文日期字符串。

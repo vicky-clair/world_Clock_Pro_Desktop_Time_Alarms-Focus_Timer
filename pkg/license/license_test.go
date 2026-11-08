@@ -35,13 +35,16 @@ func TestLicenseTrialAndSubscriptions(t *testing.T) {
 		t.Fatalf("expected notice activated_monthly, got %s", mgr.LastNotice())
 	}
 
-	// 4. 激活按年订阅 (¥30/年)
+	// 4. 激活按年订阅 (¥28/年)
 	mgr.ActivateYearly(now)
 	if mgr.Plan() != PlanYearly || !mgr.IsProActive() {
 		t.Fatalf("expected yearly pro active, got plan=%s", mgr.Plan())
 	}
 	if mgr.LastNotice() != "activated_yearly" {
 		t.Fatalf("expected notice activated_yearly, got %s", mgr.LastNotice())
+	}
+	if PriceYearlyCNY != 28 {
+		t.Fatalf("expected PriceYearlyCNY=28, got %d", PriceYearlyCNY)
 	}
 
 	// 5. 切换为完整测试版模式与恢复购买

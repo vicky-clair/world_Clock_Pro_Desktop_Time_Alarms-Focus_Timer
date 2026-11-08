@@ -145,6 +145,22 @@ func (m *Manager) Timers() []*Timer {
 	return res
 }
 
+// TickAll 在读锁保护下原地推进所有倒计时器的时间进度，并返回是否存在正在运行或已到期的任务（零切片内存分配）。
+func (m *Manager) TickAll(now time.Time) (anyRunning bool, anyExpired bool) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	for _, t := range m.timers {
+		t.Update(now)
+		switch t.State {
+		case StateRunning:
+			anyRunning = true
+		case StateExpired:
+			anyExpired = true
+		}
+	}
+	return anyRunning, anyExpired
+}
+
 // AddTimer 创建并添加一个新的倒计时器。
 // AddTimer creates a new timer with the given name and duration.
 func (m *Manager) AddTimer(name string, d time.Duration) *Timer {

@@ -4,7 +4,7 @@
 **编制日期：** 2026-11-05  
 **目标框架：** `github.com/vivaui/viva`  
 **主要语言：** Go  
-**目标产品：** 面向 Windows、macOS、Linux 的原生桌面时间管理软件（`World Clock Pro: Desktop Time, Alarms & Focus Timer`）  
+**目标产品：** 面向 Windows、macOS、Linux 的原生桌面时间管理软件（`小瑞综合时钟桌面 (Xiaoru Integrated Clock Desktop)`）  
 **重点增强：** 基于屏幕尺寸、DPI 和用户偏好的自适应背景图片/主题系统
 
 > 本文是基于 Viva 当前公开仓库与公开文档制定的应用开发方案。产品需求参考某款主流桌面时钟软件的常见功能；工程架构、数据模型与图片适配系统为本项目原创设计。Viva 版本、接口与后端支持会持续变化，项目必须锁定实际采用的版本并以该版本 API 为准。
@@ -346,7 +346,7 @@ func (m *model) theme() ui.Theme {
 func newConfig(m *model) app.Config {
     config := app.Config{
         Tree:   &tree,
-        Title:  "World Clock Pro: Desktop Time, Alarms & Focus Timer",
+        Title:  "小瑞综合时钟桌面 (Xiaoru Integrated Clock Desktop)",
         Width:  1100,
         Height: 760,
     }
@@ -360,7 +360,7 @@ func newConfig(m *model) app.Config {
                 if f.Button(toggleThemeID, "切换主题").Clicked() {
                     m.dark = !m.dark
                 }
-                f.Text("World Clock Pro: Desktop Time, Alarms & Focus Timer")
+                f.Text("小瑞综合时钟桌面 (Xiaoru Integrated Clock Desktop)")
             })
         })
     }
@@ -1127,7 +1127,7 @@ Sprint 1 不做天气、RSS、授权和云同步。
 # 附录 A：建议根目录 AGENTS.md
 
 ```markdown
-# World Clock Pro: Desktop Time, Alarms & Focus Timer — Project Instructions
+# 小瑞综合时钟桌面 (Xiaoru Integrated Clock Desktop) — Project Instructions
 
 This is a Go desktop application built with Viva.
 

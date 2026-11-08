@@ -14,18 +14,18 @@ import (
 // DrawPopoutClock 渲染紧凑型桌面悬浮小窗时钟视图（显示电脑所在国家/地区与本地时间，支持阳历与农历双历、顶/中/底三段垂直位置自由切换与一键还原）。
 // DrawPopoutClock renders the optimized popout clock widget with enlarged typography, dual calendar, and top/center/bottom positioning.
 func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
-	cfg := state.Store.Get()
+	cfg := state.Store.GetPrefs()
 	now := state.Now.Local()
-	sysLoc := clock.DetectSystemLocation(now)
 	langStr := string(state.Lang())
-	locationBadge := sysLoc.FormatBadge(langStr)
+	meta := state.DailyClockMeta(now, langStr)
+	sysLoc := meta.SysLoc
+	locationBadge := meta.LocationText
 	timeStr, period := clock.FormatTime(now, cfg.TimeFormat24H, cfg.ShowSeconds)
-	solarStr, lunarStr := clock.FormatDualCalendar(now, langStr)
+	solarStr, lunarStr := meta.SolarText, meta.LunarText
 
 	var holidayBadge string
 	if cfg.ShowHolidays {
-		holidays := clock.GetHolidays(now, sysLoc.CountryCode)
-		holidayBadge = clock.FormatHolidayBadge(holidays, langStr)
+		holidayBadge = meta.HolidayBadge
 	}
 
 	pos := cfg.PopoutPosition
@@ -213,15 +213,6 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 					}
 				})
 			}
-
-			profLabel := cfg.ActiveProfile
-			switch cfg.ActiveProfile {
-			case "Default", "":
-				profLabel = state.T("settings.profile_default")
-			case "Work":
-				profLabel = state.T("settings.profile_work")
-			}
-			f.Text(fmt.Sprintf(state.T("popout.profile_fmt"), profLabel)).FontSize(15).Muted()
 		})
 	})
 }

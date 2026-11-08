@@ -14,21 +14,21 @@ import (
 // DrawMainClock 渲染主时钟屏幕（自动识别并展示当前电脑所在国家/地区与系统本地时间，支持阳历与农历双历展示、超大字体数字时钟、矢量模拟表盘、实时天气快照以及底部快捷控制栏）。
 // DrawMainClock renders the primary clock screen (digital or analog) with dual solar & lunar calendar.
 func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
-	cfg := state.Store.Get()
+	cfg := state.Store.GetPrefs()
 	now := state.Now.Local()
-	sysLoc := clock.DetectSystemLocation(now)
 	langStr := string(state.Lang())
-	locationBadge := sysLoc.FormatBadge(langStr)
+	meta := state.DailyClockMeta(now, langStr)
+	sysLoc := meta.SysLoc
+	locationBadge := meta.LocationText
 
 	timeStr, period := clock.FormatTime(now, cfg.TimeFormat24H, cfg.ShowSeconds)
-	// 获取公历（阳历）与农历（阴历）本地化双历文本
-	solarStr, lunarStr := clock.FormatDualCalendar(now, langStr)
+	// 从自然日缓存中获取公历（阳历）与农历（阴历）本地化双历文本（避免每秒重复推算）
+	solarStr, lunarStr := meta.SolarText, meta.LunarText
 
-	// 获取今日法定节日、传统农历节日、二十四节气与网络特色节日（如1024程序员节、黑五打折、双11等）
+	// 获取今日法定节日、传统农历节日、二十四节气与网络特色节日
 	var holidayBadge string
 	if cfg.ShowHolidays {
-		holidays := clock.GetHolidays(now, sysLoc.CountryCode)
-		holidayBadge = clock.FormatHolidayBadge(holidays, langStr)
+		holidayBadge = meta.HolidayBadge
 	}
 
 	primaryCity := sysLoc.WeatherID

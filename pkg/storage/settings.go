@@ -2,6 +2,7 @@
 package storage
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -45,7 +46,6 @@ type Settings struct {
 	ShowHolidays    bool             `json:"showHolidays"`    // 是否在主时钟、悬浮时钟与世界时钟中显示今日公历、农历节气与网络节日
 	ClockStyle      string           `json:"clockStyle"`      // 时钟样式："digital"（数字）或 "analog"（模拟表盘）
 	Theme           ThemeType        `json:"theme"`           // 当前视觉主题
-	ActiveProfile   string           `json:"activeProfile"`   // 当前激活的配置文件名称（"Default" 或 "Work"）
 	WorldCities     []world.UserCity `json:"worldCities"`     // 用户已添加的世界时钟城市列表
 	Alarms          []alarm.Alarm    `json:"alarms"`          // 用户已配置的闹钟列表
 	Timers          []timer.Timer    `json:"timers"`          // 用户已配置的倒计时任务列表（支持自定义增删改持久化）
@@ -62,7 +62,7 @@ type Settings struct {
 	CloseBehavior   string           `json:"closeBehavior"`   // 关闭按钮行为："minimize"（最小化到托盘）或 "exit"（直接退出）
 	AutoStart       bool             `json:"autoStart"`       // 是否在操作系统登录时开机自动启动
 	EdgeDockEnabled bool             `json:"edgeDockEnabled"` // 窗口靠近屏幕边缘后是否自动缩小成一个状态条
-	License         license.Config   `json:"license"`         // 7天免费试用与 Pro 会员订阅配置（支持月付3元/年付30元及免付测试版）
+	License         license.Config   `json:"license"`         // 7天免费试用与 Pro 会员订阅配置（支持月付3元/年付28元及免付测试版）
 }
 
 // DefaultSettings 返回包含默认世界时钟城市与推荐偏好的初始配置。
@@ -75,7 +75,6 @@ func DefaultSettings() Settings {
 		ShowHolidays:    true,
 		ClockStyle:      "digital",
 		Theme:           ThemeOlive,
-		ActiveProfile:   "Default",
 		WorldCities:     world.DefaultCities(),
 		Timers:          timer.DefaultTimers(),
 		Topmost:         false,
@@ -100,12 +99,13 @@ func DefaultSettings() Settings {
 // Store 负责并发安全地加载、更新和持久化用户配置。
 // Store handles thread-safe loading and persisting of settings.
 type Store struct {
-	mu       sync.RWMutex
-	filePath string
-	settings Settings
+	mu        sync.RWMutex
+	filePath  string
+	settings  Settings
+	lastSaved []byte // 最近一次成功落盘或加载的 JSON 字节快照，用于去重免写与内存级 .bak 备份（降低硬盘读写磨损）
 }
 
-// NewStore 创建配置存储实例；若 filePath 为空，则默认使用用户配置目录下的 WorldClockPro/settings.json。
+// NewStore 创建配置存储实例；若 filePath 为空，则默认使用用户配置目录下的 XiaoruIntegratedClockDesktop/settings.json。
 // NewStore creates a new storage store. If path is empty, uses the user config directory.
 func NewStore(filePath string) *Store {
 	if filePath == "" {
@@ -113,7 +113,7 @@ func NewStore(filePath string) *Store {
 		if err != nil || cfgDir == "" {
 			cfgDir = "."
 		}
-		filePath = filepath.Join(cfgDir, "WorldClockPro", "settings.json")
+		filePath = filepath.Join(cfgDir, "XiaoruIntegratedClockDesktop", "settings.json")
 	}
 
 	s := &Store{
@@ -128,6 +128,18 @@ func NewStore(filePath string) *Store {
 // FilePath returns the path to the settings JSON file.
 func (s *Store) FilePath() string {
 	return s.filePath
+}
+
+// GetPrefs 返回当前标量配置偏好的零内存分配快照（不拷贝切片字段，专供 UI 每帧高频渲染与语言查询使用）。
+func (s *Store) GetPrefs() Settings {
+	s.mu.RLock()
+	cp := s.settings
+	s.mu.RUnlock()
+	cp.WorldCities = nil
+	cp.Alarms = nil
+	cp.Timers = nil
+	cp.Wallpaper.ImagePaths = nil
+	return cp
 }
 
 // Get 返回当前配置的深拷贝快照（对切片执行独立拷贝，防止外部修改污染内部状态）。
@@ -209,6 +221,7 @@ func (s *Store) Load() error {
 		if bakData, bakErr := os.ReadFile(s.filePath + ".bak"); bakErr == nil && len(bakData) > 0 {
 			if loaded, uErr := unmarshalSettingsWithDefaults(bakData); uErr == nil {
 				s.settings = loaded
+				s.lastSaved = nil
 				_ = s.saveLocked()
 				return nil
 			}
@@ -225,6 +238,7 @@ func (s *Store) Load() error {
 		if bakData, bakErr := os.ReadFile(s.filePath + ".bak"); bakErr == nil && len(bakData) > 0 {
 			if bakLoaded, uErr := unmarshalSettingsWithDefaults(bakData); uErr == nil {
 				s.settings = bakLoaded
+				s.lastSaved = nil
 				_ = s.saveLocked()
 				return nil
 			}
@@ -233,6 +247,7 @@ func (s *Store) Load() error {
 	}
 
 	s.settings = loaded
+	s.lastSaved = data
 	return nil
 }
 
@@ -244,27 +259,39 @@ func (s *Store) Save() error {
 	return s.saveLocked()
 }
 
-// saveLocked 在覆写主配置文件前，先将上一份有效配置备份至 .bak 文件，确保任何时刻至少有一份完整有效的数据。
+// saveLocked 在覆写主配置文件前，先将上一份有效配置备份至 .bak 文件，确保任何时刻至少有一份完整有效的数据；
+// 同时对比内存快照 s.lastSaved，若配置内容未发生任何实质变化则直接跳过写盘，保护用户 SSD/机械硬盘寿命。
 func (s *Store) saveLocked() error {
-	dir := filepath.Dir(s.filePath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return err
-	}
-
 	data, err := json.MarshalIndent(s.settings, "", "  ")
 	if err != nil {
 		return err
 	}
 
+	// 若序列化结果与上一次已落盘数据完全一致，则跳过磁盘写入（零冗余磁盘 I/O）
+	if len(s.lastSaved) > 0 && bytes.Equal(data, s.lastSaved) {
+		return nil
+	}
+
+	dir := filepath.Dir(s.filePath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+
 	bakPath := s.filePath + ".bak"
-	if prev, readErr := os.ReadFile(s.filePath); readErr == nil && len(prev) > 0 {
+	if len(s.lastSaved) > 0 {
+		// 直接将内存中的上一份有效 JSON 写入 .bak，省去每次保存前重复 os.ReadFile 读取主文件的磁盘读操作
+		_ = os.WriteFile(bakPath, s.lastSaved, 0644)
+	} else if prev, readErr := os.ReadFile(s.filePath); readErr == nil && len(prev) > 0 {
 		_ = os.WriteFile(bakPath, prev, 0644)
 	}
 	if err := os.WriteFile(s.filePath, data, 0644); err != nil {
 		return err
 	}
-	if _, statErr := os.Stat(bakPath); os.IsNotExist(statErr) {
-		_ = os.WriteFile(bakPath, data, 0644)
+	if len(s.lastSaved) == 0 {
+		if _, statErr := os.Stat(bakPath); os.IsNotExist(statErr) {
+			_ = os.WriteFile(bakPath, data, 0644)
+		}
 	}
+	s.lastSaved = data
 	return nil
 }

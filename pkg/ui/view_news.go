@@ -146,6 +146,7 @@ func DrawNews(f *flex.Frame, state *AppState, theme ui.Theme) {
 	})
 }
 
+// localizeHistoryArticle 为内置精选“历史上的今天”离线兜底条目提供中、英、日三语本地化内容。
 func localizeHistoryArticle(state *AppState, id, fallbackTitle, fallbackSource, fallbackSummary string) (string, string, string) {
 	lang := string(state.Lang())
 	switch id {

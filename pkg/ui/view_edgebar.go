@@ -10,12 +10,13 @@ import (
 // DrawEdgeBar 渲染软件靠近屏幕边缘后自动收缩成的精简状态条视图（仅简洁展示当前时间、公历与农历日期，并提供按钮一键恢复正常窗口）。
 // DrawEdgeBar renders the compact edge-docked status strip showing time, date, and a restore button.
 func DrawEdgeBar(f *flex.Frame, state *AppState, theme ui.Theme) {
-	cfg := state.Store.Get()
+	cfg := state.Store.GetPrefs()
 	now := state.Now.Local()
 	langStr := string(state.Lang())
+	meta := state.DailyClockMeta(now, langStr)
 
 	timeStr, period := clock.FormatTime(now, cfg.TimeFormat24H, cfg.ShowSeconds)
-	solarStr, lunarStr := clock.FormatDualCalendar(now, langStr)
+	solarStr, lunarStr := meta.SolarText, meta.LunarText
 
 	f.Row().Fill().PadX(16).PadY(8).Background(theme.Card).Items(flex.Center).Gap(14).Children(func() {
 		// 左侧：边缘状态条标识与当前时间

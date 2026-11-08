@@ -1,4 +1,4 @@
-# World Clock Pro: Desktop Time, Alarms & Focus Timer — 完全開発ドキュメント (Developer Guide)
+# 小瑞総合時計デスクトップ (Xiaoru Integrated Clock Desktop) — 完全開発ドキュメント (Developer Guide)
 
 > **ドキュメントバージョン**：1.0.0  
 > **対象読者**：デスクトップアプリ開発者、Goエンジニア、プロジェクトメンテナー  
@@ -33,7 +33,7 @@
 
 ## 1. プロジェクト概要と設計思想
 
-**World Clock Pro: Desktop Time, Alarms & Focus Timer** は、Go言語と GPU ネイティブ・デスクトップフレームワーク [Viva](https://github.com/vivaui/viva) で構築されたオールインワンのデスクトップ時間管理スイートです。WebView や HTML/CSS/JavaScript ランタイムを一切使用せず、単一のネイティブ実行ファイル（約 8.1 MiB）として動作します。
+**小瑞総合時計デスクトップ**（中国語：**小瑞综合时钟桌面**、英語：**Xiaoru Integrated Clock Desktop**）は、Go言語と GPU ネイティブ・デスクトップフレームワーク [Viva](https://github.com/vivaui/viva) で構築されたオールインワンのデスクトップ時間管理スイートです。WebView や HTML/CSS/JavaScript ランタイムを一切使用せず、単一のネイティブ実行ファイル（約 8.1 MiB）として動作します。
 
 ### コア設計原則（`AGENTS.md` 準拠）
 1. **宣言的・値型による描画（`Painting is the UI`）**：描画関数そのものが UI です。毎フレーム値型で画面構造を宣言し、複雑な DOM ツリーやレイアウトキャッシュの手動管理を行いません。
@@ -116,10 +116,11 @@ the-world-clock-on-the-desktop/
 │       ├── view_timer.go         # カウントダウンタイマー＆高精度ストップウォッチ画面
 │       ├── view_tracker.go       # ポモドーロ生産性トラッカー画面
 │       ├── view_sleep.go         # 暗所向けスリープ＆アンビエント画面
-│       ├── view_news.go          # 3言語対応ニュースリーダー画面
-│       ├── view_settings.go      # 設定画面（フォント / 壁紙スライドショー / 言語 / 時計・閉じる動作 / 情報）
+│       ├── view_news.go          # 3言語対応「今日は何の日（歴史）」画面
+│       ├── view_pro.go           # Pro会員サブスクリプション（3元/月、28元/年）＆7日間無料体験画面
+│       ├── view_settings.go      # 5タブ設定画面（🌐 言語・フォント / 🖼️ 壁紙スライドショー / ⏰ 時計・温度単位・閉じる動作 / 👑 Pro / ℹ️ 情報）
 │       ├── view_popout.go        # コンパクトなデスクトップポップアウト小窓画面（上部・中央・下部の表示位置切替対応）
-│       └── app_test.go           # app.Driver による 17 個のエンドツーエンド・ヘッドレス UI テスト
+│       └── app_test.go           # app.Driver による 21 個のエンドツーエンド・ヘッドレス UI テスト＆ベンチマーク
 ├── docs/
 │   ├── DEVELOPER_GUIDE_ZH.md     # 中国語開発ガイド
 │   ├── DEVELOPER_GUIDE_EN.md     # 英語開発ガイド
@@ -181,7 +182,7 @@ flowchart TB
 ### 4.1 アプリライフサイクル、多重起動防止とシステムトレイ
 
 [`cmd/worldclock/main.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/cmd/worldclock/main.go) にて：
-1. **多重起動の防止（Single-Instance）**：`singleinstance.SingleInstance("com.worldclockpro.desktop.v1", ...)` を呼び出します。すでにアプリが起動している状態で2つ目のプロセスが起動されると、2つ目は即座に終了し、IPC経由で既存プロセスの `state.RequestShowWindow()` を呼び出して、トレイに隠れているウィンドウを再表示・フォーカスします。
+1. **多重起動の防止（Single-Instance）**：`singleinstance.SingleInstance("com.xiaoru.clockdesktop.v1", ...)` を呼び出します。すでにアプリが起動している状態で2つ目のプロセスが起動されると、2つ目は即座に終了し、IPC経由で既存プロセスの `state.RequestShowWindow()` を呼び出して、トレイに隠れているウィンドウを再表示・フォーカスします。
 2. **閉じるボタン（✕）の動作設定**：[`pkg/ui/app.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/app.go) の `cfg.OnCloseRequest` にて：
    - まず `state.Persist()` を実行し、世界時計やアラームの最新状態を保存します。
    - `CloseBehavior == "exit"`（直接終了）またはトレイメニューからの終了（`state.ForceQuit == true`）の場合は、`allow()` を呼んでプロセスを終了します。
@@ -313,4 +314,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build_windows.ps1
 
 1. **ネイティブ PE リソース（`.syso`）**：`cmd/worldclock/resource_windows.syso` によりアイコン・バージョン情報・マニフェストを埋め込みます。
 2. **シンボル保持によるウイルス対策ソフト誤検知回避**：`-ldflags="-H=windowsgui"` のみを指定し、`-s -w` によるシンボル削除を行わないことで、ヒューリスティック誤検知を防止します。
-3. **SHA-256 Authenticode 署名**：コード署名証明書で `dist/WorldClockPro.exe` に署名し、`dist/WorldClockPro-Windows-x64.zip` を生成します。
+3. **SHA-256 Authenticode 署名**：コード署名証明書で `dist/小瑞综合时钟桌面.exe` と `dist/XiaoruIntegratedClockDesktop.exe` に署名し、`dist/小瑞综合时钟桌面-Windows-x64.zip` を生成します。

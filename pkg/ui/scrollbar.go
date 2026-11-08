@@ -24,7 +24,7 @@ func DrawScrollbar(canvas *ui.Canvas, areaBox flex.Box, ss *flex.ScrollState, th
 		return
 	}
 
-	// Subtle track
+	// 绘制半透明圆角背景轨道
 	canvas.Rounded(ui.Rect{
 		X:      trackX,
 		Y:      trackY,
@@ -32,7 +32,7 @@ func DrawScrollbar(canvas *ui.Canvas, areaBox flex.Box, ss *flex.ScrollState, th
 		Height: trackH,
 	}, 3, theme.Border.WithAlpha(0.18))
 
-	// Proportional thumb height
+	// 根据视口高度与内容总高度计算自适应滑块高度（限制最小高度为 28px）
 	thumbH := (ss.Viewport / ss.Content) * trackH
 	if thumbH < 28 {
 		thumbH = 28
@@ -41,6 +41,7 @@ func DrawScrollbar(canvas *ui.Canvas, areaBox flex.Box, ss *flex.ScrollState, th
 		thumbH = trackH
 	}
 
+	// 计算当前滚动偏移比例并映射为滑块的垂直坐标
 	maxScroll := ss.Max()
 	ratio := float32(0)
 	if maxScroll > 0 {
@@ -54,7 +55,7 @@ func DrawScrollbar(canvas *ui.Canvas, areaBox flex.Box, ss *flex.ScrollState, th
 
 	thumbY := trackY + ratio*(trackH-thumbH)
 
-	// Modern rounded pill thumb
+	// 绘制现代胶囊形圆角滑块
 	canvas.Rounded(ui.Rect{
 		X:      trackX,
 		Y:      thumbY,

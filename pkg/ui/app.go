@@ -16,15 +16,15 @@ import (
 	"github.com/vivaui/viva/ui"
 )
 
-// NewAppConfig 构建 World Clock Pro: Desktop Time, Alarms & Focus Timer 应用的 Viva 窗口配置、绘制回调与生命周期钩子。
-// NewAppConfig creates the Viva app configuration for World Clock Pro: Desktop Time, Alarms & Focus Timer.
+// NewAppConfig 构建 小瑞综合时钟桌面 (Xiaoru Integrated Clock Desktop) 应用的 Viva 窗口配置、绘制回调与生命周期钩子。
+// NewAppConfig creates the Viva app configuration for Xiaoru Integrated Clock Desktop.
 func NewAppConfig(state *AppState) app.Config {
 	var inv app.Invalidator
 	state.Invalidator = &inv
 
 	cfg := app.Config{
 		Tree:        &Tree,
-		Title:       "World Clock Pro: Desktop Time, Alarms & Focus Timer",
+		Title:       "小瑞综合时钟桌面 | Xiaoru Integrated Clock Desktop",
 		Width:       840,
 		Height:      580,
 		Invalidator: &inv,
@@ -38,28 +38,21 @@ func NewAppConfig(state *AppState) app.Config {
 		state.Now = now
 		state.UTC = now.UTC()
 
-		// 2. 检查壁纸轮播是否到达切换时间点（未到期时为 O(1) 零内存分配检查）
-		if state.Wallpaper.AdvanceIfDue(now) {
-			state.Persist()
-		}
+		// 2. 检查壁纸轮播是否到达切换时间点（未到期时为 O(1) 零内存分配检查；仅在内存推进索引，退出时统一落盘，杜绝后台周期写盘）
+		state.Wallpaper.AdvanceIfDue(now)
 
-		settings := state.Store.Get()
-		theme := BuildTheme(settings.Theme, state.Wallpaper.Config().Enabled, state.Wallpaper.Config().CardOpacity, settings.UIFontColor)
+		settings := state.Store.GetPrefs()
+		wpEnabled, wpCardOpacity := state.Wallpaper.RenderParams()
+		theme := BuildTheme(settings.Theme, wpEnabled, wpCardOpacity, settings.UIFontColor)
 
 		// 3. 检查当前分钟是否有闹钟应当触发响铃（若处于贪睡静音期内则返回 nil）
 		ringing := state.Scheduler.CheckTriggers(now)
 
-		// 4. 无论当前处于哪个标签页，同步推进后台专注计时器、睡眠模式和倒计时器进度
+		// 4. 无论当前处于哪个标签页，零分配同步推进后台专注计时器、睡眠模式和倒计时器进度
 		state.Tracker.Update(now)
 		slState, slVol := state.Sleep.Update(now)
 		_, slSound, _ := state.Sleep.Info()
-		timerRinging := false
-		for _, t := range state.TimerMgr.Timers() {
-			t.Update(now)
-			if t.State == timer.StateExpired {
-				timerRinging = true
-			}
-		}
+		timerRunning, timerRinging := state.TimerMgr.TickAll(now)
 
 		// 4b. 同步闹钟响铃、倒计时到期提醒与睡眠环境白噪音的硬件音频输出状态
 		alarmActive := ringing != nil || timerRinging
@@ -80,16 +73,7 @@ func NewAppConfig(state *AppState) app.Config {
 		}
 
 		// 5. 判断是否存在需要高频刷新（约 25 FPS）的活动秒表、倒计时或番茄钟
-		fastTick := false
-		if state.Stopwatch.State() == timer.StateRunning {
-			fastTick = true
-		}
-		for _, t := range state.TimerMgr.Timers() {
-			if t.State == timer.StateRunning {
-				fastTick = true
-				break
-			}
-		}
+		fastTick := timerRunning || state.Stopwatch.State() == timer.StateRunning
 		trStatus := state.Tracker.Status()
 		if trStatus == "Working" || trStatus == "Short Break" || trStatus == "Big Break" {
 			fastTick = true
@@ -110,7 +94,7 @@ func NewAppConfig(state *AppState) app.Config {
 		// 7. 绘制窗口根背景色与自定义壁纸图层
 		bounds := ui.Rect{Width: size.Width, Height: size.Height}
 		canvas.Fill(bounds, theme.Background)
-		if state.Wallpaper.Config().Enabled {
+		if wpEnabled {
 			state.Wallpaper.Draw(canvas, bounds, theme)
 		}
 
@@ -187,7 +171,7 @@ func NewAppConfig(state *AppState) app.Config {
 	// 窗口关闭按钮（✕）拦截回调：支持“最小化到后台系统托盘”或“直接退出程序”
 	cfg.OnCloseRequest = func(allow func()) {
 		state.Persist()
-		if state.ForceQuit || state.Store.Get().CloseBehavior == storage.CloseBehaviorExit {
+		if state.ForceQuit || state.Store.GetPrefs().CloseBehavior == storage.CloseBehaviorExit {
 			allow()
 			if state.Application != nil {
 				state.Application.Quit()

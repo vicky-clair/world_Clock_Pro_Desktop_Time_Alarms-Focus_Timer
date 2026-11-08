@@ -9,6 +9,7 @@ import (
 	"github.com/vivaui/viva/ui"
 )
 
+// localizeAlarmTitle 将内置预设闹钟标题翻译为当前界面语言，用户自定义标题则原样保留。
 // localizeAlarmTitle translates built-in default/preset alarm titles into the active UI language.
 func localizeAlarmTitle(state *AppState, title string) string {
 	switch title {
@@ -29,6 +30,7 @@ func localizeAlarmTitle(state *AppState, title string) string {
 	}
 }
 
+// localizeAlarmSound 将内置闹钟铃声名称（经典钟声 / 柔和风铃 / 数字脉冲）翻译为当前界面语言。
 // localizeAlarmSound translates built-in alarm sound names into the active UI language.
 func localizeAlarmSound(state *AppState, sound string) string {
 	switch sound {
@@ -43,6 +45,7 @@ func localizeAlarmSound(state *AppState, sound string) string {
 	}
 }
 
+// localizeRepeatSummary 将闹钟重复周期摘要（仅一次 / 每天 / 工作日 / 周末）翻译为当前界面语言。
 // localizeRepeatSummary translates alarm repeat summary into the active UI language.
 func localizeRepeatSummary(state *AppState, a alarm.Alarm) string {
 	sum := a.RepeatSummary()
@@ -63,11 +66,11 @@ func localizeRepeatSummary(state *AppState, a alarm.Alarm) string {
 // DrawAlarms 渲染闹钟管理列表与新建闹钟面板。
 // DrawAlarms renders the alarm manager and new alarm dialog.
 func DrawAlarms(f *flex.Frame, state *AppState, theme ui.Theme) {
-	cfg := state.Store.Get()
+	cfg := state.Store.GetPrefs()
 	alarms := state.Scheduler.Alarms()
 
 	f.Column().Fill().Pad(24).Gap(16).Children(func() {
-		// Action Bar
+		// 顶部标题栏与“+ 新建闹钟”按钮
 		f.Row().FillWidth().Items(flex.Center).Gap(12).Children(func() {
 			f.Text(state.T("alarm.title")).FontSize(22).Bold().Color(theme.Foreground)
 			f.Spacer()
@@ -76,7 +79,7 @@ func DrawAlarms(f *flex.Frame, state *AppState, theme ui.Theme) {
 			}
 		})
 
-		// Alarm Cards
+		// 闹钟列表或新建闹钟面板
 		if state.ShowNewAlarmModal {
 			DrawNewAlarmModal(f, state, theme)
 		} else {
@@ -86,13 +89,13 @@ func DrawAlarms(f *flex.Frame, state *AppState, theme ui.Theme) {
 					for _, alm := range alarms {
 						a := alm
 						f.Row().FillWidth().Pad(16).Background(theme.Card).Radius(12).Border(1, theme.Border).Items(flex.Center).Gap(16).Children(func() {
-							// Left: Time & Repeat
+							// 左侧：闹钟触发时间与重复周期
 							f.Column().Width(180).Gap(4).Children(func() {
 								f.Text(a.FormatTime(cfg.TimeFormat24H)).FontSize(26).Bold().Mono().Color(theme.Foreground)
 								f.Text(localizeRepeatSummary(state, a)).FontSize(12).Bold().Color(theme.Primary)
 							})
 
-							// Middle: Title & Sound
+							// 中间：闹钟标题、铃声名称与贪睡时长
 							f.Column().Width(240).Gap(4).Children(func() {
 								f.Text(localizeAlarmTitle(state, a.Title)).FontSize(16).Bold().Color(theme.Foreground)
 								f.Text(fmt.Sprintf(state.T("alarm.sound_info"), localizeAlarmSound(state, a.Sound), a.SnoozeMinutes)).FontSize(12).Muted()
@@ -107,7 +110,7 @@ func DrawAlarms(f *flex.Frame, state *AppState, theme ui.Theme) {
 								}
 							}
 
-							// Toggle Enable/Disable
+							// 启用/停用闹钟开关按钮
 							toggleLabel := state.T("common.off")
 							if a.IsEnabled {
 								toggleLabel = state.T("common.on")
@@ -123,7 +126,7 @@ func DrawAlarms(f *flex.Frame, state *AppState, theme ui.Theme) {
 								state.Persist()
 							}
 
-							// Delete Button
+							// 删除闹钟按钮
 							if f.Button(AlarmDeleteID(a.ID), state.T("alarm.delete")).DestructiveOutline().Small().Clicked() {
 								state.Scheduler.DeleteAlarm(a.ID)
 								state.Persist()
@@ -137,6 +140,7 @@ func DrawAlarms(f *flex.Frame, state *AppState, theme ui.Theme) {
 	})
 }
 
+// DrawNewAlarmModal 渲染创建新闹钟的交互面板（支持早晨/午休/晚间快捷预设、±1小时/±5分钟/±1分钟精确微调、重复规则与铃声试听）。
 // DrawNewAlarmModal renders the dialog to create an alarm.
 func DrawNewAlarmModal(f *flex.Frame, state *AppState, theme ui.Theme) {
 	f.Column().FillWidth().Pad(20).Background(theme.Card).Border(2, theme.Primary).Radius(10).Gap(14).Children(func() {
@@ -168,20 +172,26 @@ func DrawNewAlarmModal(f *flex.Frame, state *AppState, theme ui.Theme) {
 			}
 		})
 
-		// Custom Hour & Minute Steppers
+		// Custom Hour & Minute Steppers (with exact 24h carry/borrow arithmetic)
 		f.Row().Items(flex.Center).Gap(8).Children(func() {
 			f.Text(fmt.Sprintf("%02d:%02d", state.NewAlarmHour, state.NewAlarmMinute)).FontSize(22).Bold().Mono().Color(theme.Foreground)
 			if f.Button(IDBtnAlarmHourDown, state.T("alarm.step_h_down")).Small().Secondary().Clicked() {
-				state.NewAlarmHour = (state.NewAlarmHour + 23) % 24
+				state.NewAlarmHour, state.NewAlarmMinute = StepAlarmTime(state.NewAlarmHour, state.NewAlarmMinute, -1, 0)
 			}
 			if f.Button(IDBtnAlarmHourUp, state.T("alarm.step_h_up")).Small().Secondary().Clicked() {
-				state.NewAlarmHour = (state.NewAlarmHour + 1) % 24
+				state.NewAlarmHour, state.NewAlarmMinute = StepAlarmTime(state.NewAlarmHour, state.NewAlarmMinute, 1, 0)
 			}
 			if f.Button(IDBtnAlarmMinDown, state.T("alarm.step_m_down")).Small().Secondary().Clicked() {
-				state.NewAlarmMinute = (state.NewAlarmMinute + 55) % 60
+				state.NewAlarmHour, state.NewAlarmMinute = StepAlarmTime(state.NewAlarmHour, state.NewAlarmMinute, 0, -5)
+			}
+			if f.Button(IDBtnAlarmMin1Down, state.T("alarm.step_m1_down")).Small().Secondary().Clicked() {
+				state.NewAlarmHour, state.NewAlarmMinute = StepAlarmTime(state.NewAlarmHour, state.NewAlarmMinute, 0, -1)
+			}
+			if f.Button(IDBtnAlarmMin1Up, state.T("alarm.step_m1_up")).Small().Secondary().Clicked() {
+				state.NewAlarmHour, state.NewAlarmMinute = StepAlarmTime(state.NewAlarmHour, state.NewAlarmMinute, 0, 1)
 			}
 			if f.Button(IDBtnAlarmMinUp, state.T("alarm.step_m_up")).Small().Secondary().Clicked() {
-				state.NewAlarmMinute = (state.NewAlarmMinute + 5) % 60
+				state.NewAlarmHour, state.NewAlarmMinute = StepAlarmTime(state.NewAlarmHour, state.NewAlarmMinute, 0, 5)
 			}
 		})
 
@@ -299,4 +309,15 @@ func DrawNewAlarmModal(f *flex.Frame, state *AppState, theme ui.Theme) {
 			}
 		})
 	})
+}
+
+// StepAlarmTime 按 24 小时制（00:00 ~ 23:59，共 1440 分钟）精确计算闹钟时间增减与跨小时/跨午夜进位借位。
+// StepAlarmTime accurately computes 24-hour alarm time adjustments with full hour/midnight carry and borrow.
+func StepAlarmTime(hour, minute, deltaHours, deltaMinutes int) (int, int) {
+	const dayMins = 24 * 60
+	total := (hour*60 + minute + deltaHours*60 + deltaMinutes) % dayMins
+	if total < 0 {
+		total += dayMins
+	}
+	return total / 60, total % 60
 }

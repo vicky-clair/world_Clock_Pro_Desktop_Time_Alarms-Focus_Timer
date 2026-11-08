@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"time"
 
 	"worldclock/pkg/tracker"
 
@@ -22,7 +23,7 @@ func DrawTracker(f *flex.Frame, state *AppState, theme ui.Theme) {
 	scrollTracker := f.ScrollArea(IDScrollTracker).Fill()
 	scrollTracker.Children(func() {
 		f.Column().FillWidth().Pad(24).Gap(20).Items(flex.Center).Children(func() {
-			// Title Header
+			// 顶部标题栏与专注勿扰 (DND) 开关
 			f.Row().FillWidth().Items(flex.Center).Children(func() {
 				f.Text(state.T("tracker.title")).FontSize(22).Bold().Color(theme.Foreground)
 				f.Spacer()
@@ -42,7 +43,7 @@ func DrawTracker(f *flex.Frame, state *AppState, theme ui.Theme) {
 				}
 			})
 
-			// Main Status Card
+			// 番茄钟核心状态与大字倒计时卡片
 			statusColor := theme.Primary
 			if status == tracker.StatusShortBreak || status == tracker.StatusBigBreak {
 				statusColor = theme.Accent
@@ -66,22 +67,34 @@ func DrawTracker(f *flex.Frame, state *AppState, theme ui.Theme) {
 				}
 				f.Text(fmt.Sprintf("● %s", statusStr)).FontSize(16).Bold().Color(statusColor)
 
-				// Giant Remaining Countdown
+				// 64px 剩余时间大字读数
 				f.Text(tr.FormatRemaining()).FontSize(64).Bold().Mono().Color(theme.Foreground)
 
-				// Progress bar
+				// 当前阶段进度条
 				f.Progress(tr.ProgressFraction()).Height(8).FillWidth()
 
-				// Interval Info
+				// 番茄轮次说明（每 4 个工作轮次自动进入一次长休息）
 				cycleNum := (cycles % cfg.CyclesBeforeBig) + 1
 				f.Text(fmt.Sprintf(state.T("tracker.cycle_info"), cycleNum, cfg.CyclesBeforeBig, state.T("tracker.big_break"), cfg.CyclesBeforeBig)).FontSize(13).Muted()
 
-				// Controls
-				f.Row().Items(flex.Center).Gap(12).Children(func() {
+				// 操作按钮组（待机态支持 -5m / -1m / +1m / +5m 精确调节专注时长）
+				f.Row().Items(flex.Center).Gap(10).Children(func() {
 					switch status {
 					case tracker.StatusIdle:
+						if f.Button(IDBtnTrackerMin5Down, state.T("tracker.step_m5_down")).Small().Secondary().Clicked() {
+							tr.AdjustWorkDuration(-5 * time.Minute)
+						}
+						if f.Button(IDBtnTrackerMin1Down, state.T("tracker.step_m1_down")).Small().Secondary().Clicked() {
+							tr.AdjustWorkDuration(-1 * time.Minute)
+						}
 						if f.Button(IDBtnTrackerStart, state.T("tracker.start")).Clicked() {
 							tr.Start(now)
+						}
+						if f.Button(IDBtnTrackerMin1Up, state.T("tracker.step_m1_up")).Small().Secondary().Clicked() {
+							tr.AdjustWorkDuration(1 * time.Minute)
+						}
+						if f.Button(IDBtnTrackerMin5Up, state.T("tracker.step_m5_up")).Small().Secondary().Clicked() {
+							tr.AdjustWorkDuration(5 * time.Minute)
 						}
 
 					case tracker.StatusWorking:

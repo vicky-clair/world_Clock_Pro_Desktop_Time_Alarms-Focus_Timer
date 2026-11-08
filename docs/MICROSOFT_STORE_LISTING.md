@@ -1,4 +1,4 @@
-# World Clock Pro: Desktop Time, Alarms & Focus Timer — Microsoft Store 上架文案全集（中 / 英 / 日三语）
+# 小瑞综合时钟桌面 (Xiaoru Integrated Clock Desktop) — Microsoft Store 上架文案全集（中 / 英 / 日三语）
 
 本文件包含在 **微软合作伙伴中心 (Microsoft Partner Center)** 提交 Windows 应用商店审核时所需填写的全部字段，支持直接复制粘贴。
 
@@ -10,9 +10,9 @@
 
 | 语言区域 | 商店展示名称 (Store Listing Name) | 桌面/开始菜单显示名称 (Display Name) |
 | :--- | :--- | :--- |
-| **默认 / 英文 (`en-US`)** | `World Clock Pro: Desktop Time, Alarms & Focus Timer` | `World Clock Pro: Desktop Time, Alarms & Focus Timer` |
-| **中文 (简体, `zh-CN`)** | `World Clock Pro: Desktop Time, Alarms & Focus Timer` | `World Clock Pro: Desktop Time, Alarms & Focus Timer` |
-| **日文 (`ja-JP`)** | `World Clock Pro: Desktop Time, Alarms & Focus Timer` | `World Clock Pro: Desktop Time, Alarms & Focus Timer` |
+| **中文 (简体, `zh-CN`)** | `小瑞综合时钟桌面` | `小瑞综合时钟桌面` |
+| **默认 / 英文 (`en-US`)** | `Xiaoru Integrated Clock Desktop` | `Xiaoru Integrated Clock Desktop` |
+| **日文 (`ja-JP`)** | `小瑞総合時計デスクトップ` | `小瑞総合時計デスクトップ` |
 
 ---
 
@@ -20,7 +20,11 @@
 
 * **主分类 (Category)**：`Productivity`（效率 / 生产力）
 * **子分类 (Subcategory)**：`Time management`（时间管理）或 `Tools`（工具）
-* **年龄分级 (Age Rating / IARC)**：`3+ / Everyone`（全年龄段，无内购、无社交聊天、无用户生成内容）
+* **年龄分级 (Age Rating / IARC)**：`3+ / Everyone`（全年龄段，无社交聊天、无用户生成内容）
+* **订阅与试用方案 (Subscription Add-ons)**：
+  * **免费试用期**：7 天全功能免费试用（7-Day Free Trial）
+  * **按月订阅 (`9N0000PRO_MONTHLY_3CNY`)**：**3 元 / 月**（`¥3 / Month`）
+  * **按年订阅 (`9N0000PRO_YEARLY_28CNY`)**：**28 元 / 年**（`¥28 / Year`，折合每月约 2.33 元，立省 22%）
 * **系统架构要求**：`x64`（Windows 10 版本 1809 及更高版本 / Windows 11）
 
 ---
@@ -28,13 +32,13 @@
 ## 三、简体中文商店页面文案 (`zh-CN`)
 
 ### 1. 简短描述 (Short Description, 建议 100 字以内)
-> **World Clock Pro: Desktop Time, Alarms & Focus Timer** 是一款采用纯原生 GPU 渲染的超轻量桌面世界时钟与效率中心。内置公历农历双历大字显示、世界各国当日节日与节气、全球 193 国时钟、自由排版悬浮时钟、屏幕边缘自动收缩状态条、高性能壁纸轮播、番茄专注追踪、自定义倒计时、真实合成闹钟与白噪音，零后台轮询，极速响应。
+> **小瑞综合时钟桌面** 是一款采用纯原生 GPU 渲染的超轻量桌面世界时钟与效率中心。内置公历农历双历大字显示、世界各国当日节日与节气、全球 193 国时钟、自由排版悬浮时钟、屏幕边缘自动收缩状态条、高性能壁纸轮播、番茄专注追踪、自定义倒计时、真实合成闹钟与白噪音，零后台轮询，极速响应。
 
 ### 2. 完整应用简介 (Description)
 ```text
-World Clock Pro: Desktop Time, Alarms & Focus Timer —— 为跨时区办公、专注工作与桌面美学打造的原生桌面时间中心。
+小瑞综合时钟桌面 —— 为跨时区办公、专注工作与桌面美学打造的原生桌面时间中心。
 
-告别臃肿卡顿的网页套壳软件！World Clock Pro: Desktop Time, Alarms & Focus Timer 基于 Go 语言与原生 GPU 渲染引擎构建，没有内置浏览器内核，空闲时零后台 CPU 轮询，在老旧笔记本与高刷电竞屏上都能保持丝滑流畅与极低内存占用。
+告别臃肿卡顿的网页套壳软件！小瑞综合时钟桌面 基于 Go 语言与原生 GPU 渲染引擎构建，没有内置浏览器内核，空闲时零后台 CPU 轮询，在老旧笔记本与高刷电竞屏上都能保持丝滑流畅与极低内存占用。
 
 【核心功能亮点】
 
@@ -98,11 +102,12 @@ World Clock Pro: Desktop Time, Alarms & Focus Timer —— 为跨时区办公、
 
 ### 5. 版本更新说明 (Release Notes - v1.0.0)
 ```text
-World Clock Pro: Desktop Time, Alarms & Focus Timer v1.0.0 正式版发布：
+小瑞综合时钟桌面 (Xiaoru Integrated Clock Desktop) v1.0.0 正式版发布：
 • 新增：世界时钟「城市/国家/时区」实时搜索输入框，支持全球 193 国及各大国际都市检索。
-• 新增：靠近屏幕边缘自动缩小为精简时间日期状态条，支持开机自动启动开关与 7 天免费试用 Pro 订阅中心。
+• 新增：靠近屏幕边缘自动缩小为精简时间日期状态条，支持开机自动启动开关与 7 天免费试用 Pro 订阅中心（月付 3 元 / 年付 28 元）。
+• 新增：闹钟、倒计时、睡眠定时与番茄钟全面支持 +1分钟 / -1分钟 / +1秒 / -1秒 精准进位借位微调。
 • 新增：高性能本地照片壁纸轮播引擎，支持导入照片文件夹，按 1/5/10/15 分钟进行随机或顺序播放。
-• 优化：采用按需单帧解码与 4K/8K 自动降采样技术，确保海量图片轮播时零 CPU 轮询、极低内存占用。
+• 优化：采用按需单帧解码、4K/8K 自动降采样与零冗余磁盘写入技术，确保海量图片轮播时零 CPU 轮询、零后台写盘、极低内存占用。
 • 完善：支持中、英、日三语界面实时切换及四大视觉主题定制。
 ```
 
@@ -111,13 +116,13 @@ World Clock Pro: Desktop Time, Alarms & Focus Timer v1.0.0 正式版发布：
 ## 四、英文商店页面文案 (`en-US`)
 
 ### 1. Short Description
-> **World Clock Pro: Desktop Time, Alarms & Focus Timer** is an ultra-lightweight, GPU-native desktop world clock and productivity hub. Features dual Gregorian/Lunar calendars, world holidays, a 193-country world clock with instant search, screen-edge auto-shrink bar, zero-overhead photo wallpaper carousel, Pomodoro focus tracker, multi-timers, stopwatch, and ambient sleep sounds.
+> **Xiaoru Integrated Clock Desktop** is an ultra-lightweight, GPU-native desktop world clock and productivity hub. Features dual Gregorian/Lunar calendars, world holidays, a 193-country world clock with instant search, screen-edge auto-shrink bar, zero-overhead photo wallpaper carousel, Pomodoro focus tracker, multi-timers, stopwatch, and ambient sleep sounds.
 
 ### 2. Description
 ```text
-World Clock Pro: Desktop Time, Alarms & Focus Timer — The GPU-Native Global World Clock, Wallpaper Carousel & Focus Hub for Windows.
+Xiaoru Integrated Clock Desktop — The GPU-Native Global World Clock, Wallpaper Carousel & Focus Hub for Windows.
 
-Built from the ground up in Go with a native GPU rendering engine (no bloated WebView or Electron), World Clock Pro: Desktop Time, Alarms & Focus Timer delivers instant startup, zero idle CPU polling, and a minimal memory footprint while keeping your desktop both productive and beautiful.
+Built from the ground up in Go with a native GPU rendering engine (no bloated WebView or Electron), Xiaoru Integrated Clock Desktop delivers instant startup, zero idle CPU polling, and a minimal memory footprint while keeping your desktop both productive and beautiful.
 
 [KEY FEATURES]
 
@@ -170,11 +175,11 @@ Built from the ground up in Go with a native GPU rendering engine (no bloated We
 ## 五、日文商店页面文案 (`ja-JP`)
 
 ### 1. Short Description
-> **World Clock Pro: Desktop Time, Alarms & Focus Timer** は、ネイティブGPU描画による超軽量デスクトップ世界時計＆作業効率化アプリです。太陽暦・旧暦デュアル表示、世界の祝日・節気表示、世界193カ国の検索対応ワールドクロック、位置切替対応ポップアウト小窓、画面端でのミニバー自動縮小、低負荷な壁紙スライドショー、カスタムタイマー、睡眠用環境音を搭載しています。
+> **小瑞総合時計デスクトップ** は、ネイティブGPU描画による超軽量デスクトップ世界時計＆作業効率化アプリです。太陽暦・旧暦デュアル表示、世界の祝日・節気表示、世界193カ国の検索対応ワールドクロック、位置切替対応ポップアウト小窓、画面端でのミニバー自動縮小、低負荷な壁紙スライドショー、カスタムタイマー、睡眠用環境音を搭載しています。
 
 ### 2. Description
 ```text
-World Clock Pro: Desktop Time, Alarms & Focus Timer —— グローバルな時間管理、集中作業、デスクトップの美しさをひとつにまとめたネイティブ時計アプリ。
+小瑞総合時計デスクトップ —— グローバルな時間管理、集中作業、デスクトップの美しさをひとつにまとめたネイティブ時計アプリ。
 
 WebViewを使用しないGo言語＆ネイティブGPUレンダリング設計により、待機時のCPU負荷ゼロ・省メモリを実現。大量の写真を壁紙スライドショーに設定してもPCのパフォーマンスを一切損ないません。
 

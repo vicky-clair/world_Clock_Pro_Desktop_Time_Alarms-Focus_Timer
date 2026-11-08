@@ -1,8 +1,8 @@
 [app]
-name = "World Clock Pro: Desktop Time, Alarms & Focus Timer"
-id = "com.worldclockpro.desktop"
+name = "小瑞综合时钟桌面 (Xiaoru Integrated Clock Desktop)"
+id = "com.xiaoru.clockdesktop"
 version = "1.0.0"
-executable = "OliveClock"
+executable = "XiaoruIntegratedClockDesktop"
 package = "./cmd/worldclock"
 icon = "assets/icon.png"
 
@@ -10,4 +10,4 @@ icon = "assets/icon.png"
 out = "dist"
 
 [windows]
-publisher = "World Clock Pro Studio"
+publisher = "Xiaoru Studio"
