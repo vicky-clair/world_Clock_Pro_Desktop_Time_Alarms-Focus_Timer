@@ -52,7 +52,7 @@ func NewAppConfig(state *AppState) app.Config {
 		ringing := state.Scheduler.CheckTriggers(now)
 
 		// 4. 无论当前处于哪个标签页，零分配同步推进后台专注计时器、睡眠模式和倒计时器进度
-		state.Tracker.Update(now)
+		trackerChanged := state.Tracker.Update(now)
 		slState, slVol := state.Sleep.Update(now)
 		_, slSound, _ := state.Sleep.Info()
 		timerRunning, timerRinging := state.TimerMgr.TickAll(now)
@@ -68,6 +68,10 @@ func NewAppConfig(state *AppState) app.Config {
 		sleepPlaying := slState == sleep.StateActive || slState == sleep.StateFading
 		if state.Audio != nil {
 			state.Audio.SyncState(alarmActive, alarmSound, sleepPlaying, string(slSound), slVol)
+			// 当番茄工作法阶段（专注 <-> 休息）切换且未开启勿扰模式时，触发单次柔和风铃提示音
+			if trackerChanged && !state.Tracker.Config().DoNotDisturb && !alarmActive && !sleepPlaying {
+				state.Audio.PreviewAlarm("Gentle Chime")
+			}
 		}
 
 		// 4c. 后台非阻塞同步“历史上的今天”在线 API（每天每种语言仅请求一次，完成后自动触发单次重绘）

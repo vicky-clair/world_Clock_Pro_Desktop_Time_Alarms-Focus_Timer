@@ -101,6 +101,43 @@ func encodeWAV(samples []int16, sampleRate int) []byte {
 	return buf
 }
 
+// ScaleWAVVolumeInto 将标准 16-bit PCM RIFF WAVE 字节流按指定软件音量比例（0.0 ~ 1.0）缩放写入 dst 缓冲区并返回。
+// 双重保障设计：部分 Windows 10/11 现代声卡驱动（如 USB 声卡、蓝牙耳机或显示器 HDMI 音频）会忽略 waveOutSetVolume 硬件混音指令，
+// 通过在软件层直接对 16-bit PCM 采样振幅进行精确线性衰减，可确保在任何电脑与外设上睡眠白噪音渐弱与试听音量 100% 生效。
+func ScaleWAVVolumeInto(dst, src []byte, vol float32) []byte {
+	if len(src) <= 44 {
+		return src
+	}
+	if vol < 0 {
+		vol = 0
+	} else if vol > 1 {
+		vol = 1
+	}
+	if math.Abs(float64(vol-1.0)) < 0.005 {
+		return src
+	}
+	if cap(dst) < len(src) {
+		dst = make([]byte, len(src))
+	} else {
+		dst = dst[:len(src)]
+	}
+	// 复制 44 字节标准 RIFF WAVE 头部
+	copy(dst[:44], src[:44])
+
+	scale := float64(vol)
+	for off := 44; off+1 < len(src); off += 2 {
+		sample := int16(binary.LittleEndian.Uint16(src[off : off+2]))
+		scaled := math.Round(float64(sample) * scale)
+		if scaled > 32767 {
+			scaled = 32767
+		} else if scaled < -32768 {
+			scaled = -32768
+		}
+		binary.LittleEndian.PutUint16(dst[off:off+2], uint16(int16(scaled)))
+	}
+	return dst
+}
+
 // synthClassicChime 合成 3.6 秒的经典钟声琶音（C5 - E5 - G5 - C6 温暖泛音列）。
 func synthClassicChime() []int16 {
 	totalSec := 3.6
