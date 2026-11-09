@@ -1,12 +1,18 @@
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
   <Package Name="小瑞综合时钟桌面"
            Manufacturer="Xiaoru Studio"
            Version="1.0.0.0"
            UpgradeCode="E4F18B32-5819-4C5A-9D45-B7D8C5708812"
+           Codepage="936"
            Scope="perUserOrMachine">
     <MajorUpgrade DowngradeErrorMessage="已安装更新版本的小瑞综合时钟桌面。" />
     <MediaTemplate EmbedCab="yes" />
 
+    <!-- 启用标准图形安装向导界面（支持自定义选择安装路径与安装摘要） -->
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+
+    <!-- 默认安装目录 -->
     <StandardDirectory Id="ProgramFiles6432Folder">
       <Directory Id="INSTALLFOLDER" Name="XiaoruIntegratedClockDesktop">
         <Component Id="MainExecutable" Guid="36B82DC9-8399-4A73-A337-03B52C617B51">
@@ -15,6 +21,7 @@
       </Directory>
     </StandardDirectory>
 
+    <!-- 开始菜单快捷方式 -->
     <StandardDirectory Id="ProgramMenuFolder">
       <Directory Id="AppShortcutsFolder" Name="小瑞综合时钟桌面">
         <Component Id="AppShortcut" Guid="719FA07B-9E39-4E6C-9A88-29C34A972B53">
@@ -29,6 +36,7 @@
       </Directory>
     </StandardDirectory>
 
+    <!-- 桌面快捷方式 -->
     <StandardDirectory Id="DesktopFolder">
       <Component Id="DesktopShortcutComp" Guid="A3E50711-209E-436A-8E48-185F4AC5D581">
         <Shortcut Id="ApplicationDesktopShortcut"

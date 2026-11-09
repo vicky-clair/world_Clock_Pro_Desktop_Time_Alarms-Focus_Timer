@@ -14,7 +14,7 @@ if (-not (Test-Path $ExePath)) {
 
 Write-Host "[1/3] 正在使用 WiX Toolset v4 编译 MSI 安装包..." -ForegroundColor Cyan
 Set-Location $RootDir
-wix build $WxsPath -arch x64 -o $MsiPath
+wix build $WxsPath -ext WixToolset.UI.wixext -arch x64 -o $MsiPath
 
 Write-Host "[2/3] 正在应用 Authenticode 数字签名..." -ForegroundColor Cyan
 $cert = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert | Where-Object { $_.Subject -like "*Xiaoru Studio*" } | Select-Object -First 1
