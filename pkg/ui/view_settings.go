@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"worldclock/pkg/clock"
 	"worldclock/pkg/i18n"
 	"worldclock/pkg/storage"
 	"worldclock/pkg/wallpaper"
@@ -607,7 +606,80 @@ func drawSettingsLanguage(f *flex.Frame, state *AppState, theme ui.Theme, cfg st
 		})
 	})
 
+	drawSettingsBars(f, state, theme, cfg)
 	drawSettingsFont(f, state, theme, cfg)
+}
+
+// drawSettingsBars 渲染“状态栏与沉浸模式”卡片（在语言/常规设置中提供顶部导航栏与底部控制栏的开启与隐藏切换）。
+func drawSettingsBars(f *flex.Frame, state *AppState, theme ui.Theme, cfg storage.Settings) {
+	f.Column().FillWidth().Pad(16).Background(theme.Card).Radius(12).Border(1, theme.Border).Gap(12).Children(func() {
+		f.Text(state.T("settings.bars_title")).FontSize(15).Bold().Color(theme.Primary)
+		f.Text(state.T("settings.bars_desc")).FontSize(12).Muted()
+
+		// 1. 顶部状态栏（功能导航栏）开启/关闭
+		f.Row().Items(flex.Center).Children(func() {
+			f.Text(state.T("settings.header_title")).Bold().Color(theme.Foreground)
+			f.Spacer()
+			f.Row().Gap(8).Children(func() {
+				btnShowH := f.Button(IDOptHeaderShow, state.T("settings.header_show")).Small()
+				if !cfg.HideHeader {
+					btnShowH.Outline()
+				} else {
+					btnShowH.Secondary()
+				}
+				if btnShowH.Clicked() {
+					state.UpdateSettings(func(s *storage.Settings) {
+						s.HideHeader = false
+					})
+				}
+
+				btnHideH := f.Button(IDOptHeaderHide, state.T("settings.header_hide")).Small()
+				if cfg.HideHeader {
+					btnHideH.Outline()
+				} else {
+					btnHideH.Secondary()
+				}
+				if btnHideH.Clicked() {
+					state.UpdateSettings(func(s *storage.Settings) {
+						s.HideHeader = true
+					})
+				}
+			})
+		})
+
+		f.Divider()
+
+		// 2. 底部状态栏（快捷控制栏）开启/关闭
+		f.Row().Items(flex.Center).Children(func() {
+			f.Text(state.T("settings.footer_title")).Bold().Color(theme.Foreground)
+			f.Spacer()
+			f.Row().Gap(8).Children(func() {
+				btnShowF := f.Button(IDOptFooterShow, state.T("settings.footer_show")).Small()
+				if !cfg.HideFooter {
+					btnShowF.Outline()
+				} else {
+					btnShowF.Secondary()
+				}
+				if btnShowF.Clicked() {
+					state.UpdateSettings(func(s *storage.Settings) {
+						s.HideFooter = false
+					})
+				}
+
+				btnHideF := f.Button(IDOptFooterHide, state.T("settings.footer_hide")).Small()
+				if cfg.HideFooter {
+					btnHideF.Outline()
+				} else {
+					btnHideF.Secondary()
+				}
+				if btnHideF.Clicked() {
+					state.UpdateSettings(func(s *storage.Settings) {
+						s.HideFooter = true
+					})
+				}
+			})
+		})
+	})
 }
 
 // drawSettingsFont 渲染字体与排版定制卡片组（实时字体预览、系统内字体库全局调取、时钟字号预设与 2px 步进微调、时钟数字高亮色、界面全域文字颜色以及全局字号缩放）。
@@ -1112,38 +1184,6 @@ func drawSettingsClock(f *flex.Frame, state *AppState, theme ui.Theme, cfg stora
 					s.ShowHolidays = !s.ShowHolidays
 				})
 			}
-		})
-
-		f.Divider()
-
-		f.Row().Items(flex.Center).Children(func() {
-			f.Text(state.T("settings.clockface"))
-			f.Spacer()
-			f.Row().Gap(8).Children(func() {
-				btnDig := f.Button(IDOptStyleDigital, state.T("clock.style_digital"))
-				if cfg.ClockStyle == string(clock.StyleDigital) {
-					btnDig.Outline()
-				} else {
-					btnDig.Secondary()
-				}
-				if btnDig.Clicked() {
-					state.UpdateSettings(func(s *storage.Settings) {
-						s.ClockStyle = string(clock.StyleDigital)
-					})
-				}
-
-				btnAna := f.Button(IDOptStyleAnalog, state.T("clock.style_analog"))
-				if cfg.ClockStyle == string(clock.StyleAnalog) {
-					btnAna.Outline()
-				} else {
-					btnAna.Secondary()
-				}
-				if btnAna.Clicked() {
-					state.UpdateSettings(func(s *storage.Settings) {
-						s.ClockStyle = string(clock.StyleAnalog)
-					})
-				}
-			})
 		})
 
 		f.Divider()

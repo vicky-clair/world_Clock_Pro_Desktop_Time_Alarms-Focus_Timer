@@ -63,6 +63,8 @@ type Settings struct {
 	CloseBehavior   string           `json:"closeBehavior"`   // 关闭按钮行为："minimize"（最小化到托盘）或 "exit"（直接退出）
 	AutoStart       bool             `json:"autoStart"`       // 是否在操作系统登录时开机自动启动
 	EdgeDockEnabled bool             `json:"edgeDockEnabled"` // 窗口靠近屏幕边缘后是否自动缩小成一个状态条
+	HideHeader      bool             `json:"hideHeader"`      // 是否隐藏主窗口顶部状态栏（功能导航栏）
+	HideFooter      bool             `json:"hideFooter"`      // 是否隐藏主时钟底部状态栏（快捷控制栏）
 	License         license.Config   `json:"license"`         // 7天免费试用与 Pro 会员订阅配置（支持月付3元/年付28元及免付测试版）
 }
 
@@ -197,6 +199,9 @@ func unmarshalSettingsWithDefaults(data []byte) (Settings, error) {
 	}
 	if loaded.PopoutPosition != PopoutPosTop && loaded.PopoutPosition != PopoutPosBottom {
 		loaded.PopoutPosition = PopoutPosCenter
+	}
+	if loaded.ClockStyle == "" {
+		loaded.ClockStyle = "digital"
 	}
 	if loaded.ClockFontSize <= 0 {
 		loaded.ClockFontSize = 64

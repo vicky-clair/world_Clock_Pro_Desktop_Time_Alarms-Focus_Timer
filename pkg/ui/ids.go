@@ -198,6 +198,11 @@ var (
 	IDOptEdgeDock               = Tree.ID(featSetting, "opt-edge-dock")                // 靠近屏幕边缘自动缩为状态条徽章开关
 	IDOptEdgeDockEnable         = Tree.ID(featSetting, "opt-edge-dock-enable")         // 启用状态条收缩按钮
 	IDOptEdgeDockDisable        = Tree.ID(featSetting, "opt-edge-dock-disable")        // 不启用状态条收缩按钮
+	IDOptHeaderShow             = Tree.ID(featSetting, "opt-header-show")              // 显示顶部状态栏按钮
+	IDOptHeaderHide             = Tree.ID(featSetting, "opt-header-hide")              // 隐藏顶部状态栏按钮
+	IDOptFooterShow             = Tree.ID(featSetting, "opt-footer-show")              // 显示底部状态栏按钮
+	IDOptFooterHide             = Tree.ID(featSetting, "opt-footer-hide")              // 隐藏底部状态栏按钮
+	IDBtnClockMiniSettings      = Tree.ID(featClock, "btn-clock-mini-settings")        // 顶部状态栏隐藏时主时钟界面的极简设置按钮
 	IDBtnSettingsEdgeBarPreview = Tree.ID(featSetting, "btn-settings-edgebar-preview") // 立即体验缩为边缘状态条按钮
 
 	// 设置中心顶部五大子模块切换按钮 (Settings Sub-Tabs)

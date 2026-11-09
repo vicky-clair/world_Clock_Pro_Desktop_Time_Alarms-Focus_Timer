@@ -78,6 +78,33 @@ func main() {
 						},
 					},
 					{
+						Title: state.T("tray.settings"),
+						OnSelect: func() {
+							state.ActiveTab = ui.TabSettings
+							state.ResetScroll()
+							win.Show()
+						},
+					},
+					{
+						Separator: true,
+					},
+					{
+						Title: state.T("tray.toggle_header"),
+						OnSelect: func() {
+							state.UpdateSettings(func(s *storage.Settings) {
+								s.HideHeader = !s.HideHeader
+							})
+						},
+					},
+					{
+						Title: state.T("tray.toggle_footer"),
+						OnSelect: func() {
+							state.UpdateSettings(func(s *storage.Settings) {
+								s.HideFooter = !s.HideFooter
+							})
+						},
+					},
+					{
 						Separator: true,
 					},
 					{

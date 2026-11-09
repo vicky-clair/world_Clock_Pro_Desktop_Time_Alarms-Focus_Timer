@@ -51,7 +51,7 @@ func setupTestApp(t *testing.T) (*AppState, *app.Driver) {
 	var canvas vui.Canvas
 	cfg := NewAppConfig(state)
 	cfg.Width = 900
-	cfg.Height = 1200
+	cfg.Height = 1400
 	driver, err := app.NewDriver(cfg, &canvas)
 	if err != nil {
 		t.Fatalf("failed to create app.Driver: %v", err)
@@ -89,15 +89,9 @@ func TestMainClockInteractions(t *testing.T) {
 		t.Fatal("expected seconds to be OFF")
 	}
 
-	// 3. Toggle Style Digital -> Analog
+	// 3. Clock Style is consistently digital
 	if state.Store.Get().ClockStyle != string(clock.StyleDigital) {
 		t.Fatal("expected default digital clock style")
-	}
-	if !clickID(t, driver, IDBtnToggleStyle) {
-		t.Fatal("failed to click style toggle button")
-	}
-	if state.Store.Get().ClockStyle != string(clock.StyleAnalog) {
-		t.Fatal("expected style to switch to analog")
 	}
 }
 
@@ -1630,6 +1624,59 @@ func TestAutoStartSettingToggle(t *testing.T) {
 	}
 	if len(hookCalls) != 3 || !hookCalls[2] {
 		t.Fatalf("expected AutostartHook called with true, got %v", hookCalls)
+	}
+}
+
+func TestHeaderAndFooterVisibilityToggle(t *testing.T) {
+	state, driver := setupTestApp(t)
+	defer driver.Close()
+
+	// Switch to Settings -> Language subtab
+	if !clickID(t, driver, TabSettingsID) {
+		t.Fatal("failed to click TabSettingsID")
+	}
+	if !clickID(t, driver, IDSettingsTabLanguage) {
+		t.Fatal("failed to click IDSettingsTabLanguage")
+	}
+
+	// 1. Initially both should be false (visible)
+	if state.Store.Get().HideHeader {
+		t.Fatal("expected default HideHeader to be false")
+	}
+	if state.Store.Get().HideFooter {
+		t.Fatal("expected default HideFooter to be false")
+	}
+
+	// 2. Click Hide Header
+	if !clickID(t, driver, IDOptHeaderHide) {
+		t.Fatal("failed to click IDOptHeaderHide")
+	}
+	if !state.Store.Get().HideHeader {
+		t.Fatal("expected HideHeader to be true after clicking IDOptHeaderHide")
+	}
+
+	// 3. Click Show Header
+	if !clickID(t, driver, IDOptHeaderShow) {
+		t.Fatal("failed to click IDOptHeaderShow")
+	}
+	if state.Store.Get().HideHeader {
+		t.Fatal("expected HideHeader to be false after clicking IDOptHeaderShow")
+	}
+
+	// 4. Click Hide Footer
+	if !clickID(t, driver, IDOptFooterHide) {
+		t.Fatal("failed to click IDOptFooterHide")
+	}
+	if !state.Store.Get().HideFooter {
+		t.Fatal("expected HideFooter to be true after clicking IDOptFooterHide")
+	}
+
+	// 5. Click Show Footer
+	if !clickID(t, driver, IDOptFooterShow) {
+		t.Fatal("failed to click IDOptFooterShow")
+	}
+	if state.Store.Get().HideFooter {
+		t.Fatal("expected HideFooter to be false after clicking IDOptFooterShow")
 	}
 }
 

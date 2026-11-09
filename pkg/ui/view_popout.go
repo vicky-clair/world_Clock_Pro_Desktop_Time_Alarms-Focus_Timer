@@ -135,15 +135,13 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 			f.Spacer()
 		}
 
-		// Clock representation: 整体视觉层级优化
-		if cfg.ClockStyle == string(clock.StyleAnalog) {
-			drawAnalogFace(f, now, theme, 240)
-
-			// 1. 数字时间读数
-			f.Row().Items(flex.Baseline).Gap(8).Children(func() {
-				state.ApplyDigitsFont(f.Text(timeStr).FontSize(42).Bold()).Color(state.ClockColor(theme))
+		// Clock representation: 超大字号数字时钟卡片
+		f.Column().Pad(28).Background(theme.Card).Radius(20).Border(1, theme.Border).Items(flex.Center).Gap(14).Children(func() {
+			// 1. 超大数字时钟主体（居于最上方核心视觉焦点）
+			f.Row().Items(flex.Baseline).Gap(10).Children(func() {
+				state.ApplyDigitsFont(f.Text(timeStr).FontSize(76).Bold()).Color(state.ClockColor(theme))
 				if period != "" {
-					f.Text(period).FontSize(20).Bold().Color(theme.Primary)
+					f.Text(period).FontSize(24).Bold().Color(theme.Primary)
 				}
 			})
 
@@ -175,88 +173,36 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 				}
 				f.Text(weatherText).FontSize(14).Bold().Color(theme.Primary)
 			})
-		} else {
-			// Digital Popout Clock: 超大字号数字时钟卡片
-			f.Column().Pad(28).Background(theme.Card).Radius(20).Border(1, theme.Border).Items(flex.Center).Gap(14).Children(func() {
-				// 1. 超大数字时钟主体（居于最上方核心视觉焦点）
-				f.Row().Items(flex.Baseline).Gap(10).Children(func() {
-					state.ApplyDigitsFont(f.Text(timeStr).FontSize(76).Bold()).Color(state.ClockColor(theme))
-					if period != "" {
-						f.Text(period).FontSize(24).Bold().Color(theme.Primary)
-					}
-				})
-
-				// 2. 紧随时间下方：IP 所在国家 与 所在国家/地区 徽章
-				f.Row().PadX(14).PadY(4).Background(theme.Muted).Radius(10).Items(flex.Center).Gap(6).Children(func() {
-					if ipBadge != "" {
-						f.Text(ipBadge).FontSize(13).Bold().Color(theme.Accent)
-						f.Text("•").FontSize(11).Muted()
-					}
-					f.Text(locationBadge).FontSize(13).Bold().Color(theme.Primary)
-				})
-
-				// 3. 阳历、农历与节假日
-				f.Column().Items(flex.Center).Gap(4).Children(func() {
-					f.Text(solarStr).FontSize(18).Bold().Color(theme.Foreground)
-					f.Text(lunarStr).FontSize(14).Color(theme.MutedForeground)
-					if holidayBadge != "" {
-						f.Row().PadX(10).PadY(2).Background(theme.Muted).Radius(6).Children(func() {
-							f.Text(holidayBadge).FontSize(12).Bold().Color(theme.Primary)
-						})
-					}
-				})
-
-				// 4. 底部实时天气快照
-				f.Row().PadX(14).PadY(4).Background(theme.Muted).Radius(10).Gap(6).Children(func() {
-					if ipLocStr != "" {
-						f.Text(fmt.Sprintf("📍 %s", ipLocStr)).FontSize(13).Bold().Color(theme.Foreground)
-						f.Text("•").FontSize(11).Muted()
-					}
-					f.Text(weatherText).FontSize(14).Bold().Color(theme.Primary)
-				})
-			})
-		}
+		})
 
 		// 垂直位置调度：居中或靠顶时在下部插入弹性拉伸 Spacer
 		if pos == storage.PopoutPosCenter || pos == storage.PopoutPosTop {
 			f.Spacer()
 		}
 
-		// Footer controls
-		f.Row().Items(flex.Center).Gap(10).Children(func() {
-			formatLabel := state.T("clock.12h")
-			if cfg.TimeFormat24H {
-				formatLabel = state.T("clock.24h")
-			}
-			if f.Button(IDBtnToggle24H, formatLabel).Outline().Clicked() {
-				state.UpdateSettings(func(s *storage.Settings) {
-					s.TimeFormat24H = !s.TimeFormat24H
-				})
-			}
+		// Footer controls (当开启底部状态栏隐藏模式时，不予渲染)
+		if !cfg.HideFooter {
+			f.Row().Items(flex.Center).Gap(10).Children(func() {
+				formatLabel := state.T("clock.12h")
+				if cfg.TimeFormat24H {
+					formatLabel = state.T("clock.24h")
+				}
+				if f.Button(IDBtnToggle24H, formatLabel).Outline().Clicked() {
+					state.UpdateSettings(func(s *storage.Settings) {
+						s.TimeFormat24H = !s.TimeFormat24H
+					})
+				}
 
-			secLabel := state.T("clock.seconds_off")
-			if cfg.ShowSeconds {
-				secLabel = state.T("clock.seconds_on")
-			}
-			if f.Button(IDBtnToggleSeconds, secLabel).Outline().Clicked() {
-				state.UpdateSettings(func(s *storage.Settings) {
-					s.ShowSeconds = !s.ShowSeconds
-				})
-			}
-
-			styleLabel := state.T("clock.style_digital")
-			if cfg.ClockStyle == string(clock.StyleAnalog) {
-				styleLabel = state.T("clock.style_analog")
-			}
-			if f.Button(IDBtnToggleStyle, styleLabel).Outline().Clicked() {
-				state.UpdateSettings(func(s *storage.Settings) {
-					if s.ClockStyle == string(clock.StyleAnalog) {
-						s.ClockStyle = string(clock.StyleDigital)
-					} else {
-						s.ClockStyle = string(clock.StyleAnalog)
-					}
-				})
-			}
-		})
+				secLabel := state.T("clock.seconds_off")
+				if cfg.ShowSeconds {
+					secLabel = state.T("clock.seconds_on")
+				}
+				if f.Button(IDBtnToggleSeconds, secLabel).Outline().Clicked() {
+					state.UpdateSettings(func(s *storage.Settings) {
+						s.ShowSeconds = !s.ShowSeconds
+					})
+				}
+			})
+		}
 	})
 }
