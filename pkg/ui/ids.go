@@ -202,6 +202,8 @@ var (
 	IDOptHeaderHide             = Tree.ID(featSetting, "opt-header-hide")              // 隐藏顶部状态栏按钮
 	IDOptFooterShow             = Tree.ID(featSetting, "opt-footer-show")              // 显示底部状态栏按钮
 	IDOptFooterHide             = Tree.ID(featSetting, "opt-footer-hide")              // 隐藏底部状态栏按钮
+	IDOptBarsAllShow            = Tree.ID(featSetting, "opt-bars-all-show")            // 一键显示全部状态栏按钮
+	IDOptBarsAllHide            = Tree.ID(featSetting, "opt-bars-all-hide")            // 一键隐藏全部状态栏按钮
 	IDBtnClockMiniSettings      = Tree.ID(featClock, "btn-clock-mini-settings")        // 顶部状态栏隐藏时主时钟界面的极简设置按钮
 	IDBtnSettingsEdgeBarPreview = Tree.ID(featSetting, "btn-settings-edgebar-preview") // 立即体验缩为边缘状态条按钮
 

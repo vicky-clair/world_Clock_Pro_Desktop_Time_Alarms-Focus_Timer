@@ -164,8 +164,8 @@ func NewAppConfig(state *AppState) app.Config {
 			}
 
 			f.Column().Fill().Children(func() {
-				// 顶部全局导航栏与响铃提醒横幅：当设置开启顶部状态栏隐藏且处于主时钟时自动隐藏（响铃或模态时强制保障显示）
-				showHeader := !settings.HideHeader || state.ActiveTab != TabClock || state.Scheduler.Ringing() != nil || state.ShowProModal
+				// 顶部全局导航栏与响铃提醒横幅：当设置开启顶部状态栏隐藏且处于主时钟或悬浮时钟时自动隐藏（响铃或模态时强制保障显示）
+				showHeader := !settings.HideHeader || (state.ActiveTab != TabClock && state.ActiveTab != TabPopout) || state.Scheduler.Ringing() != nil || state.ShowProModal
 				if showHeader {
 					DrawHeader(f, state, theme)
 				}

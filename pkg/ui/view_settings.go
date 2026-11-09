@@ -610,13 +610,13 @@ func drawSettingsLanguage(f *flex.Frame, state *AppState, theme ui.Theme, cfg st
 	drawSettingsFont(f, state, theme, cfg)
 }
 
-// drawSettingsBars 渲染“状态栏与沉浸模式”卡片（在语言/常规设置中提供顶部导航栏与底部控制栏的开启与隐藏切换）。
+// drawSettingsBars 渲染“状态栏与沉浸模式”卡片（在语言/常规设置中提供主窗口与悬浮时钟顶部导航栏与底部控制栏的开启与隐藏切换）。
 func drawSettingsBars(f *flex.Frame, state *AppState, theme ui.Theme, cfg storage.Settings) {
 	f.Column().FillWidth().Pad(16).Background(theme.Card).Radius(12).Border(1, theme.Border).Gap(12).Children(func() {
 		f.Text(state.T("settings.bars_title")).FontSize(15).Bold().Color(theme.Primary)
 		f.Text(state.T("settings.bars_desc")).FontSize(12).Muted()
 
-		// 1. 顶部状态栏（功能导航栏）开启/关闭
+		// 1. 顶部状态栏（主窗口导航栏 / 悬浮时钟顶栏）开启/关闭
 		f.Row().Items(flex.Center).Children(func() {
 			f.Text(state.T("settings.header_title")).Bold().Color(theme.Foreground)
 			f.Spacer()
@@ -649,7 +649,7 @@ func drawSettingsBars(f *flex.Frame, state *AppState, theme ui.Theme, cfg storag
 
 		f.Divider()
 
-		// 2. 底部状态栏（快捷控制栏）开启/关闭
+		// 2. 底部状态栏（主窗口快捷控制栏 / 悬浮时钟底栏）开启/关闭
 		f.Row().Items(flex.Center).Children(func() {
 			f.Text(state.T("settings.footer_title")).Bold().Color(theme.Foreground)
 			f.Spacer()
@@ -674,6 +674,41 @@ func drawSettingsBars(f *flex.Frame, state *AppState, theme ui.Theme, cfg storag
 				}
 				if btnHideF.Clicked() {
 					state.UpdateSettings(func(s *storage.Settings) {
+						s.HideFooter = true
+					})
+				}
+			})
+		})
+
+		f.Divider()
+
+		// 3. 全部状态栏（一键全沉浸模式）：同时显示或隐藏主窗口与悬浮时钟所有状态栏
+		f.Row().Items(flex.Center).Children(func() {
+			f.Text(state.T("settings.bars_all_title")).Bold().Color(theme.Foreground)
+			f.Spacer()
+			f.Row().Gap(8).Children(func() {
+				btnShowAll := f.Button(IDOptBarsAllShow, state.T("settings.bars_all_show")).Small()
+				if !cfg.HideHeader && !cfg.HideFooter {
+					btnShowAll.Outline()
+				} else {
+					btnShowAll.Secondary()
+				}
+				if btnShowAll.Clicked() {
+					state.UpdateSettings(func(s *storage.Settings) {
+						s.HideHeader = false
+						s.HideFooter = false
+					})
+				}
+
+				btnHideAll := f.Button(IDOptBarsAllHide, state.T("settings.bars_all_hide")).Small()
+				if cfg.HideHeader && cfg.HideFooter {
+					btnHideAll.Outline()
+				} else {
+					btnHideAll.Secondary()
+				}
+				if btnHideAll.Clicked() {
+					state.UpdateSettings(func(s *storage.Settings) {
+						s.HideHeader = true
 						s.HideFooter = true
 					})
 				}

@@ -51,7 +51,7 @@ func setupTestApp(t *testing.T) (*AppState, *app.Driver) {
 	var canvas vui.Canvas
 	cfg := NewAppConfig(state)
 	cfg.Width = 900
-	cfg.Height = 1400
+	cfg.Height = 1600
 	driver, err := app.NewDriver(cfg, &canvas)
 	if err != nil {
 		t.Fatalf("failed to create app.Driver: %v", err)
@@ -1677,6 +1677,63 @@ func TestHeaderAndFooterVisibilityToggle(t *testing.T) {
 	}
 	if state.Store.Get().HideFooter {
 		t.Fatal("expected HideFooter to be false after clicking IDOptFooterShow")
+	}
+
+	// 6. Test One-Click Hide All Status Bars
+	if !clickID(t, driver, IDOptBarsAllHide) {
+		t.Fatal("failed to click IDOptBarsAllHide")
+	}
+	if !state.Store.Get().HideHeader || !state.Store.Get().HideFooter {
+		t.Fatal("expected both HideHeader and HideFooter to be true")
+	}
+
+	// 7. Verify Popout mode reflects hidden bars
+	state.IsPopout = true
+	state.ActiveTab = TabPopout
+	_ = driver.Resize(900, 1201)
+
+	// In Popout mode with HideHeader=true, full header (IDBtnPinPopout) is hidden, but mini restore button (IDBtnExitPopout) remains
+	snap := driver.Snapshot()
+	hasPin := false
+	hasExit := false
+	has24H := false
+	for _, hit := range snap.Hits {
+		if hit.ID == IDBtnPinPopout {
+			hasPin = true
+		}
+		if hit.ID == IDBtnExitPopout {
+			hasExit = true
+		}
+		if hit.ID == IDBtnToggle24H {
+			has24H = true
+		}
+	}
+	if hasPin {
+		t.Fatal("expected IDBtnPinPopout to be hidden when HideHeader is true")
+	}
+	if !hasExit {
+		t.Fatal("expected IDBtnExitPopout to remain accessible for restoring from popout")
+	}
+	if has24H {
+		t.Fatal("expected IDBtnToggle24H to be hidden when HideFooter is true")
+	}
+
+	// Click Exit Popout to return to clock
+	if !clickID(t, driver, IDBtnExitPopout) {
+		t.Fatal("failed to click IDBtnExitPopout in immersive popout mode")
+	}
+	// Use mini settings button from clock (since header is hidden) to navigate to settings
+	if !clickID(t, driver, IDBtnClockMiniSettings) {
+		t.Fatal("failed to click IDBtnClockMiniSettings")
+	}
+	clickID(t, driver, IDSettingsTabLanguage)
+
+	// 8. Test One-Click Show All Status Bars
+	if !clickID(t, driver, IDOptBarsAllShow) {
+		t.Fatal("failed to click IDOptBarsAllShow")
+	}
+	if state.Store.Get().HideHeader || state.Store.Get().HideFooter {
+		t.Fatal("expected both HideHeader and HideFooter to be false")
 	}
 }
 

@@ -74,61 +74,73 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	weatherText := fmt.Sprintf("%s %s (%s)", wSnap.Icon, tempStr, condStr)
 
 	f.Column().Fill().Pad(20).Background(theme.Background).Items(flex.Center).Gap(16).Children(func() {
-		// Header controls: 置顶锁定、显示位置控制（顶、中间、底部）与一键还原
-		f.Row().FillWidth().Items(flex.Center).Children(func() {
-			pinLabel := state.T("popout.pin_off")
-			if cfg.Topmost {
-				pinLabel = state.T("popout.pin_on")
-			}
-			if f.Button(IDBtnPinPopout, pinLabel).Outline().Clicked() {
-				state.SetTopmost(!cfg.Topmost)
-			}
-
-			f.Spacer()
-
-			// 位置切换按钮组：支持在顶、中间、底部显示
-			f.Row().Items(flex.Center).Gap(6).Children(func() {
-				f.Text(state.T("popout.pos_label") + ":").FontSize(14).Muted()
-
-				btnTop := f.Button(IDBtnPopoutPosTop, state.T("popout.pos_top")).Small()
-				if pos != storage.PopoutPosTop {
-					btnTop.Outline()
+		// Header controls: 置顶锁定、显示位置控制（顶、中间、底部）与一键还原（开启顶部状态栏隐藏时自动隐藏）
+		if !cfg.HideHeader {
+			f.Row().FillWidth().Items(flex.Center).Children(func() {
+				pinLabel := state.T("popout.pin_off")
+				if cfg.Topmost {
+					pinLabel = state.T("popout.pin_on")
 				}
-				if btnTop.Clicked() {
-					state.UpdateSettings(func(s *storage.Settings) {
-						s.PopoutPosition = storage.PopoutPosTop
-					})
+				if f.Button(IDBtnPinPopout, pinLabel).Outline().Clicked() {
+					state.SetTopmost(!cfg.Topmost)
 				}
 
-				btnCenter := f.Button(IDBtnPopoutPosCenter, state.T("popout.pos_center")).Small()
-				if pos != storage.PopoutPosCenter {
-					btnCenter.Outline()
-				}
-				if btnCenter.Clicked() {
-					state.UpdateSettings(func(s *storage.Settings) {
-						s.PopoutPosition = storage.PopoutPosCenter
-					})
-				}
+				f.Spacer()
 
-				btnBottom := f.Button(IDBtnPopoutPosBottom, state.T("popout.pos_bottom")).Small()
-				if pos != storage.PopoutPosBottom {
-					btnBottom.Outline()
-				}
-				if btnBottom.Clicked() {
-					state.UpdateSettings(func(s *storage.Settings) {
-						s.PopoutPosition = storage.PopoutPosBottom
-					})
+				// 位置切换按钮组：支持在顶、中间、底部显示
+				f.Row().Items(flex.Center).Gap(6).Children(func() {
+					f.Text(state.T("popout.pos_label") + ":").FontSize(14).Muted()
+
+					btnTop := f.Button(IDBtnPopoutPosTop, state.T("popout.pos_top")).Small()
+					if pos != storage.PopoutPosTop {
+						btnTop.Outline()
+					}
+					if btnTop.Clicked() {
+						state.UpdateSettings(func(s *storage.Settings) {
+							s.PopoutPosition = storage.PopoutPosTop
+						})
+					}
+
+					btnCenter := f.Button(IDBtnPopoutPosCenter, state.T("popout.pos_center")).Small()
+					if pos != storage.PopoutPosCenter {
+						btnCenter.Outline()
+					}
+					if btnCenter.Clicked() {
+						state.UpdateSettings(func(s *storage.Settings) {
+							s.PopoutPosition = storage.PopoutPosCenter
+						})
+					}
+
+					btnBottom := f.Button(IDBtnPopoutPosBottom, state.T("popout.pos_bottom")).Small()
+					if pos != storage.PopoutPosBottom {
+						btnBottom.Outline()
+					}
+					if btnBottom.Clicked() {
+						state.UpdateSettings(func(s *storage.Settings) {
+							s.PopoutPosition = storage.PopoutPosBottom
+						})
+					}
+				})
+
+				f.Spacer()
+
+				if f.Button(IDBtnExitPopout, state.T("nav.restore")).Clicked() {
+					state.IsPopout = false
+					state.ActiveTab = TabClock
+					state.Persist()
 				}
 			})
-
-			f.Spacer()
-
-			if f.Button(IDBtnExitPopout, state.T("nav.restore")).Clicked() {
-				state.IsPopout = false
-				state.ActiveTab = TabClock
-				state.Persist()
-			}
-		})
+		} else {
+			// 顶部状态栏隐藏时，在悬浮时钟右上角提供轻巧微型的“↙ 还原”快捷按钮，保持纯净并防止无法退出悬浮窗
+			f.Row().FillWidth().Items(flex.Center).Children(func() {
+				f.Spacer()
+				if f.Button(IDBtnExitPopout, "↙ "+state.T("nav.restore")).Small().Ghost().Clicked() {
+					state.IsPopout = false
+					state.ActiveTab = TabClock
+					state.Persist()
+				}
+			})
+		}
 
 		// 垂直位置调度：居中或靠底时在上部插入弹性拉伸 Spacer
 		if pos == storage.PopoutPosCenter || pos == storage.PopoutPosBottom {

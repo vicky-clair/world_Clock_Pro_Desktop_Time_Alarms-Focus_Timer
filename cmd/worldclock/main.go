@@ -105,6 +105,16 @@ func main() {
 						},
 					},
 					{
+						Title: state.T("tray.toggle_all_bars"),
+						OnSelect: func() {
+							state.UpdateSettings(func(s *storage.Settings) {
+								newVal := !(s.HideHeader && s.HideFooter)
+								s.HideHeader = newVal
+								s.HideFooter = newVal
+							})
+						},
+					},
+					{
 						Separator: true,
 					},
 					{
