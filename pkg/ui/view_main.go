@@ -70,11 +70,11 @@ func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	}
 
 	f.Column().Fill().Pad(24).Gap(18).Items(flex.Center).Children(func() {
-		// 当顶部状态栏隐藏时，在主时钟右上角提供一个优雅轻巧的“⚙ 设置”快捷入口，防止用户迷失
+		// 当顶部状态栏隐藏时，在主时钟右上角仅保留一个醒目纯净的“⚙”极简图标，避免文字破坏纯粹沉浸感
 		if cfg.HideHeader {
 			f.Row().FillWidth().Items(flex.Center).Children(func() {
 				f.Spacer()
-				if f.Button(IDBtnClockMiniSettings, "⚙ "+state.T("nav.settings")).Small().Ghost().Clicked() {
+				if f.Button(IDBtnClockMiniSettings, "⚙").Small().Ghost().Clicked() {
 					state.ActiveTab = TabSettings
 					state.ResetScroll()
 				}

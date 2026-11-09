@@ -131,10 +131,15 @@ func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 				}
 			})
 		} else {
-			// 顶部状态栏隐藏时，在悬浮时钟右上角提供轻巧微型的“↙ 还原”快捷按钮，保持纯净并防止无法退出悬浮窗
-			f.Row().FillWidth().Items(flex.Center).Children(func() {
+			// 顶部状态栏隐藏时，在悬浮时钟右上角仅保留纯粹轻巧的“⚙”设置与“⤢”还原图标，杜绝文字冗余
+			f.Row().FillWidth().Items(flex.Center).Gap(6).Children(func() {
 				f.Spacer()
-				if f.Button(IDBtnExitPopout, "↙ "+state.T("nav.restore")).Small().Ghost().Clicked() {
+				if f.Button(IDBtnClockMiniSettings, "⚙").Small().Ghost().Clicked() {
+					state.IsPopout = false
+					state.ActiveTab = TabSettings
+					state.ResetScroll()
+				}
+				if f.Button(IDBtnExitPopout, "⤢").Small().Ghost().Clicked() {
 					state.IsPopout = false
 					state.ActiveTab = TabClock
 					state.Persist()
