@@ -54,10 +54,13 @@
 
 ## 📖 详细使用指南 (User Guide)
 
-### 1. 主时钟、悬浮时钟与屏幕边缘状态条
+### 1. 主时钟、悬浮时钟与全沉浸模式
 - **切换时间格式与显示**：主时钟与悬浮时钟专注于超清晰数字大字显示，在底部控制栏可一键切换 **`24小时制 / 12小时制`** 与 **`显示秒数: 是/否`**。
-- **状态栏显示与沉浸模式（顶部导航与底部控制栏自由隐藏）**：进入 **设置 → 🌐 语言**，在“状态栏显示与沉浸模式”卡片中可随时一键开启或隐藏 **`顶部状态栏（功能导航栏）`** 与 **`底部状态栏（快捷控制栏）`**。在顶部状态栏隐藏后，主时钟右上角会提供优雅的 **`⚙ 设置`** 快捷入口，同时系统托盘右键菜单中亦内置快捷开关，让桌面时钟享受极致纯净、无干扰的沉浸式体验。
-- **进入桌面悬浮时钟**：点击顶部导航栏 **`↗ 悬浮时钟`** 或主时钟底部的 **`悬浮时钟模式 ↗`**。在悬浮小窗顶部可通过 **`[⬆ 顶部]`**、**`[⏺ 居中]`**、**`[⬇ 底部]`** 调整时钟在窗口内的垂直位置，点击 **`📌 置顶`** 可锁定在桌面最前端，点击 **`还原窗口 ↙`** 返回完整界面。
+- **状态栏显示与全沉浸模式（顶部导航与底部控制栏自由隐藏）**：
+  - 进入 **设置 → 🌐 语言与状态栏**，在“状态栏显示与沉浸模式”卡片中可随时一键切换 **`[👁 显示顶部状态栏] / [✕ 隐藏顶部状态栏]`** 与 **`[👁 显示底部状态栏] / [✕ 隐藏底部状态栏]`**，亦可点击 **`[🌌 开启全沉浸模式]`** 一键同时隐藏或恢复上下状态栏；
+  - **醒目纯图标无障碍操作**：在顶部导航栏隐藏后，主时钟右上角常驻保留醒目的纯图标按钮 **`⚙`**，点击即可随时进入设置，无需依赖复杂快捷键；悬浮时钟小窗在全沉浸模式下自动隐藏控制栏，并在右上角提供纯图标 **`⚙`**（进入设置）与 **`⤢`**（退出小窗恢复常规窗口），保持极致纯粹与交互便捷的最佳平衡；
+  - **系统托盘联动**：右下角系统托盘菜单中内置 `显示/隐藏顶部栏`、`显示/隐藏底部栏` 与 `显示/隐藏全部状态栏` 快捷开关，随时随地一键随心切换。
+- **进入桌面悬浮时钟**：点击顶部导航栏 **`↗ 悬浮时钟`** 或主时钟底部的 **`悬浮时钟模式 ↗`**。在悬浮小窗顶部可通过 **`[⬆ 顶部]`**、**`[⏺ 居中]`**、**`[⬇ 底部]`** 调整时钟在窗口内的垂直位置，点击 **`📌 置顶`** 可锁定在桌面最前端，点击 **`⤢`** 或 **`还原窗口 ↙`** 返回完整界面。悬浮小窗同样完美支持全沉浸模式，摆在桌面宛如精致的电子时钟壁挂。
 - **屏幕边缘自动缩小为状态条**：
   - **自动触发**：将窗口拖动靠近屏幕顶部或左右边缘，窗口会自动缩小为紧凑型时间日期状态条。
   - **手动触发**：点击主时钟底部控制栏的 **`➖ 缩为状态条`**（或 **设置 → ⏰ 时钟** 中的 **`➖ 立即缩为状态条`**）。
@@ -126,6 +129,16 @@
    - 所有用户设置、世界城市、闹钟与自定义倒计时任务均保存在本地 `%APPDATA%\XiaoruIntegratedClockDesktop\settings.json`，并在每次有变更写入前自动通过内存快照备份至 `settings.json.bak`（当配置无实质变化时自动跳过写盘，实现零冗余硬盘写入）；若遇异常断电导致主配置损坏，启动时会自动从 `.bak` 恢复。
 8. **关于仓库源码与构建产物**：
    - 本 GitHub 仓库仅托管纯净源代码与资源文件，不上传打包后的二进制可执行文件与 `dist/` 目录。请按照下方步骤使用 `go run ./cmd/worldclock` 直接运行，或执行 `.\build_windows.ps1` 在本地一键编译生成 `dist\小瑞综合时钟桌面.exe`（及 `dist\XiaoruIntegratedClockDesktop.exe`）。
+9. **关于杀毒软件启发式分析误报（如 `VHO:HackTool.Win64.Convagent.gen` 等）的说明与处理建议**：
+   - **误报原因解析**：
+     - 本项目为 100% 纯正开源软件，绝无任何恶意行为、无后门、无广告插件、无任何未经许可的遥测或数据回传。
+     - 部分安全软件（如卡巴斯基、火绒、Windows Defender 等）的“启发式分析（Heuristic Analysis）”模块在扫描**本地刚刚编译出的全新 Go 二进制程序**或**单元测试临时进程（`*.test.exe`）**时，可能会因以下特征触发误报预警（如报告类型为“可能会造成损害的软件”，名称带有 `.gen` 泛型代号）：
+       1. **注册系统开机自启**：软件提供了标准的 Windows 启动项注册功能（读写 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` 注册表键），这一行为属于系统级自启项维护，启发式分析常对此类行为赋予较高风险权值；
+       2. **无云端信誉库背书**：本地自行编译的可执行文件具有全新的随机哈希，尚未上传至安全厂商的云端全球白名单库，启发式引擎在缺乏信誉数据时倾向于从严拦截；
+       3. **测试临时文件拦截**：运行 `go test ./...` 过程中，Go 编译工具链会在 Windows `%TEMP%` 目录下快速生成 `pkg.test.exe` 并立即执行测试和清理，激进的文件反病毒组件有时会将其误拦截导致测试进程被终止。
+   - **推荐处理方式**：
+     - **日常开发 / 源码运行**：在安全软件中将本项目工作目录（例如 `c:\XMWJJ\the-world-clock-on-the-desktop`）或 Go 构建临时目录添加至“信任区 / 排除项（Exclusion / Whitelist）”；
+     - **正式分发与使用**：建议使用项目根目录下提供的 [`build_windows.ps1`](build_windows.ps1) 脚本进行构建。该脚本会自动嵌入标准的 Windows 原生 PE 资源（图标、版本声明、`asInvoker` 权限清单）、保留标准 Go 符号表与 BuildID，并自动施加 Authenticode 数字签名，大幅提升在 Windows Defender、SmartScreen 及各大杀毒软件中的信任度与兼容性。
 
 ---
 
@@ -229,7 +242,8 @@ the-world-clock-on-the-desktop/
 
 ## 🚀 Key Features
 
-- **🕒 Main Clock & Aesthetic Hierarchy**: Large clock digits (~76-90px) as the primary hero focal point. Directly beneath the time readout, an elegant capsule displays the detected **Public IP Country with full unmasked IP and OS Country/Region** (e.g., `🌐 IP Country: United States (120.244.11.22) • 📍 Country/Region: United States · New York (UTC-05:00)`). Followed by a unified Gregorian and Lunar calendar section with holiday chips, and a bottom weather pill prefixed with IP location (`📍 China Guangdong Guangzhou • ⛅ 24°C (Cloudy)`). Supports digital & vector analog dials, 12H/24H, seconds toggle, and `°C` / `°F`.
+- **🕒 Main Clock & Aesthetic Hierarchy**: Large clock digits (~76-90px) as the primary hero focal point. Directly beneath the time readout, an elegant capsule displays the detected **Public IP Country with full unmasked IP and OS Country/Region** (e.g., `🌐 IP Country: United States (120.244.11.22) • 📍 Country/Region: United States · New York (UTC-05:00)`). Followed by a unified Gregorian and Lunar calendar section with holiday chips, and a bottom weather pill prefixed with IP location (`📍 China Guangdong Guangzhou • ⛅ 24°C (Cloudy)`). Supports 12H/24H, seconds toggle, and `°C` / `°F`.
+- **🌌 Status Bar Visibility & Immersive Mode**: Independently hide or show the top navigation bar and bottom status bar, or toggle one-click Full Immersive Mode (`Settings → 🌐 Language & Status Bars`). When hidden, prominent icon-only buttons (**`⚙`** for settings and **`⤢`** for restoring normal window) provide distraction-free aesthetics while preserving seamless accessibility. Includes system tray integration and guaranteed alarm banner override.
 - **🌐 Public IP Geolocation & 6-Hour Weather Updates**: Asynchronous non-blocking public IP lookup detecting host country, region, city, coordinates, and full IP. Automatically queries the Open-Meteo API using real IP coordinates for live weather, cached and refreshed **strictly every 6 hours** with seamless offline fallback.
 - **🎉 World Holidays, 24 Solar Terms & Shopping/Tech Festivals**: Comprehensive holiday engine for CN, US, JP, GB, and FR, astronomical 24 Solar Terms (Lidong, etc.), and tech/shopping festivals (1024 Programmers' Day, Black Friday, Cyber Monday, Double 11, Double 12, 618, 520). Displays "🎉 Today's Holiday: None" when no holiday falls on the current day.
 - **🌍 Global World Clock (200+ Cities & 193 Countries)**: Real-time search across English, Chinese, Japanese, country codes, and IANA timezones (`America/New_York`, `Asia/Tokyo`, `Europe/London`, etc.). Supports continent filters, favorites (`★`), custom ordering (`↑`/`↓`), duplicate detection alert dialogs, and per-city local holiday displays.
@@ -268,6 +282,10 @@ powershell -ExecutionPolicy Bypass -File .\build_windows.ps1
 go test ./... -count=1
 ```
 
+### ⚠️ Note on Antivirus Heuristic Detection (e.g., `VHO:HackTool.Win64.Convagent.gen`)
+- **Root Cause**: This application is 100% open-source, contains zero telemetry, ads, or backdoors. Heuristic analysis engines in security software (Kaspersky, Defender) may occasionally flag freshly compiled local Go binaries or temporary unit test processes (`pkg.test.exe`). This is triggered because the app manages Windows startup registry entries (`HKCU\...\Run`) for its autostart feature, and newly generated local hashes lack cloud reputation.
+- **Solution**: Whitelist this repository or your Go build cache in your antivirus exclusions. For releases, use [`build_windows.ps1`](build_windows.ps1), which embeds complete Windows PE manifests and applies Authenticode digital signatures.
+
 ---
 
 # 🇯🇵 日本語ドキュメント (Japanese)
@@ -284,7 +302,8 @@ go test ./... -count=1
 
 ## 🚀 主な機能
 
-- **🕒 メイン時計＆視覚階層の最適化**：画面最上部に76-90pxの特大デジタル数字（または高精度アナログ文字盤）を配置し視覚の中心を確立。時間数字の直下に、検出された**パブリックIPの国・完全IPアドレス（マスクなし）およびOSの国・地域バッジ**（例：`🌐 IP の国：日本 (120.244.11.22) • 📍 現在の国・地域：日本 · 東京 (UTC+09:00)`）を丸角カプセルで配置。太陽暦（22px）と太陰太陽暦（16px）および祝日・節気チップを統合し、最下部にIP地域付きリアルタイム天気（`📍 日本 東京都 • ⛅ 24°C (曇り)`）をすっきり表示。
+- **🕒 メイン時計＆視覚階層の最適化**：画面最上部に76-90pxの特大デジタル数字を配置し視覚の中心を確立。
+- **🌌 ステータスバー表示と全画面没入モード**：上部ナビゲーションバーと下部ステータスバーの個別表示／非表示、またはワンクリックで両方を隠す全没入モードに対応（**設定 → 🌐 言語とステータスバー**）。非表示時も右上隅に目立つ純アイコンボタン（設定 **`⚙`**、小窓復元 **`⤢`**）を常駐させ、美観と操作性を両立。トレイメニューからも瞬時に切り替え可能。時間数字の直下に、検出された**パブリックIPの国・完全IPアドレス（マスクなし）およびOSの国・地域バッジ**（例：`🌐 IP の国：日本 (120.244.11.22) • 📍 現在の国・地域：日本 · 東京 (UTC+09:00)`）を丸角カプセルで配置。太陽暦（22px）と太陰太陽暦（16px）および祝日・節気チップを統合し、最下部にIP地域付きリアルタイム天気（`📍 日本 東京都 • ⛅ 24°C (曇り)`）をすっきり表示。
 - **🌐 パブリックIP自動位置特定＆6時間ごとの気象更新**：非ブロッキング非同期でパブリックIP、国、都道府県、市区町村、座標を検出し完全IPを表示。実IP座標をもとにOpen-Meteo高精度気象APIと連携し、**厳格に6時間ごとに自動更新**。オフライン時は自動フォールバック。
 - **🎉 世界の祝日・二十四節気・ネット＆セール記念日**：日本（JP）、中国（CN）、アメリカ（US）、イギリス（GB）、フランス（FR）の祝日、高精度天文学アルゴリズムによる二十四節気（立冬など）、およびネット記念日・ショッピング祭（1024プログラマーの日、ブラックフライデー、サイバーマンデー、独身の日等）。祝日がない日は「🎉 今日の祝日・記念日：なし」と明示表示。
 - **🌍 世界時計（193カ国＋主要都市）**：東京、大阪、ニューヨーク、ロンドン、上海、パリなど世界中の都市を**日本語・英語・中国語・タイムゾーンでリアルタイム検索**。大陸別フィルター、お気に入り固定（`★`）、並び替え（`↑`/`↓`）、重複追加警告ダイアログ、各都市現地の祝日・節気表示に対応。
@@ -317,6 +336,10 @@ powershell -ExecutionPolicy Bypass -File .\build_windows.ps1
 # 4. 全自動テストの実行
 go test ./... -count=1
 ```
+
+### ⚠️ ウイルス対策ソフトのヒューリスティック誤検知について（`VHO:HackTool.Win64.Convagent.gen` 等）
+- **原因**：本アプリは100%オープンソースであり、悪意のあるコードやテレメトリは一切含まれていません。自動起動登録（レジストリ `Run` キーの管理）機能を持つ新規コンパイルのGoバイナリやテストプロセス（`pkg.test.exe`）に対して、セキュリティソフト（カスペルスキーやDefender等）がヒューリスティック分析により誤検知アラートを出す場合があります。
+- **対処法**：リポジトリ作業フォルダまたはGoビルドキャッシュを除外リスト（ホワイトリスト）に追加してください。配布時は Authenticode 署名とPEリソースを付与する [`build_windows.ps1`](build_windows.ps1) のご利用を推奨します。
 
 ---
 

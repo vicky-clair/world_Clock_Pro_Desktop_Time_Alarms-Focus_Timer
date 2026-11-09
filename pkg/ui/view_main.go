@@ -11,8 +11,8 @@ import (
 	"worldclock/pkg/weather"
 )
 
-// DrawMainClock 渲染主时钟屏幕（自动识别并展示当前电脑所在国家/地区与系统本地时间，支持阳历与农历双历展示、超大字体数字时钟、矢量模拟表盘、实时天气快照以及底部快捷控制栏）。
-// DrawMainClock renders the primary clock screen (digital or analog) with dual solar & lunar calendar.
+// DrawMainClock 渲染主时钟屏幕（自动识别并展示当前电脑所在国家/地区与系统本地时间，支持阳历与农历双历展示、超大字体数字时钟、实时天气快照、公网 IP 定位徽章、沉浸状态栏模式以及底部快捷控制栏）。
+// DrawMainClock renders the primary clock screen with digital typography, dual solar & lunar calendar, and IP location weather.
 func DrawMainClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	cfg := state.Store.GetPrefs()
 	now := state.Now.Local()

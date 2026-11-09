@@ -24,6 +24,7 @@
    - [4.10 タイマーの自由追加・編集・削除と永続化 (`pkg/timer` & `pkg/ui/view_timer.go`)](#410-タイマーの自由追加編集削除と永続化)
    - [4.11 OS起動時の自動実行連携 (`pkg/ui/autostart.go` & `cmd/worldclock/main.go`)](#411-os起動時の自動実行連携)
    - [4.12 画面端でのミニバー自動縮小と復元 (`pkg/ui/edgebar.go` & `pkg/ui/view_edgebar.go`)](#412-画面端でのミニバー自動縮小と復元)
+   - [4.13 ステータスバー表示と没入モード制御 (`pkg/ui/view_settings.go`, `view_main.go`, `view_popout.go`)](#413-ステータスバー表示と没入モード制御)
 5. [Viva フレームワーク UI 開発規約](#5-viva-フレームワーク-ui-開発規約)
 6. [ヘッドレステストと検証ワークフロー (`app.Driver`)](#6-ヘッドレステストと検証ワークフロー-appdriver)
 7. [Windows ビルド、PE リソース埋め込みと Authenticode 署名](#7-windows-ビルドpe-リソース埋め込みと-authenticode-署名)
@@ -270,6 +271,26 @@ flowchart TB
 1. **画面端接近検出 (`DetectScreenEdge`)**：`cfg.OnFrameChange` から現在のモニター作業領域を取得し、ウィンドウが画面端に近づいた際にミニバーモードへ移行します。
 2. **スリムバー表示とワンクリック復元 (`DrawEdgeBar`)**：現在時刻と太陽暦・旧暦の日付のみをコンパクトに表示し、**`⤢ 通常表示に戻す`** ボタンで元のウィンドウサイズへ復元します。
 3. **設定での有効 / 無効切り替え**：**設定 → ⏰ 時計** 最上部のカードで **`✅ ミニバー縮小を有効化`** と **`🚫 無効にする`** ボタンを提供しています。
+
+### 4.13 ステータスバー表示と没入モード制御
+
+[`pkg/ui/view_settings.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/view_settings.go)、[`pkg/ui/view_main.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/view_main.go)、[`pkg/ui/view_popout.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/view_popout.go)、[`cmd/worldclock/main.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/cmd/worldclock/main.go) にて：
+
+1. **設定の永続化**：[`Settings`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/storage/settings.go) 内の `HideHeader bool` と `HideFooter bool` で管理され、**設定 → 🌐 言語とステータスバー** で切り替え可能：
+   - **上部ステータスバー**：`[👁 上部バーを表示]`（`IDOptHeaderShow`）/ `[✕ 上部バーを非表示]`（`IDOptHeaderHide`）。
+   - **下部ステータスバー**：`[👁 下部バーを表示]`（`IDOptFooterShow`）/ `[✕ 下部バーを非表示]`（`IDOptFooterHide`）。
+   - **ワンクリック全画面没入モード**：`[🌌 全没入モード切替]`（`IDBtnToggleAllBars`）で上下のバーを同時に表示／非表示。
+2. **メイン時計ビューの没入対応（`DrawMainClock`）**：
+   - `HideHeader == true` の場合、メインナビゲーションバーを非表示にし、右上隅に目立つミニ設定アイコン **`⚙`**（`IDBtnClockMiniSettings`）のみを表示。
+   - `HideFooter == true` の場合、下部の IP 所属地と天気バーを非表示にします。
+   - 他のタブ（世界時計、アラーム等）に切り替えた場合は、ナビゲーションが自動的に表示され操作性を損ないません。
+3. **ポップアウト小窓の純粋な没入表示（`DrawPopoutClock`）**：
+   - ポップアウト小窓でも `HideHeader` と `HideFooter` を反映。
+   - 全没入時はコントロールバーを隠し、右上隅に **`⚙`**（設定）と **`⤢`**（通常ウィンドウに戻す）の2つのアイコンボタンのみを配置し、視覚的ノイズを極小化。
+4. **システムトレイ連携**：
+   - トレイメニューに `tray.toggle_header`、`tray.toggle_footer`、`tray.toggle_all_bars` を提供し、ウィンドウを開かずに切り替え可能。
+5. **アラーム強制優先表示**：
+   - アラームやタイマーが鳴動した際は最優先でバナーを表示し、見逃しを防止します。
 
 ---
 

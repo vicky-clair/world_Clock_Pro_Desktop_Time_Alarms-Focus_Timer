@@ -24,6 +24,7 @@
    - [4.10 Custom Timers CRUD & Persistence Safety (`pkg/timer` & `pkg/ui/view_timer.go`)](#410-custom-timers-crud--persistence-safety)
    - [4.11 System Autostart Integration (`pkg/ui/autostart.go` & `cmd/worldclock/main.go`)](#411-system-autostart-integration)
    - [4.12 Auto-Shrink Edge Status Bar & Hysteresis Restore (`pkg/ui/edgebar.go` & `pkg/ui/view_edgebar.go`)](#412-auto-shrink-edge-status-bar--hysteresis-restore)
+   - [4.13 Status Bar Visibility & Immersive Mode Control (`pkg/ui/view_settings.go`, `view_main.go`, `view_popout.go`)](#413-status-bar-visibility--immersive-mode-control)
 5. [Viva UI Development Conventions](#5-viva-ui-development-conventions)
 6. [Headless Testing & Verification (`app.Driver`)](#6-headless-testing--verification-appdriver)
 7. [Windows Build, PE Resource Embedding & Authenticode Signing](#7-windows-build-pe-resource-embedding--authenticode-signing)
@@ -299,6 +300,26 @@ In [`pkg/ui/edgebar.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/
 2. **DPI-Aware Native Resize (`platformShrinkWindowToEdgeBar`)**: Saves the outer window rectangle (`GetWindowRect`) and resizes the window to a compact `560×118` (DPI-scaled) strip docked against the screen edge via `SetWindowPos`.
 3. **One-Click Restore with Hysteresis (`DrawEdgeBar` & `ExitEdgeBar`)**: Renders time, solar/lunar date, and a **`⤢ Restore Normal`** (`IDBtnRestoreEdgeBar`) button. Clicking restore returns the window to its saved size with a `64px` margin inside the monitor work area and sets `SuppressEdgeBarUntilMoveAway` until the window moves clearly inside the screen.
 4. **Prominent Enable / Disable Settings**: Places **`✅ Enable Edge Bar`** (`IDOptEdgeDockEnable`), **`🚫 Do Not Enable`** (`IDOptEdgeDockDisable`), and **`➖ Shrink to Bar Now`** (`IDBtnSettingsEdgeBarPreview`) at the top of **Settings → ⏰ Clock**.
+
+### 4.13 Status Bar Visibility & Immersive Mode Control
+
+In [`pkg/ui/view_settings.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/view_settings.go), [`pkg/ui/view_main.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/view_main.go), [`pkg/ui/view_popout.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/view_popout.go), and [`cmd/worldclock/main.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/cmd/worldclock/main.go):
+
+1. **Persistent Preference Fields**: [`Settings`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/storage/settings.go) stores `HideHeader bool` and `HideFooter bool`, configurable from **Settings → 🌐 Language & Status Bars**:
+   - **Header Bar**: `[👁 Show Header Bar]` (`IDOptHeaderShow`) & `[✕ Hide Header Bar]` (`IDOptHeaderHide`).
+   - **Footer Bar**: `[👁 Show Footer Bar]` (`IDOptFooterShow`) & `[✕ Hide Footer Bar]` (`IDOptFooterHide`).
+   - **One-Click Immersive Mode**: `[🌌 Toggle Immersive Mode]` (`IDBtnToggleAllBars`), instantly hiding or restoring both bars simultaneously.
+2. **Main Clock Immersive Adaptation (`DrawMainClock`)**:
+   - When `HideHeader == true`, the main navigation header is hidden. A clean, prominent icon-only button **`⚙`** (`IDBtnClockMiniSettings`) remains anchored at the top-right, enabling users to enter settings anytime without needing keyboard shortcuts.
+   - When `HideFooter == true`, the bottom IP location and weather status bar are hidden.
+   - When switching to non-clock tabs (World Clocks, Alarms, Timers, Settings), the header automatically stays visible so tab switching is never blocked.
+3. **Popout Clock Clean Immersion (`DrawPopoutClock`)**:
+   - The popout floating window fully respects `HideHeader` and `HideFooter`.
+   - In full immersion mode (both hidden), the top and bottom popout bars vanish, leaving only two minimalist icon-only buttons at the top right: **`⚙`** (open settings, `IDBtnPopoutMiniSettings`) and **`⤢`** (restore normal window, `IDBtnExitPopout`).
+4. **System Tray Integration**:
+   - The tray context menu offers `tray.toggle_header`, `tray.toggle_footer`, and `tray.toggle_all_bars`, enabling bar toggling directly from the Windows notification area without restoring the window.
+5. **Alarm Banner Override Guarantee**:
+   - When an alarm or countdown timer fires, the active ringing banner possesses top rendering priority and is rendered unconditionally across all views, ensuring alerts are never missed.
 
 ---
 

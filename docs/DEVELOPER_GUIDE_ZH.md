@@ -24,6 +24,7 @@
    - [4.10 倒计时任务自定义增删改查与落盘机制 (`pkg/timer` & `pkg/ui/view_timer.go`)](#410-倒计时任务自定义增删改查与落盘机制)
    - [4.11 开机自动启动与系统登录项同步 (`pkg/ui/autostart.go` & `cmd/worldclock/main.go`)](#411-开机自动启动与系统登录项同步)
    - [4.12 靠近屏幕边缘自动缩小为状态条与防抖恢复 (`pkg/ui/edgebar.go` & `pkg/ui/view_edgebar.go`)](#412-靠近屏幕边缘自动缩小为状态条与防抖恢复)
+   - [4.13 状态栏显示与全沉浸模式控制机制 (`pkg/ui/view_settings.go`, `view_main.go`, `view_popout.go`)](#413-状态栏显示与全沉浸模式控制机制)
 5. [Viva 框架 UI 开发规范](#5-viva-框架-ui-开发规范)
 6. [测试体系与无头验证 (`app.Driver`)](#6-测试体系与无头验证-appdriver)
 7. [Windows 构建、PE 资源嵌入与数字签名打包](#7-windows-构建pe-资源嵌入与数字签名打包)
@@ -117,7 +118,7 @@ the-world-clock-on-the-desktop/
 │       ├── theme.go              # 四大内置主题（Olive/Dark/Light/Nord）与毛玻璃透明度/字体颜色合成
 │       ├── scrollbar.go          # 自定义现代圆角胶囊滚动条绘制器
 │       ├── edgebar.go            # 窗口靠近屏幕边缘检测、防抖回差与状态条进入/恢复状态机
-│       ├── view_main.go          # 主时钟视图（数字毛玻璃卡片 / 矢量模拟表盘 + 底部快捷悬浮栏）
+│       ├── view_main.go          # 主时钟视图（超大字号数字时钟、公网 IP 定位徽章、实时天气快照、沉浸模式与底部快捷栏）
 │       ├── view_edgebar.go       # 屏幕边缘紧凑时间日期状态条视图与一键恢复按钮
 │       ├── view_world.go         # 世界时钟列表视图、193 国搜索添加弹窗、重复添加提醒模态框
 │       ├── view_alarms.go        # 闹钟列表视图与新建闹钟面板（支持 ±1小时/±5分钟/±1分钟精确进位借位微调）
@@ -126,8 +127,8 @@ the-world-clock-on-the-desktop/
 │       ├── view_sleep.go         # 极简暗光睡眠与环境音视图（支持 ±1分/±5分微调）
 │       ├── view_news.go          # 历史上的今天视图与三语文章本地化
 │       ├── view_pro.go           # Pro 会员订阅（¥3/月、¥28/年）与 7 天免费试用中心视图及弹窗
-│       ├── view_settings.go      # 五大模块设置视图（🌐语言含字体定制 / 🖼️壁纸轮播 / ⏰时钟含温度单位与关闭行为 / 👑会员 / ℹ️关于）
-│       ├── view_popout.go        # 紧凑型桌面悬浮小窗视图（支持顶/中/底三段垂直位置自由切换与双历大字）
+│       ├── view_settings.go      # 五大模块设置视图（🌐语言含状态栏沉浸模式与字体定制 / 🖼️壁纸轮播 / ⏰时钟含温度单位与关闭行为 / 👑会员 / ℹ️关于）
+│       ├── view_popout.go        # 紧凑型桌面悬浮小窗视图（支持顶/中/底三段垂直位置自由切换、状态栏隐藏与双历大字）
 │       └── app_test.go           # 基于 app.Driver 的 21 组端到端无头 UI 交互测试与性能基准测试
 ├── docs/
 │   ├── DEVELOPER_GUIDE_ZH.md     # 中文完整开发文档（本文档）
@@ -301,6 +302,27 @@ sequenceDiagram
 2. **DPI 感知原生窗口缩放 (`platformShrinkWindowToEdgeBar`)**：在进入状态条前自动保存原窗口外框 `RECT`，并根据当前显示器 DPI（`GetDpiForWindow`）调用 `SetWindowPos` 将窗口缩小为 `560×118` 贴边紧凑横条。
 3. **精简状态条视图与一键恢复 (`DrawEdgeBar` & `ExitEdgeBar`)**：状态条仅简洁呈现当前时间与公历/农历日期，右侧提供 **`⤢ 恢复正常`**（`IDBtnRestoreEdgeBar`）按钮。点击后恢复原窗口尺寸并向屏幕内部偏移 `64px` 安全距离，同时置位 `SuppressEdgeBarUntilMoveAway` 防抖锁，直到窗口完全离开边缘回差区（`IsClearlyInsideScreen`）后才重新允许下次边缘吸附。
 4. **设置页启用/不启用开关**：在 **设置 → ⏰ 时钟** 最顶部提供 **`✅ 启用状态条收缩`**（`IDOptEdgeDockEnable`）与 **`🚫 不启用`**（`IDOptEdgeDockDisable`）双按钮及 **`➖ 立即缩为状态条`** 体验按钮。选择“不启用”时，不仅屏蔽拖动边缘自动收缩，还会自动隐藏主时钟底部控制栏上的快捷按钮。
+
+### 4.13 状态栏显示与全沉浸模式控制机制
+
+在 [`pkg/ui/view_settings.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/view_settings.go)、[`pkg/ui/view_main.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/view_main.go)、[`pkg/ui/view_popout.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/ui/view_popout.go) 与 [`cmd/worldclock/main.go`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/cmd/worldclock/main.go) 中：
+
+1. **设置持久化字段**：在 [`Settings`](file:///c:/XMWJJ/the-world-clock-on-the-desktop/pkg/storage/settings.go) 中维护 `HideHeader bool` 与 `HideFooter bool`，并在 **设置 → 🌐 界面语言与状态栏** 页面提供独立的切换开关：
+   - **顶部状态栏**：`[👁 显示顶部状态栏]`（`IDOptHeaderShow`）与 `[✕ 隐藏顶部状态栏]`（`IDOptHeaderHide`）。
+   - **底部状态栏**：`[👁 显示底部状态栏]`（`IDOptFooterShow`）与 `[✕ 隐藏底部状态栏]`（`IDOptFooterHide`）。
+   - **一键全沉浸**：`[🌌 开启全沉浸模式]`（`IDBtnToggleAllBars`），一键将顶部和底部同时隐藏，或同时恢复显示。
+2. **主时钟界面的沉浸自适应（`DrawMainClock`）**：
+   - 当 `HideHeader == true` 时，隐藏主导航栏（世界时钟/闹钟/计时器/壁纸/设置等按钮），但在右上角保留醒目的纯图标按钮 **`⚙`**（`IDBtnClockMiniSettings`），确保用户在完全沉浸模式下无需快捷键即可轻松一键返回设置面板。
+   - 当 `HideFooter == true` 时，隐藏底部 IP 属地与天气状态条。
+   - 处于非时钟视图（如闹钟、世界时钟列表、设置页面）时，顶部导航栏保持可见，确保核心功能模块的切换不被阻断。
+3. **悬浮小窗模式的纯粹沉浸（`DrawPopoutClock`）**：
+   - 悬浮时钟模式同样严格响应 `HideHeader` 与 `HideFooter` 配置。
+   - 当全部隐藏进入全沉浸模式时，顶部控制栏与底部控制栏自动隐去，只在小窗右上角保留两个极简醒目的纯图标按钮：**`⚙`**（进入设置，`IDBtnPopoutMiniSettings`）与 **`⤢`**（退出小窗恢复常规窗口，`IDBtnExitPopout`）。
+   - 既保证了极致纯粹的桌面桌面壁挂/摆件视觉体验，又保留了完全可逆、永不迷路的交互通路。
+4. **系统托盘菜单多重联动控制**：
+   - 托盘右键菜单中提供 `tray.toggle_header`、`tray.toggle_footer` 与 `tray.toggle_all_bars`（显示/隐藏全部状态栏）快捷项，用户无需打开主界面即可随时在任务栏右下角切换显示状态。
+5. **闹钟强提醒安全覆盖保障**：
+   - 当有闹钟或倒计时响铃触发时，顶部闹钟提醒横幅拥有最高的渲染优先级，强制优先渲染并提供“停止”与“稍后提醒”按钮，绝不会因状态栏处于隐藏模式而遗漏关键提醒。
 
 ---
 

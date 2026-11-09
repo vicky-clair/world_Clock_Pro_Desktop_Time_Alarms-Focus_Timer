@@ -12,7 +12,7 @@ import (
 	"github.com/vivaui/viva/ui"
 )
 
-// DrawPopoutClock 渲染紧凑型桌面悬浮小窗时钟视图（显示电脑所在国家/地区与本地时间，支持阳历与农历双历、顶/中/底三段垂直位置自由切换与一键还原）。
+// DrawPopoutClock 渲染紧凑型桌面悬浮小窗时钟视图（显示电脑所在国家/地区与本地时间，支持阳历与农历双历、公网 IP 定位与天气快照、顶/中/底三段垂直位置自由切换、状态栏沉浸模式与一键还原）。
 // DrawPopoutClock renders the optimized popout clock widget with enlarged typography, dual calendar, and top/center/bottom positioning.
 func DrawPopoutClock(f *flex.Frame, state *AppState, theme ui.Theme) {
 	cfg := state.Store.GetPrefs()

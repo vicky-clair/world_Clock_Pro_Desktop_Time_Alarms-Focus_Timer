@@ -44,7 +44,6 @@ var (
 	// 主时钟底部快捷控制栏按钮 (Main Clock Dock Controls)
 	IDBtnToggle24H     = Tree.ID(featClock, "btn-toggle-24h")     // 12/24 小时制切换按钮
 	IDBtnToggleSeconds = Tree.ID(featClock, "btn-toggle-seconds") // 秒数显示开关按钮
-	IDBtnToggleStyle   = Tree.ID(featClock, "btn-toggle-style")   // 数字/指针表盘切换按钮
 	IDBtnQuickPopout   = Tree.ID(featClock, "btn-quick-popout")   // 进入悬浮时钟模式按钮
 	IDBtnQuickEdgeBar  = Tree.ID(featClock, "btn-quick-edgebar")  // 一键缩为边缘状态条按钮
 
@@ -184,8 +183,6 @@ var (
 	IDOptFormat24H              = Tree.ID(featSetting, "opt-format-24h")               // 12/24 小时制切换
 	IDOptFullDate               = Tree.ID(featSetting, "opt-full-date")                // 完整/简短日期格式切换
 	IDOptShowHolidays           = Tree.ID(featSetting, "opt-show-holidays")            // 是否显示节假日与二十四节气开关
-	IDOptStyleDigital           = Tree.ID(featSetting, "opt-style-digital")            // 数字时钟样式按钮
-	IDOptStyleAnalog            = Tree.ID(featSetting, "opt-style-analog")             // 模拟指针表盘样式按钮
 	IDOptPopoutPosTop           = Tree.ID(featSetting, "opt-popout-pos-top")           // 设置页：悬浮时钟靠顶
 	IDOptPopoutPosCenter        = Tree.ID(featSetting, "opt-popout-pos-center")        // 设置页：悬浮时钟居中
 	IDOptPopoutPosBottom        = Tree.ID(featSetting, "opt-popout-pos-bottom")        // 设置页：悬浮时钟靠底
