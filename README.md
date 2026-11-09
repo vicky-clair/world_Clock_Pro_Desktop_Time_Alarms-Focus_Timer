@@ -159,13 +159,43 @@ cd world_Clock_Pro_Desktop_Time_Alarms-Focus_Timer
 go run ./cmd/worldclock
 ```
 
-### 3. 一键打包带数字签名的 Windows 正式版 (`.exe`)
-项目内置了自动化构建脚本 `build_windows.ps1`，会自动嵌入 Windows 原生 PE 版本信息、图标与 DPI 感知清单（`.syso`），并进行本地 Authenticode 代码签名：
+### 3. 一键编译与打包全套发布包
+
+#### (1) 一键编译绿色免安装版 EXE 与 ZIP (`.exe`)
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\build_windows.ps1
 ```
-构建完成后，直接双击运行生成的可执行文件：
-- `dist\小瑞综合时钟桌面.exe`（或 `dist\XiaoruIntegratedClockDesktop.exe`）
+生成：`dist\小瑞综合时钟桌面.exe` 及 `dist\小瑞综合时钟桌面-Windows-x64.zip`（均带 Authenticode 数字签名与高清图标资源）。
+
+#### (2) 一键编译标准 Windows MSI 安装包 (`.msi`)
+项目基于 WiX Toolset v4 构建了企业级标准 MSI 安装数据库包：
+```powershell
+powershell -ExecutionPolicy Bypass -File .\packaging\wix\build_msi.ps1
+```
+生成：`dist\小瑞综合时钟桌面.msi`（自带桌面快捷方式、开始菜单目录、开机自启项及控制面板干净卸载）。
+
+#### (3) 一键编译 Windows 安装向导程序 (`_Setup.exe`)
+项目集成了 Inno Setup 6 编译器脚本，支持生成向导式安装包：
+```powershell
+powershell -ExecutionPolicy Bypass -File .\packaging\innosetup\build_installer.ps1
+```
+生成：`dist\小瑞综合时钟桌面_Setup.exe`（超高 LZMA2 压缩率，体积仅 ~7.8 MiB）。
+
+#### (4) 一键生成全部 Windows 安装分发包
+```powershell
+powershell -ExecutionPolicy Bypass -File .\packaging\build_all_packages.ps1
+```
+
+#### (5) Themida PE 加固与代码混淆保护
+对于商业分发或需要防止逆向工程的场景，提供了针对 `C:\BLWJ\Themida_3.2.6.0_nCh2CZZRNLW` 的加固配置方案与脚本：
+```powershell
+powershell -ExecutionPolicy Bypass -File .\packaging\themida\protect_themida.ps1
+```
+详见专用说明文档：[`packaging/themida/README_THEMIDA.md`](packaging/themida/README_THEMIDA.md)。
+
+#### (6) 苹果 macOS / Mac App Store 支持格式 (`.app` / `.pkg` / `.dmg`)
+由于 Viva 框架在 macOS 下深度依赖 Apple 原生 Metal 渲染管线与 Cocoa 原生框架，在 Windows 平台直接交叉编译受限于苹果专有 SDK。项目提供了标准的 Apple Bundle 结构（`Info.plist`、`entitlements.plist` 沙盒配置）以及 **GitHub Actions 自动化编译流水线**（[`.github/workflows/build_macos.yml`](.github/workflows/build_macos.yml)）：
+- 只要推送代码至 GitHub，云端官方 Apple Silicon（`macos-14`）虚拟机便会自动编译原生 Universal 二进制，打包为符合苹果商店上架要求的 **`.app`** 应用程序包、**`.pkg`** 安装包与 **`.dmg`** 镜像，可直接在 GitHub Releases 中一键下载。
 
 ### 4. 运行全套自动化测试与性能基准
 无需弹出真实桌面窗口，使用内置 `app.Driver` 即可在毫秒级完成全界面交互测试：

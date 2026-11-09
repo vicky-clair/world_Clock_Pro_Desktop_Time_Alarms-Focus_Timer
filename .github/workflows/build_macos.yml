@@ -1,0 +1,41 @@
+name: Build macOS & Apple App Store Packages
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-14 # Apple Silicon M1 环境
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: true
+
+      - name: Build macOS App Bundle
+        run: |
+          chmod +x packaging/macos/build_macos.sh
+          ./packaging/macos/build_macos.sh
+
+      - name: Package DMG for macOS
+        run: |
+          mkdir -p dist/dmg_staging
+          cp -r "dist/小瑞综合时钟桌面.app" dist/dmg_staging/
+          hdiutil create -volname "小瑞综合时钟桌面" -srcfolder dist/dmg_staging -ov -format UDZO "dist/小瑞综合时钟桌面-macOS-Universal.dmg"
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: 小瑞综合时钟桌面-macOS
+          path: |
+            dist/小瑞综合时钟桌面.app
+            dist/小瑞综合时钟桌面-macOS-Universal.dmg

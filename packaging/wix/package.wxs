@@ -1,0 +1,49 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="小瑞综合时钟桌面"
+           Manufacturer="Xiaoru Studio"
+           Version="1.0.0.0"
+           UpgradeCode="E4F18B32-5819-4C5A-9D45-B7D8C5708812"
+           Scope="perUserOrMachine">
+    <MajorUpgrade DowngradeErrorMessage="已安装更新版本的小瑞综合时钟桌面。" />
+    <MediaTemplate EmbedCab="yes" />
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALLFOLDER" Name="XiaoruIntegratedClockDesktop">
+        <Component Id="MainExecutable" Guid="36B82DC9-8399-4A73-A337-03B52C617B51">
+          <File Id="AppExe" Source="dist\小瑞综合时钟桌面.exe" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppShortcutsFolder" Name="小瑞综合时钟桌面">
+        <Component Id="AppShortcut" Guid="719FA07B-9E39-4E6C-9A88-29C34A972B53">
+          <Shortcut Id="ApplicationStartMenuShortcut"
+                    Name="小瑞综合时钟桌面"
+                    Description="高颜值全能桌面时钟、世界时区、闹钟与番茄专注"
+                    Target="[!AppExe]"
+                    WorkingDirectory="INSTALLFOLDER" />
+          <RemoveFolder Id="CleanUpShortcuts" On="uninstall" />
+          <RegistryValue Root="HKCU" Key="Software\Xiaoru\ClockDesktop" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder">
+      <Component Id="DesktopShortcutComp" Guid="A3E50711-209E-436A-8E48-185F4AC5D581">
+        <Shortcut Id="ApplicationDesktopShortcut"
+                  Name="小瑞综合时钟桌面"
+                  Description="高颜值全能桌面时钟、世界时区、闹钟与番茄专注"
+                  Target="[!AppExe]"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKCU" Key="Software\Xiaoru\ClockDesktop" Name="desktopShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <Feature Id="MainFeature" Title="小瑞综合时钟桌面" Level="1">
+      <ComponentRef Id="MainExecutable" />
+      <ComponentRef Id="AppShortcut" />
+      <ComponentRef Id="DesktopShortcutComp" />
+    </Feature>
+  </Package>
+</Wix>
