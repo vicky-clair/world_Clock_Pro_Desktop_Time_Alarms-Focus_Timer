@@ -5,6 +5,7 @@ package main
 import (
 	"log"
 	"os"
+	"path/filepath"
 
 	"worldclock/pkg/storage"
 	"worldclock/pkg/ui"
@@ -15,6 +16,12 @@ import (
 )
 
 func main() {
+	// 0. 规范工作目录：当被系统开机自启（如 Windows Run 注册表）拉起时，CWD 默认为 C:\Windows\System32。
+	// 将工作目录切换至当前可执行文件所在目录，确保相对路径资源加载与本地文件操作安全可靠。
+	if exe, err := os.Executable(); err == nil && exe != "" {
+		_ = os.Chdir(filepath.Dir(exe))
+	}
+
 	// 1. 初始化 JSON 持久化存储与全局应用运行时状态
 	store := storage.NewStore("")
 	state := ui.NewAppState(store)

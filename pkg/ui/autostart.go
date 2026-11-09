@@ -4,8 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/vivaui/viva/app"
 )
 
 const (
@@ -38,8 +36,5 @@ func SyncSystemAutostart(enabled bool) error {
 	if isTestBinary() {
 		return nil
 	}
-	return app.SetAutostart(app.Autostart{
-		ID:   AutostartAppID,
-		Name: AutostartAppName,
-	}, enabled)
+	return syncSystemAutostartPlatform(enabled)
 }

@@ -6,6 +6,19 @@
 
 $ErrorActionPreference = "Stop"
 
+# Auto-detect Go toolchain from PATH or user environments
+if (-not (Get-Command go -ErrorAction SilentlyContinue)) {
+    $vfoxGo = Join-Path $env:USERPROFILE ".version-fox\cache\golang\current\bin"
+    if (Test-Path $vfoxGo) {
+        $env:PATH = "$vfoxGo;$env:PATH"
+    } else {
+        $userPath = [System.Environment]::GetEnvironmentVariable('Path', 'User')
+        if ($userPath) {
+            $env:PATH = "$userPath;$env:PATH"
+        }
+    }
+}
+
 $OutDir = Join-Path $PSScriptRoot "dist"
 if (-not (Test-Path $OutDir)) {
     New-Item -ItemType Directory -Path $OutDir | Out-Null
